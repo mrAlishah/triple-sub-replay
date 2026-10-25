@@ -116,7 +116,7 @@ internal fun toggleMoreSettingsSection(
     tapped: MoreSettingsSection,
 ): MoreSettingsSection? = if (open == tapped) null else tapped
 
-internal enum class LanguagePickerMode { SOURCE, TARGET }
+internal enum class LanguagePickerMode { SOURCE, TARGET, THIRD }
 
 /** Which language list is open, shared by the full settings page and the quick languages popup. */
 internal class LanguagePickerState {
@@ -185,24 +185,39 @@ private fun showLanguagePickerIfOpen(
     onTargetChange: (String) -> Unit,
 ): Boolean {
     val mode = picker.mode ?: return false
-    val source = mode == LanguagePickerMode.SOURCE
+    val slots = LocalTripleSubtitleControls.current
     val interfaceLocale = currentInterfaceLocale()
+    val title =
+        when (mode) {
+            LanguagePickerMode.SOURCE -> R.string.settings_original_caption_language
+            LanguagePickerMode.TARGET -> R.string.settings_translate_to
+            LanguagePickerMode.THIRD -> R.string.settings_slot_third
+        }
+    val selectedCode =
+        when (mode) {
+            LanguagePickerMode.SOURCE -> sourcePreference
+            LanguagePickerMode.TARGET -> targetLanguage
+            LanguagePickerMode.THIRD -> slots.language
+        }
+    val onPicked: (String) -> Unit =
+        when (mode) {
+            LanguagePickerMode.SOURCE -> onSourceChange
+            LanguagePickerMode.TARGET -> onTargetChange
+            LanguagePickerMode.THIRD -> slots.onLanguageChange
+        }
     LanguagePickerDialog(
-        title =
-            stringResource(
-                if (source) R.string.settings_original_caption_language else R.string.settings_translate_to,
-            ),
+        title = stringResource(title),
         choices =
-            if (source) {
+            if (mode == LanguagePickerMode.SOURCE) {
                 sourceChoices
             } else {
                 TranslationLanguages.all.map { LanguageChoice(it.code, languageDisplayName(it.code, interfaceLocale)) }
             },
-        selectedCode = if (source) sourcePreference else targetLanguage,
+        selectedCode = selectedCode,
         searchQuery = picker.query,
         onSearchQueryChange = { picker.query = it },
         onChoice = { choice ->
-            if (source) onSourceChange(choice.code) else onTargetChange(choice.code)
+            onPicked(choice.code)
             picker.close()
         },
         onDismiss = picker::close,
@@ -217,23 +232,34 @@ private fun LanguagePickerButtons(
     targetLanguage: String,
     onPick: (LanguagePickerMode) -> Unit,
 ) {
-    Text(stringResource(R.string.settings_original_language))
-    Spacer(Modifier.height(6.dp))
-    OutlinedButton(
-        onClick = { onPick(LanguagePickerMode.SOURCE) },
-        modifier = Modifier.fillMaxWidth().testTag("source_language_picker"),
-    ) {
-        Text(sourceLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
+    val slots = LocalTripleSubtitleControls.current
+    val locale = currentInterfaceLocale()
+    SubtitleSlotRow(
+        label = R.string.settings_slot_original,
+        checked = slots.originalEnabled,
+        onCheckedChange = slots.onOriginalEnabledChange,
+        languageLabel = sourceLabel,
+        onPickLanguage = { onPick(LanguagePickerMode.SOURCE) },
+        tag = "source_language",
+    )
     Spacer(Modifier.height(12.dp))
-    Text(stringResource(R.string.settings_translate_to))
-    Spacer(Modifier.height(6.dp))
-    OutlinedButton(
-        onClick = { onPick(LanguagePickerMode.TARGET) },
-        modifier = Modifier.fillMaxWidth().testTag("target_language_picker"),
-    ) {
-        Text(languageDisplayName(targetLanguage, currentInterfaceLocale()))
-    }
+    SubtitleSlotRow(
+        label = R.string.settings_slot_second,
+        checked = slots.secondEnabled,
+        onCheckedChange = slots.onSecondEnabledChange,
+        languageLabel = languageDisplayName(targetLanguage, locale),
+        onPickLanguage = { onPick(LanguagePickerMode.TARGET) },
+        tag = "target_language",
+    )
+    Spacer(Modifier.height(12.dp))
+    SubtitleSlotRow(
+        label = R.string.settings_slot_third,
+        checked = slots.enabled,
+        onCheckedChange = slots.onEnabledChange,
+        languageLabel = languageDisplayName(slots.language, locale),
+        onPickLanguage = { onPick(LanguagePickerMode.THIRD) },
+        tag = "third_language",
+    )
     SettingsHint(stringResource(R.string.settings_model_download_hint))
 }
 
@@ -541,7 +567,6 @@ internal fun SubtitleSettingsDialog(
                         if (translationEngineActions != null) {
                             OnlineTranslationSettingsRows(onlineTranslation, translationEngineActions)
                         }
-                        LocalTripleSubtitleControls.current?.let { TripleSubtitleSettings(it) }
                         SettingsSwitchRow(
                             title = stringResource(R.string.settings_natural_flow_title),
                             description = stringResource(R.string.settings_natural_flow_description),

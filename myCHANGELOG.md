@@ -7,8 +7,9 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Added
 
-- **Triple subtitles.** Settings → Translation → Triple subtitles (off by default) shows a third line under the translation, translated from the video's own captions; the Third language defaults to Persian and can be any translation language. Persian lines are laid out right-to-left. A failure of the third line never hides the original or the translation. See `docs/specs/2026-10-25-triple-subtitles.md`.
+- **Triple subtitles.** The Subtitle languages dialog now has three slots, Original, Second and Third, each with a checkbox and a language list; checked slots show on the video and in the panel in that order. The Third slot is off by default and defaults to Persian, which is laid out right-to-left. Its line is translated from the video's own captions and a failure of it never hides the other lines. See `docs/specs/2026-10-25-triple-subtitles.md`.
 
 ### Changed
 
+- **Default second language.** The translation language now defaults to English instead of Vietnamese.
 - **Debug build identity.** The debug app is called "Triple Sub Replay" and installs as `com.kienhoang.dualsubreplay.triple`, beside the original app, and is never offered upstream updates.

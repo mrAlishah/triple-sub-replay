@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,6 +18,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -108,6 +111,55 @@ class SubtitleUiTest {
         composeRule.runOnIdle { assertTrue(openedAllSettings) }
         composeRule.onNodeWithText("Done").performClick()
         composeRule.runOnIdle { assertTrue(dismissed) }
+    }
+
+    @Test
+    fun gearPopupHasThreeSubtitleSlotsWithCheckboxesAndLanguages() {
+        var original by mutableStateOf(true)
+        var second by mutableStateOf(true)
+        var third by mutableStateOf(false)
+        var thirdLanguage by mutableStateOf("fa")
+        composeRule.setContent {
+            val controls =
+                TripleSubtitleControls(
+                    originalEnabled = original,
+                    secondEnabled = second,
+                    enabled = third,
+                    language = thirdLanguage,
+                    onOriginalEnabledChange = { original = it },
+                    onSecondEnabledChange = { second = it },
+                    onEnabledChange = { third = it },
+                    onLanguageChange = { thirdLanguage = it },
+                )
+            DualSubTheme {
+                CompositionLocalProvider(LocalTripleSubtitleControls provides controls) {
+                    QuickLanguageSettingsDialog(
+                        sourcePreference = "auto",
+                        targetLanguage = "en",
+                        availableSourceLanguages = listOf(CaptionLanguage("de", "German")),
+                        onSourceChange = {},
+                        onTargetChange = {},
+                        onOpenAllSettings = {},
+                        onDismiss = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("source_language_checkbox").assertIsOn()
+        composeRule.onNodeWithTag("target_language_checkbox").assertIsOn()
+        composeRule.onNodeWithTag("third_language_checkbox").assertIsOff()
+        composeRule.onNodeWithText("Persian").assertIsDisplayed()
+        composeRule.onNodeWithTag("third_language_checkbox").performClick()
+        composeRule.onNodeWithTag("target_language_checkbox").performClick()
+        composeRule.runOnIdle {
+            assertTrue(third)
+            assertEquals(false, second)
+        }
+        composeRule.onNodeWithTag("third_language_picker").performClick()
+        composeRule.onNodeWithTag("language_search").performTextInput("German")
+        composeRule.onNodeWithTag("language_option_third_de").performClick()
+        composeRule.runOnIdle { assertEquals("de", thirdLanguage) }
     }
 
     @Test

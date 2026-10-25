@@ -151,7 +151,7 @@
     <string name="settings_google_wait_2">2 秒</string>
     <string name="settings_google_wait_4">4 秒</string>
     <string name="settings_google_wait_8">8 秒</string>
-    <string name="settings_triple_title">三语字幕</string>
-    <string name="settings_triple_description">在译文下方显示第三行,由视频原字幕翻译而来。</string>
-    <string name="settings_triple_language_title">第三种语言</string>
+    <string name="settings_slot_original">原文字幕</string>
+    <string name="settings_slot_second">第二字幕</string>
+    <string name="settings_slot_third">第三字幕</string>
 </resources>

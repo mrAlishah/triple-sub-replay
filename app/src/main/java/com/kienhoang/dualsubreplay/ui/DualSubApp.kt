@@ -314,7 +314,7 @@ private fun DualSubExperience(
                 )
         }
     val nativeDialogVisible by youtubeNativeDialogVisible.collectAsStateWithLifecycle()
-    val tracksVisible = state.showOriginal() || state.showTranslation()
+    val tracksVisible = state.showOriginal() || state.showTranslation() || state.showThird()
     val sideBySide =
         tracksVisible && !nativeDialogVisible &&
             shouldUseLandscapeSplit(
@@ -941,7 +941,7 @@ internal fun SubtitleTimeline(
                     isDownloadingTranslationModel = state.isDownloadingTranslationModel,
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
-                    thirdText = state.thirdLines.textFor(state.activeVideoId, segment.id),
+                    thirdText = state.thirdLines.textFor(state.activeVideoId, segment.id)?.takeIf { state.showThird() },
                 )
             }
         }

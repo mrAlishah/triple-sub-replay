@@ -5,6 +5,8 @@
 Approved for implementation. The fork owner asked for this change and authorized local implementation
 and local commits on `feat_triple_subtitles`. This does not authorize push, PR, merge, tag or release.
 
+> **Revision 1 (owner request, same day) replaces the interaction model described below.** The separate "Triple subtitles" switch and "Third language" list in Settings → Translation are gone; see [Revision 1: subtitle slots](#revision-1-subtitle-slots). Everything about the third line's data flow (side map, translation from the source text, failure isolation) is unchanged.
+
 ## Context / problem
 
 Upstream DualSub Replay shows two lines per caption: the original and one translation
@@ -174,3 +176,37 @@ and need a device check.
 
 Known limitations: no tap-to-learn on the third line; no third line for live-fallback subtitles; no dedicated
 background prefetch for the third language; the second language is still chosen with the existing target-language setting.
+
+## Revision 1: subtitle slots
+
+Owner request: language activation and choice happen in the existing **Subtitle languages** dialog (and the same
+block on the full settings page), not in separate settings.
+
+### Behavior
+- Three slots, always in this order: line 1 Original, line 2 Second, line 3 Third. Each has a checkbox and a language button.
+- Original: checkbox plus the existing "Original language" list. Second: checkbox plus the existing target-language list
+  (default **English**, changed from upstream's Vietnamese; the setup flow still sets it explicitly). Third: checkbox
+  (default **off**) plus the same searchable list (default **Persian**).
+- One checked slot shows one line, two show the dual layout, three show the triple layout. Persian is right-to-left
+  (`TextDirection.Content`, unchanged).
+- A third language equal to the caption language, or equal to the second language while the second slot is on, is not
+  requested. When the second slot is off, a third language equal to it is requested like any other.
+
+### Design (smallest change)
+- Original and Second checkboxes read and write the existing `originalVisibility` / `translatedVisibility` settings
+  (checked = anything but NEVER; unchecking sets NEVER, checking sets ALWAYS). No new persistence, the settings page's
+  "Original captions" / "Translated captions" and the assistant stay in sync, and Reset all settings already covers them.
+- Third keeps its two preferences (`triple_subtitles_enabled`, `third_language`); `tripleSubtitlesEnabled` now means "third slot checked".
+- The dialog reads `LocalTripleSubtitleControls` (default: no-op controls), so `QuickLanguageSettingsDialog` and its call site are untouched.
+  `LanguagePickerButtons` renders the three `SubtitleSlotRow`s; `LanguagePickerMode` gains `THIRD`.
+- The third line is gated by `showThird()`: its checkbox, plus the second line's play-mode and pause rules while the second slot is on.
+  It no longer depends on the second slot being visible.
+- Removed: `TripleSubtitleSettings` (switch and dropdown) and its hook in the Translation section; the three `settings_triple_*`
+  strings are replaced by `settings_slot_original`, `settings_slot_second`, `settings_slot_third` in all 8 locales.
+
+### Deviations and limits
+- Unchecking all three slots is allowed (same as hiding both lines today).
+- Re-checking Original or Second restores "always"; a previous "on pause" mode is not remembered.
+- If Original is off and the third language equals the caption language, nothing is shown for the third slot (it would need an identity "translation").
+- Not verified: the dialog on a device or emulator, RTL rendering, rotation, live YouTube. The new `SubtitleUiTest` case
+  compiles (`assembleDebugAndroidTest`) but was not run.

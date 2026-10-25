@@ -98,7 +98,7 @@ data class DualSubUiState(
     val activeVideoId: String? = null,
     val subtitlePanelVisible: Boolean = true,
     val sourcePreference: String = "auto",
-    val targetLanguage: String = "vi",
+    val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
     val onboardingCompleted: Boolean = false,
     val guideCompleted: Boolean = false,
     val dailyGoalPromptCompleted: Boolean = false,
@@ -480,9 +480,9 @@ class AppViewModel internal constructor(
                     ),
                 targetLanguage =
                     preferences
-                        .getString("target_language", "vi")
+                        .getString("target_language", DEFAULT_SECOND_LANGUAGE)
                         ?.takeIf(TranslationLanguages::isSupported)
-                        ?: "vi",
+                        ?: DEFAULT_SECOND_LANGUAGE,
                 onboardingCompleted = preferences.getBoolean("onboarding_completed", false),
                 guideCompleted =
                     initialGuideCompleted(
@@ -1301,7 +1301,7 @@ class AppViewModel internal constructor(
         _state.update { current ->
             current.copy(
                 sourcePreference = "auto",
-                targetLanguage = "vi",
+                targetLanguage = DEFAULT_SECOND_LANGUAGE,
                 fontScale = 1f,
                 portraitPanelOffsetFraction = DEFAULT_PORTRAIT_PANEL_OFFSET_FRACTION,
                 landscapeSplitEnabled = true,

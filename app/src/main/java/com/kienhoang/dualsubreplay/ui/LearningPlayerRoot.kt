@@ -512,10 +512,14 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             TranslationEngineActions(viewModel::setTranslationEngine, viewModel::tryGoogleTranslationAgain, viewModel::setGoogleWait)
         }
     val tripleControls =
-        remember(viewModel, state.tripleSubtitlesEnabled, state.thirdLanguage) {
+        remember(viewModel, state.originalVisibility, state.translatedVisibility, state.tripleSubtitlesEnabled, state.thirdLanguage) {
             TripleSubtitleControls(
+                originalEnabled = state.originalVisibility != CaptionVisibility.NEVER,
+                secondEnabled = state.translatedVisibility != CaptionVisibility.NEVER,
                 enabled = state.tripleSubtitlesEnabled,
                 language = state.thirdLanguage,
+                onOriginalEnabledChange = { viewModel.setCaptionVisibility(true, slotVisibility(it)) },
+                onSecondEnabledChange = { viewModel.setCaptionVisibility(false, slotVisibility(it)) },
                 onEnabledChange = viewModel::setTripleSubtitlesEnabled,
                 onLanguageChange = viewModel::setThirdLanguage,
             )

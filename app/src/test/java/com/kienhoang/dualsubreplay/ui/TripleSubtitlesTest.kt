@@ -132,12 +132,16 @@ class TripleSubtitlesTest {
     private fun playing(
         thirdLines: ThirdLines,
         translatedVisibility: CaptionVisibility = CaptionVisibility.ALWAYS,
+        thirdEnabled: Boolean = true,
+        originalVisibility: CaptionVisibility = CaptionVisibility.ALWAYS,
     ) = DualSubUiState(
         activeVideoId = "v1",
         segments = listOf(SubtitleSegment(7, 0, 1000, "Hallo", "Hello")),
         currentIndex = 0,
         thirdLines = thirdLines,
+        tripleSubtitlesEnabled = thirdEnabled,
         translatedVisibility = translatedVisibility,
+        originalVisibility = originalVisibility,
     )
 
     @Test
@@ -152,12 +156,48 @@ class TripleSubtitlesTest {
         assertNull(learningOverlayContent(playing(ThirdLines("other", mapOf(7L to "سلام"))), strings)!!.thirdText)
     }
 
+    private val persian = ThirdLines("v1", mapOf(7L to "سلام"))
+
+    private fun threeLines(state: DualSubUiState): List<String?> =
+        learningOverlayContent(state, strings)!!.let { listOf(it.originalText, it.translatedText, it.thirdText) }
+
     @Test
-    fun hidingTranslationsAlsoHidesTheThirdLine() {
-        val hidden = playing(ThirdLines("v1", mapOf(7L to "سلام")), CaptionVisibility.NEVER)
-        val content = learningOverlayContent(hidden, strings)!!
-        assertNull(content.translatedText)
-        assertNull(content.thirdText)
+    fun eachSlotIsIndependentOfTheOthers() {
+        val never = CaptionVisibility.NEVER
+        assertEquals(listOf("Hallo", null, "سلام"), threeLines(playing(persian, never)))
+        assertEquals(listOf(null, "Hello", "سلام"), threeLines(playing(persian, originalVisibility = never)))
+        assertEquals(listOf(null, null, "سلام"), threeLines(playing(persian, never, originalVisibility = never)))
+    }
+
+    @Test
+    fun anUncheckedThirdSlotShowsNoThirdLineEvenWithTranslatedLines() {
+        assertEquals(listOf("Hallo", "Hello", null), threeLines(playing(persian, thirdEnabled = false)))
+    }
+
+    @Test
+    fun thirdLineFollowsTheSecondLinesPlayModeOnlyWhileTheSecondSlotIsOn() {
+        val listenFirst = playing(persian).copy(studyPlayMode = StudyPlayMode.LISTEN_FIRST, playbackPaused = false)
+        assertNull(threeLines(listenFirst)[2])
+        val secondOff = listenFirst.copy(translatedVisibility = CaptionVisibility.NEVER)
+        assertEquals("سلام", threeLines(secondOff)[2])
+    }
+
+    @Test
+    fun aThirdLanguageThatMatchesAHiddenSecondLineIsStillRequested() {
+        assertNull(thirdLanguageToTranslate(true, source = "de", target = "en", third = "en", secondShown = true))
+        assertEquals("en", thirdLanguageToTranslate(true, source = "de", target = "en", third = "en", secondShown = false))
+        assertNull(thirdLanguageToTranslate(true, source = "de", target = "en", third = "de", secondShown = false))
+    }
+
+    @Test
+    fun forkDefaultsAreEnglishSecondPersianThirdOffAndSlotsMapToVisibility() {
+        val defaults = DualSubUiState()
+        assertEquals("en", defaults.targetLanguage)
+        assertEquals("fa", defaults.thirdLanguage)
+        assertEquals(false, defaults.tripleSubtitlesEnabled)
+        assertEquals(CaptionVisibility.ALWAYS, slotVisibility(true))
+        assertEquals(CaptionVisibility.NEVER, slotVisibility(false))
+        assertNull(defaults.thirdLanguageFor("de"))
     }
 
     private suspend fun withStore(block: suspend (SubtitleStore) -> Unit) {

@@ -71,7 +71,7 @@ internal fun CompactSubtitleCard(
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
     thirdText: String? = null,
 ) {
-    if (!showOriginal && !showTranslation) return
+    if (!showOriginal && !showTranslation && thirdText == null) return
     val rowState = stringResource(if (active) R.string.player_active_subtitle else R.string.player_subtitle)
     OutlinedCard(
         modifier =
@@ -161,7 +161,7 @@ internal fun CompactSubtitleCard(
                         )
                     }
                 }
-                if (showTranslation) thirdText?.let { ThirdLineText(it, fontScale, translatedColor, Modifier.padding(top = 2.dp)) }
+                thirdText?.let { ThirdLineText(it, fontScale, translatedColor, Modifier.padding(top = 2.dp)) }
             }
         }
     }

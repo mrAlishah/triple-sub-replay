@@ -49,8 +49,8 @@ internal fun learningOverlayContent(
     return content.copy(
         originalText = content.originalText.takeIf { state.showOriginal() },
         translatedText = content.translatedText.takeIf { state.showTranslation() },
-        thirdText = content.thirdText.takeIf { state.showTranslation() },
-        statusText = content.statusText.takeIf { state.showOriginal() || state.showTranslation() },
+        thirdText = content.thirdText.takeIf { state.showThird() },
+        statusText = content.statusText.takeIf { state.showOriginal() || state.showTranslation() || state.showThird() },
     )
 }
 

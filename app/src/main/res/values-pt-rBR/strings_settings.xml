@@ -151,7 +151,7 @@
     <string name="settings_google_wait_2">2 s</string>
     <string name="settings_google_wait_4">4 s</string>
     <string name="settings_google_wait_8">8 s</string>
-    <string name="settings_triple_title">Legendas triplas</string>
-    <string name="settings_triple_description">Mostra uma terceira linha abaixo da tradução, traduzida a partir das legendas do próprio vídeo.</string>
-    <string name="settings_triple_language_title">Terceiro idioma</string>
+    <string name="settings_slot_original">Legenda original</string>
+    <string name="settings_slot_second">Segunda legenda</string>
+    <string name="settings_slot_third">Terceira legenda</string>
 </resources>

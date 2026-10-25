@@ -151,7 +151,7 @@
     <string name="settings_google_wait_2">2초</string>
     <string name="settings_google_wait_4">4초</string>
     <string name="settings_google_wait_8">8초</string>
-    <string name="settings_triple_title">3개 언어 자막</string>
-    <string name="settings_triple_description">번역 아래에 영상 원본 자막을 번역한 세 번째 줄을 표시합니다.</string>
-    <string name="settings_triple_language_title">세 번째 언어</string>
+    <string name="settings_slot_original">원본 자막</string>
+    <string name="settings_slot_second">두 번째 자막</string>
+    <string name="settings_slot_third">세 번째 자막</string>
 </resources>

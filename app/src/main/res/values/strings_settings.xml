@@ -151,7 +151,7 @@
     <string name="settings_google_wait_2">2 s</string>
     <string name="settings_google_wait_4">4 s</string>
     <string name="settings_google_wait_8">8 s</string>
-    <string name="settings_triple_title">Triple subtitles</string>
-    <string name="settings_triple_description">Show a third line under the translation, translated from the video\'s own captions.</string>
-    <string name="settings_triple_language_title">Third language</string>
+    <string name="settings_slot_original">Original subtitle</string>
+    <string name="settings_slot_second">Second subtitle</string>
+    <string name="settings_slot_third">Third subtitle</string>
 </resources>

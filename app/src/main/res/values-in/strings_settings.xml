@@ -151,7 +151,7 @@
     <string name="settings_google_wait_2">2 dtk</string>
     <string name="settings_google_wait_4">4 dtk</string>
     <string name="settings_google_wait_8">8 dtk</string>
-    <string name="settings_triple_title">Subtitel tiga bahasa</string>
-    <string name="settings_triple_description">Tampilkan baris ketiga di bawah terjemahan, diterjemahkan dari teks asli video.</string>
-    <string name="settings_triple_language_title">Bahasa ketiga</string>
+    <string name="settings_slot_original">Subtitel asli</string>
+    <string name="settings_slot_second">Subtitel kedua</string>
+    <string name="settings_slot_third">Subtitel ketiga</string>
 </resources>

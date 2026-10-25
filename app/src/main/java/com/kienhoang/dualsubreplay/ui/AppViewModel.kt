@@ -36,6 +36,7 @@ import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.YouTubeCaptionProvider
 import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
 import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
+import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import com.kienhoang.dualsubreplay.data.savedWordFrom
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 import com.kienhoang.dualsubreplay.translation.DEFAULT_TRANSLATION_ENGINE
@@ -1150,6 +1151,16 @@ class AppViewModel internal constructor(
         } else {
             translateText(source, current.targetLanguage, text)
         }
+    }
+
+    /** Translates [text] from the third subtitle line into the learning language (or the second language if that is the same). */
+    internal suspend fun translateThirdLine(
+        text: String,
+        language: String,
+    ): String {
+        val current = _state.value
+        val source = learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
+        return translateText(language, if (language == source) current.targetLanguage else source, text)
     }
 
     internal suspend fun translateSelection(selection: LearningWordSelection): String =

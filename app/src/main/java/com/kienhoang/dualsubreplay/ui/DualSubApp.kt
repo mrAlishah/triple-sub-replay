@@ -108,7 +108,7 @@ fun DualSubApp(
     val savedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
     val webController = rememberYouTubeWebController()
     val pronouncer = rememberWordPronouncer()
-    BindPhraseActions(state, webController, pronouncer, viewModel::translateSubtitleText)
+    BindPhraseActions(state, webController, pronouncer, viewModel::translateSubtitleText, viewModel::translateThirdLine)
     val studyRunner = rememberStudyPlaybackRunner(webController, state)
     var showVocabulary by remember { mutableStateOf(false) }
     var showProgress by remember { mutableStateOf(false) }
@@ -941,7 +941,7 @@ internal fun SubtitleTimeline(
                     isDownloadingTranslationModel = state.isDownloadingTranslationModel,
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
-                    thirdText = state.thirdLines.textFor(state.activeVideoId, segment.id)?.takeIf { state.showThird() },
+                    thirdText = state.thirdLineFor(segment.id)?.takeIf { state.showThird() },
                 )
             }
         }

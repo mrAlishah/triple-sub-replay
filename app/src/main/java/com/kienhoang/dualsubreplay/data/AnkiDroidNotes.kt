@@ -75,9 +75,14 @@ internal fun ankiNoteFields(word: SavedWord): List<String> =
         ankiHtml(word.meaning),
         ankiHtml(word.reading.orEmpty()),
         ankiSentenceHtml(word.sentence, word.word),
-        ankiHtml(word.translatedSentence.orEmpty()),
+        ankiTranslationHtml(word),
         ankiSourceLink(word.videoId, word.startMs),
     )
+
+/** The Translation field: the second line, then each further sentence translation as its own right-to-left-safe block. */
+internal fun ankiTranslationHtml(word: SavedWord): String =
+    ankiHtml(word.translatedSentence.orEmpty()) +
+        word.sentenceTranslations.values.joinToString("") { "<div dir=\"auto\">${ankiHtml(it)}</div>" }
 
 /** The words of [words] that were not sent before, by id. */
 internal fun unsentAnkiWords(

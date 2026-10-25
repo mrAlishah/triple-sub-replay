@@ -19,6 +19,21 @@ class SavedWordTest {
         assertEquals(selection.videoId, translated.videoId)
     }
 
+    @Test fun thirdLineTapIsAWordOfThatLanguageWithTheSourceAsItsMeaningLanguage() {
+        val tap = WordTap(selection.token.copy(text = "خانه"), selection.segment, true, language = "fa")
+        val third = learningSelection(tap, "de", "en", selection.videoId)
+        assertEquals("fa", third.wordLanguage)
+        assertEquals("de", third.meaningLanguage)
+        assertTrue(third.translated)
+        val sameAsSource = learningSelection(tap.copy(language = "de"), "de", "en", selection.videoId)
+        assertEquals("de", sameAsSource.wordLanguage)
+        assertEquals("en", sameAsSource.meaningLanguage)
+        val saved = savedWordFrom(third, "Haus", true)
+        assertEquals("fa", saved.wordLanguage)
+        val plain = learningSelection(tap.copy(language = null), "de", "en", selection.videoId)
+        assertNotEquals(savedWordFrom(plain, "Haus", true).id, saved.id)
+    }
+
     @Test fun identityIncludesLanguageAndExampleButNotMeaningOrClipChoices() {
         assertEquals(card.id, savedWordFrom(selection.copy(token = selection.token.copy(text = "learn")), "new meaning", false).id)
         assertNotEquals(card.id, savedWordFrom(selection.copy(wordLanguage = "de"), "học", true).id)

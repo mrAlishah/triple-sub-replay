@@ -9,6 +9,8 @@ data class WordTap(
     val segment: SubtitleSegment?,
     val translated: Boolean,
     val parts: List<AnalyzedToken> = listOf(token),
+    /** The language of the tapped line when it is neither the original nor the second line (the third subtitle). */
+    val language: String? = null,
 )
 
 data class LearningWordSelection(
@@ -28,16 +30,18 @@ internal fun learningSelection(
     source: String,
     target: String,
     videoId: String?,
-): LearningWordSelection =
-    LearningWordSelection(
+): LearningWordSelection {
+    val wordLanguage = tap.language ?: if (tap.translated) target else source
+    return LearningWordSelection(
         token = tap.token,
-        wordLanguage = if (tap.translated) target else source,
-        meaningLanguage = if (tap.translated) source else target,
+        wordLanguage = wordLanguage,
+        meaningLanguage = if (wordLanguage == source) target else source,
         videoId = videoId,
         segment = tap.segment,
         translated = tap.translated,
         parts = tap.parts,
     )
+}
 
 /** The language of original subtitle lines, falling back to English until one is known. */
 internal fun learningSourceLanguage(
@@ -91,7 +95,8 @@ internal fun savedWordId(
     videoId: String?,
     segment: SubtitleSegment?,
 ): String {
-    val key = listOf(word.lowercase(Locale.ROOT), wordLanguage, meaningLanguage,
+    val spelling = if (wordLanguage == "fa") normalizePersian(word) else word.lowercase(Locale.ROOT)
+    val key = listOf(spelling, wordLanguage, meaningLanguage,
         videoId.orEmpty(), segment?.startMs.toString(), segment?.endMs.toString()).joinToString("\u0000")
     return MessageDigest.getInstance("SHA-256").digest(key.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }

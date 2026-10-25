@@ -268,3 +268,40 @@ Upstream touchpoints added: `SavedWord` (one defaulted field, `mergeResaved`, on
 
 ### Validation (this revision)
 Unit tests added in `SavedWordTest` and `TripleSubtitlesTest`. Instrumented tests, device, and live YouTube were not run.
+
+## Revision 4: exports, third-line taps, Persian rules
+
+Plan: `docs/superpowers/plans/2026-10-25-third-line-export-and-taps.md`.
+
+### Export (decision: no new note type or field)
+Both Anki paths find the note type by exact name and field list (`noteTypeId` for AnkiDroid, `ankiConnectFields` for AnkiConnect).
+Adding a field to `ANKI_FIELDS` would make AnkiDroid create a second note type of the same name and push AnkiConnect users onto the
+degraded front/back layout. So saved `sentenceTranslations` are appended to the existing **Translation** field (`ankiTranslationHtml`, one
+`<div dir="auto">` each; no extras = byte-identical to before). The TSV gets a trailing `sentenceTranslations` column outside
+`transferColumns` (that list drives the import mapping form); import reads it by header name, so old files and backups are unaffected.
+The backup JSON already carries the map (Revision 3).
+
+### Taps on the third line
+- `WordTap.language` (default null) names the line's language; `learningSelection` makes it the word language and the learning language
+  the meaning language. A tapped third-line word is saved as e.g. `fa`, with the German sentence, the second line and the Persian line kept
+  (`thirdSentenceTranslations` now skips only the learning and second languages, not the word's own).
+- `PhraseActions` gains `pronounceIn`, `selectIn`, `translateFrom` and `SelectableSubtitleText` a `lineLanguage`; all default to the old behavior.
+  Quick translate on the third line goes into the learning language (`AppViewModel.translateThirdLine`).
+- `ThirdLineText(tap)` is tappable only when Word learning and Tap to learn are on; the card and overlay build the tap from existing parameters
+  and `LocalTripleSubtitleControls.language`, so no upstream composable signature changed.
+- `DualSubUiState.thirdLineFor` shows a third line only while its recorded language is the chosen one, so a tap can never mislabel a stale line.
+- Limits: no part-of-speech colors or Known-words counting on the third line; meaning lookups use the existing online translator (offline: the
+  existing "could not translate" path); dictionary/morphology for Persian is not claimed.
+
+### Persian rules (rule-based, no dependency)
+- `SPACED_WORD_REGEX` joins letters across a zero-width non-joiner ("می‌خواهم" is one word). Affects any language only when a ZWNJ sits between two letters.
+- `normalizePersian` (Arabic yeh/kaf to Persian, vowel marks and tatweel dropped, ZWNJ kept) feeds the saved-word id when the word language is `fa`.
+
+### Upstream touchpoints added
+`PhraseSelection.kt` (additive fields, `lineLanguage`, one extracted helper), `SavedWord.kt` (`WordTap.language`, `learningSelection`, id), `LanguageAwareTokenizer.kt`
+(one character in a regex), `AnkiDroidNotes.kt` (one field function), `PracticeTransfer.kt` (one column), `AppViewModel.kt` (one function), `DualSubApp.kt`,
+`SubtitleCard.kt`, `LearningPlayerRoot.kt`, `CaptionPresentation.kt` (one call each).
+
+### Validation
+Unit tests added: `AnkiDroidNotesTest`, `PracticeTransferTest`, `SavedWordTest`, `TripleSubtitlesTest`, `PersianTextTest`. Not run: instrumented tests,
+the tap bar and RTL layout on a device, AnkiDroid/AnkiConnect with a real collection, live YouTube.

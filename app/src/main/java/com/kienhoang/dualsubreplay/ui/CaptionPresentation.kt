@@ -74,7 +74,7 @@ private fun unfilteredLearningOverlayContent(
             originalText = active.originalText,
             translatedText = active.translatedText ?: strings.get(pendingTranslationTextRes(false, state.translationError != null)),
             statusText = null,
-            thirdText = state.thirdLines.textFor(state.activeVideoId, active.id),
+            thirdText = state.thirdLineFor(active.id),
             activeWordIndex = if (state.wordHighlightEnabled) state.activeWordIndex else -1,
             segment = active,
         )

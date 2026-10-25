@@ -876,7 +876,12 @@ internal fun LearningSubtitleOverlay(
                     if (index > 0) Spacer(Modifier.size(2.dp))
                     line()
                 }
-                content.thirdText?.let { ThirdLineText(it, fontScale, translatedColor, Modifier.padding(top = 2.dp)) }
+                content.thirdText?.let {
+                    val learn = wordLearningEnabled && tapToLearnEnabled
+                    ThirdLine(it, fontScale, translatedColor, learn, content.segment, highlightColor, onWordClick) {
+                        overlayActionsVisible = !overlayActionsVisible
+                    }
+                }
                 onRetryTranscript?.let { retry ->
                     // The overlay stays dark on every app theme, so the button takes a light subtitle color.
                     androidx.compose.material3.TextButton(

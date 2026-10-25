@@ -32,6 +32,7 @@ import com.kienhoang.dualsubreplay.data.validClipRange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 
 @Composable
@@ -127,7 +128,7 @@ internal fun WordLearningDialog(
                         saving = true
                         scope.launch {
                             try {
-                                onSave(meaning, online && canClip, extras.texts.toMap().filterValues { it.isNotBlank() })
+                                onSave(meaning, online && canClip, extras.texts.toMap())
                                 saved = true
                                 error = null
                             } catch (cancel: CancellationException) {
@@ -147,6 +148,9 @@ internal fun WordLearningDialog(
         }
     }
 }
+
+/** A lookup slower than this counts as failed, so one stuck language never holds Save back. */
+private const val LOOKUP_TIMEOUT_MS = 20_000L
 
 /**
  * Meanings in the other subtitle languages: each loads, fails and is edited on its own, keyed by language
@@ -184,8 +188,8 @@ private class ExtraMeanings(
         failed.remove(language)
         loading.add(language)
         try {
-            val text = translate(language).trim()
-            if (text.isEmpty()) failed.add(language) else edit(language, text)
+            val text = withTimeoutOrNull(LOOKUP_TIMEOUT_MS) { translate(language).trim() }
+            if (text.isNullOrEmpty()) failed.add(language) else edit(language, text)
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: Exception) {

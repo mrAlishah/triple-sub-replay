@@ -98,7 +98,7 @@ internal class VocabularyRepository internal constructor(
                 val old = getById(word.id)
                 val updated =
                     if (old == null) {
-                        word
+                        word.copy(meanings = word.meanings.filterValues { it.isNotBlank() })
                     } else {
                         mergeResaved(old, word)
                     }

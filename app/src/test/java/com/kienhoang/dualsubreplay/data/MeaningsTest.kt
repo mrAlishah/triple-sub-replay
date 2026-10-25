@@ -42,10 +42,15 @@ class MeaningsTest {
         assertEquals(mapOf("fa" to "بالا رفتن", "ar" to "صعود"), merged.meanings)
     }
 
-    @Test fun savedWordDropsBlankAndPrimaryLanguageMeanings() {
+    @Test fun savedWordDropsPrimaryLanguageAndKeepsBlankAsAClearMarker() {
         val selection = LearningWordSelection(AnalyzedToken("Aufstieg", 0, 8, PartOfSpeech.NOUN), "de", "en", null, null, false)
         val saved = savedWordFrom(selection, "Ascension", false, meanings = mapOf("fa" to " صعود ", "en" to "x", "ar" to " "))
-        assertEquals(mapOf("fa" to "صعود"), saved.meanings)
+        assertEquals(mapOf("fa" to "صعود", "ar" to ""), saved.meanings)
+    }
+
+    @Test fun resaveWithABlankTextClearsThatLanguage() {
+        val merged = mergeResaved(word, word.copy(meanings = mapOf("fa" to "")))
+        assertEquals(word.meanings - "fa", merged.meanings)
     }
 
     @Test fun savingExtraMeaningsKeepsTheWordId() {

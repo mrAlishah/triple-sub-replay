@@ -112,7 +112,7 @@ internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
         dueAt = old.dueAt,
         intervalMs = old.intervalMs,
         sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations,
-        meanings = old.meanings + new.meanings,
+        meanings = (old.meanings + new.meanings).filterValues { it.isNotBlank() },
     )
 
 internal fun savedWordFrom(
@@ -134,9 +134,12 @@ internal fun savedWordFrom(
         meanings = cleanMeanings(meanings, selection.meaningLanguage))
 }
 
-/** Trimmed real texts only: no blank placeholder and no second copy of the [primary] language. */
+/**
+ * Trimmed texts without a second copy of the [primary] language. A blank text stays as "" so a re-save
+ * ([mergeResaved]) can clear that language; [VocabularyRepository.save] never stores a blank.
+ */
 private fun cleanMeanings(meanings: Map<String, String>, primary: String): Map<String, String> {
     val result = LinkedHashMap<String, String>()
-    for ((language, text) in meanings) if (text.isNotBlank() && language != primary) result[language] = text.trim()
+    for ((language, text) in meanings) if (language != primary) result[language] = text.trim()
     return result
 }

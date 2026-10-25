@@ -51,6 +51,37 @@ class TripleSubtitlesTest {
     }
 
     @Test
+    fun savedWordKeepsTheThirdLineOnlyWhenItIsRealAndOfAnotherLanguage() {
+        val row = SubtitleSegment(7, 0, 1000, "Haus", "house")
+        val lines = ThirdLines("v1", mapOf(7L to "خانه"), "fa")
+        assertEquals(mapOf("fa" to "خانه"), thirdSentenceTranslations(lines, "v1", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v2", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", row.copy(id = 8), "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", null, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", row, "fa", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", row, "de", "fa"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines.copy(language = "en"), "v1", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines.copy(language = null), "v1", row, "de", "en"))
+    }
+
+    @Test
+    fun aThirdLineShowsOnlyWhileItsLanguageIsTheChosenOne() {
+        val state = DualSubUiState(activeVideoId = "v1", thirdLanguage = "fa", thirdLines = ThirdLines("v1", mapOf(7L to "خانه"), "fa"))
+        assertEquals("خانه", state.thirdLineFor(7))
+        assertNull(state.copy(thirdLanguage = "ar").thirdLineFor(7))
+        assertNull(state.copy(thirdLines = ThirdLines("v1", mapOf(7L to "خانه"))).thirdLineFor(7))
+    }
+
+    @Test
+    fun aThirdLineTapCarriesTheThirdLanguageAndTheRow() {
+        val row = SubtitleSegment(7, 0, 1000, "Haus", "house")
+        val tap = phraseTap("خانه بزرگ", subtitleWordTokens("خانه بزرگ", "fa"), 0..0, row, true, "fa")
+        assertEquals("fa", tap.language)
+        assertEquals(row, tap.segment)
+        assertEquals("خانه", tap.token.text)
+    }
+
+    @Test
     fun everyRowGetsItsOwnThirdLineFromTheSourceText() =
         runBlocking {
             withStore { store ->
@@ -146,7 +177,7 @@ class TripleSubtitlesTest {
 
     @Test
     fun overlayShowsAllThreeLinesOfTheActiveRow() {
-        val content = learningOverlayContent(playing(ThirdLines("v1", mapOf(7L to "سلام"))), strings)!!
+        val content = learningOverlayContent(playing(ThirdLines("v1", mapOf(7L to "سلام"), "fa")), strings)!!
         assertEquals(Triple("Hallo", "Hello", "سلام"), Triple(content.originalText, content.translatedText, content.thirdText))
     }
 
@@ -156,7 +187,7 @@ class TripleSubtitlesTest {
         assertNull(learningOverlayContent(playing(ThirdLines("other", mapOf(7L to "سلام"))), strings)!!.thirdText)
     }
 
-    private val persian = ThirdLines("v1", mapOf(7L to "سلام"))
+    private val persian = ThirdLines("v1", mapOf(7L to "سلام"), "fa")
 
     private fun threeLines(state: DualSubUiState): List<String?> =
         learningOverlayContent(state, strings)!!.let { listOf(it.originalText, it.translatedText, it.thirdText) }

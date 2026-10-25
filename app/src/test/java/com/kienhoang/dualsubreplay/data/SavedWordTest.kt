@@ -19,6 +19,21 @@ class SavedWordTest {
         assertEquals(selection.videoId, translated.videoId)
     }
 
+    @Test fun thirdLineTapIsAWordOfThatLanguageWithTheSourceAsItsMeaningLanguage() {
+        val tap = WordTap(selection.token.copy(text = "خانه"), selection.segment, true, language = "fa")
+        val third = learningSelection(tap, "de", "en", selection.videoId)
+        assertEquals("fa", third.wordLanguage)
+        assertEquals("de", third.meaningLanguage)
+        assertTrue(third.translated)
+        val sameAsSource = learningSelection(tap.copy(language = "de"), "de", "en", selection.videoId)
+        assertEquals("de", sameAsSource.wordLanguage)
+        assertEquals("en", sameAsSource.meaningLanguage)
+        val saved = savedWordFrom(third, "Haus", true)
+        assertEquals("fa", saved.wordLanguage)
+        val plain = learningSelection(tap.copy(language = null), "de", "en", selection.videoId)
+        assertNotEquals(savedWordFrom(plain, "Haus", true).id, saved.id)
+    }
+
     @Test fun identityIncludesLanguageAndExampleButNotMeaningOrClipChoices() {
         assertEquals(card.id, savedWordFrom(selection.copy(token = selection.token.copy(text = "learn")), "new meaning", false).id)
         assertNotEquals(card.id, savedWordFrom(selection.copy(wordLanguage = "de"), "học", true).id)
@@ -51,5 +66,28 @@ class SavedWordTest {
         assertEquals(saved, decodeWord(encodeWord(saved)))
         assertEquals(card.copy(videoId = null, reading = null, translatedSentence = null),
             decodeWord(encodeWord(card.copy(videoId = null, reading = null, translatedSentence = null))))
+    }
+
+    @Test fun sentenceTranslationsRoundTripAndOldPayloadsDecodeToNone() {
+        val withFa = card.copy(sentenceTranslations = mapOf("fa" to "یک کلمه یاد بگیر"))
+        assertEquals(withFa, decodeWord(encodeWord(withFa)))
+        assertFalse(encodeWord(card).has("sentenceTranslations"))
+        assertEquals(emptyMap<String, String>(), decodeWord(encodeWord(card)).sentenceTranslations)
+    }
+
+    @Test fun savingAgainKeepsKnownTranslationsAddsNewOnesAndKeepsReviewState() {
+        val old = card.copy(dueAt = 5, intervalMs = 9, sentenceTranslations = mapOf("fa" to "قدیمی"))
+        val merged = mergeResaved(old, card.copy(meaning = "neu", sentenceTranslations = mapOf("fa" to "جدید", "de" to "Satz")))
+        assertEquals("neu", merged.meaning)
+        assertEquals(5, merged.dueAt)
+        assertEquals(9, merged.intervalMs)
+        assertEquals(mapOf("fa" to "قدیمی", "de" to "Satz"), merged.sentenceTranslations)
+        assertEquals(old.sentenceTranslations, mergeResaved(old, card).sentenceTranslations)
+    }
+
+    @Test fun savedWordFromStoresOnlyNonBlankSentenceTranslations() {
+        val saved = savedWordFrom(selection, "học", true, mapOf("fa" to "متن", "ar" to " "))
+        assertEquals(mapOf("fa" to "متن"), saved.sentenceTranslations)
+        assertEquals(card.id, saved.id)
     }
 }

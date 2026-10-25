@@ -224,3 +224,150 @@ Owner request: every subtitle slot gets an **RTL** checkbox, so any language can
   read `LocalTripleSubtitleControls.current.rtl`, so no composable signature changed. The card needs one changed line
   (`lines.forEachDirected(slotRtl)`) and the overlay one changed call; the original and translated line composables are untouched.
 - Not verified on a device: how tap-to-learn word flow and highlighting look inside an RTL line.
+
+## Revision 3: vocabulary and Practice integration
+
+Owner request: Triple subtitles must reach the learning workflow, not only subtitle rendering. Revision 1 and 2 already
+cover the dialog UX (slots, checkboxes, RTL, no separate toggle); this revision audits the rest and changes only what is needed.
+
+### Findings (Caption → Word → Save → Storage → Practice → Export)
+- Word language is decided by the tapped line (`learningSelection`): original line = source language, second line = target. The third line is plain
+  text (non-goal kept), so a word is never attributed to the third language. The saved-word id has no third-line input, so hiding or changing
+  slots cannot create duplicates or change identity.
+- Storage is one JSON `payload` per row in the `words` table (`VocabularyRepository`). Optional keys need no schema change or migration;
+  older builds ignore an unknown key and newer builds read old rows without it (`LegacyVocabularyUpgradeTest`).
+- SRS (`reviewInterval`, `reviewWord`, `dueAt`, `intervalMs`) never reads language fields; it is untouched.
+- Only one gap: `SavedWord.translatedSentence` holds the second line only, so the third line was lost on save.
+
+### Decision
+`SavedWord.sentenceTranslations: Map<languageCode, text>` (additive, written only when non-empty). Captured in `AppViewModel.saveWord` from
+`ThirdLines` (which now records its `language`) by `thirdSentenceTranslations`: only a real, non-blank line of the current video and row, in a language
+different from the word's two languages. Re-saving uses `mergeResaved`: keeps SRS state and every stored translation, adds new languages.
+Rollback: stop writing the key; stored data stays valid. Limits: a translation that arrives after saving is added only by saving again;
+word-level Persian meanings need a lookup the app does not have for Persian and are not claimed.
+
+### Integration classification
+| Point | Class | Evidence |
+| --- | --- | --- |
+| Subtitle languages dialog, slot checkboxes, RTL, persistence, dedup (`thirdLanguageToTranslate`) | No change | Revisions 1-2; `TripleSubtitlesTest` |
+| All slots unchecked | No change | Allowed, same as hiding both lines today |
+| Word save (`AppViewModel.saveWord`) | Must change | third line lost otherwise |
+| Saved-word storage codec, re-save merge | Must change | `encodeWord`, `decodeWord`, `VocabularyRepository.save` |
+| Practice and saved-word card | Should change | extra translations shown after reveal; layout unchanged |
+| SRS, statistics (`ProgressScreen`) | No change | no language input |
+| Backup JSON export/import | No change needed | uses the same codec; old backups lack the key |
+| CSV/TSV and Anki (AnkiDroid, AnkiConnect) | Future scope | fixed column/note-type layout; a new field would break users' mappings and note types |
+| AI assistant save tool (`aiSavedWord`) and AI subtitle context | Future scope | assistant reads two-line captions; third line not exposed |
+| Word taps on the third line, Persian analysis | Future scope | no Persian tokenizer, none added |
+| Live fallback captions | No change | no segments, so no third line |
+| Playback, replay, seeking | No change | rows unchanged |
+| Backup rules, prefs | No change | `rtl_*`, `triple_*`, `third_language` are ordinary preferences |
+
+Upstream touchpoints added: `SavedWord` (one defaulted field, `mergeResaved`, one parameter), `VocabularyRepository` (codec, one call),
+`AppViewModel.saveWord`/`publishThirdLines`, `SavedWordsScreen` (one line). A smaller change was not viable: the row JSON is the only store.
+
+### Validation (this revision)
+Unit tests added in `SavedWordTest` and `TripleSubtitlesTest`. Instrumented tests, device, and live YouTube were not run.
+
+## Revision 4: exports, third-line taps, Persian rules
+
+Plan: `docs/superpowers/plans/2026-10-25-third-line-export-and-taps.md`.
+
+### Export (decision: no new note type or field)
+Both Anki paths find the note type by exact name and field list (`noteTypeId` for AnkiDroid, `ankiConnectFields` for AnkiConnect).
+Adding a field to `ANKI_FIELDS` would make AnkiDroid create a second note type of the same name and push AnkiConnect users onto the
+degraded front/back layout. So saved `sentenceTranslations` are appended to the existing **Translation** field (`ankiTranslationHtml`, one
+`<div dir="auto">` each; no extras = byte-identical to before). The TSV gets a trailing `sentenceTranslations` column outside
+`transferColumns` (that list drives the import mapping form); import reads it by header name, so old files and backups are unaffected.
+The backup JSON already carries the map (Revision 3).
+
+### Taps on the third line
+- `WordTap.language` (default null) names the line's language; `learningSelection` makes it the word language and the learning language
+  the meaning language. A tapped third-line word is saved as e.g. `fa`, with the German sentence, the second line and the Persian line kept
+  (`thirdSentenceTranslations` now skips only the learning and second languages, not the word's own).
+- `PhraseActions` gains `pronounceIn`, `selectIn`, `translateFrom` and `SelectableSubtitleText` a `lineLanguage`; all default to the old behavior.
+  Quick translate on the third line goes into the learning language (`AppViewModel.translateThirdLine`).
+- `ThirdLineText(tap)` is tappable only when Word learning and Tap to learn are on; the card and overlay build the tap from existing parameters
+  and `LocalTripleSubtitleControls.language`, so no upstream composable signature changed.
+- `DualSubUiState.thirdLineFor` shows a third line only while its recorded language is the chosen one, so a tap can never mislabel a stale line.
+- Limits: no part-of-speech colors or Known-words counting on the third line; meaning lookups use the existing online translator (offline: the
+  existing "could not translate" path); dictionary/morphology for Persian is not claimed.
+
+### Persian rules (rule-based, no dependency)
+- `SPACED_WORD_REGEX` joins letters across a zero-width non-joiner ("می‌خواهم" is one word). Affects any language only when a ZWNJ sits between two letters.
+- `normalizePersian` (Arabic yeh/kaf to Persian, vowel marks and tatweel dropped, ZWNJ kept) feeds the saved-word id when the word language is `fa`.
+
+### Upstream touchpoints added
+`PhraseSelection.kt` (additive fields, `lineLanguage`, one extracted helper), `SavedWord.kt` (`WordTap.language`, `learningSelection`, id), `LanguageAwareTokenizer.kt`
+(one character in a regex), `AnkiDroidNotes.kt` (one field function), `PracticeTransfer.kt` (one column), `AppViewModel.kt` (one function), `DualSubApp.kt`,
+`SubtitleCard.kt`, `LearningPlayerRoot.kt`, `CaptionPresentation.kt` (one call each).
+
+### Validation
+Unit tests added: `AnkiDroidNotesTest`, `PracticeTransferTest`, `SavedWordTest`, `TripleSubtitlesTest`, `PersianTextTest`. Not run: instrumented tests,
+the tap bar and RTL layout on a device, AnkiDroid/AnkiConnect with a real collection, live YouTube.
+
+## Revision 2: word meanings in every enabled language
+
+### Status
+
+Owner request (2026-10-25), confirmed on a phone: with German as the original and English and Persian as the second and third lines, tapping "Aufstieg" showed only `Meaning (English)`. Authorizes local implementation and local commits; no push, PR, merge or release.
+
+### Root cause
+
+`learningSelection` (`data/SavedWord.kt`) gives every tap exactly one `meaningLanguage` (`target` for a source-language word, `source` otherwise), and `WordLearningDialog`, `saveWord`, `SavedWord`, the TSV/backup codecs, the Anki fields and Practice all carry that one meaning. The third language only ever reached the word as a *sentence* translation (`sentenceTranslations`). Nothing looked up or stored a word meaning in the third language.
+
+### Integration map
+
+| Concern | Where | Change |
+| --- | --- | --- |
+| Effective languages | `ui/TripleSubtitles.kt` (`thirdLanguageFor`, `thirdLanguageToTranslate`, `translatedVisibility`) | New `extraMeaningLanguages(...)`: ordered source, second, third, without duplicates, without the tapped word's language and without the primary meaning language. Reuses the existing slot state; no second source of truth. |
+| Selection | `LearningWordSelection` | New `extraMeaningLanguages: List<String> = emptyList()` (default keeps upstream callers and tests unchanged). Set in `AppViewModel.selectLearningWord`. |
+| Lookup | `AppViewModel.translateSelection` / `translateText` | Reused per language: `translateSelectionTo(selection, language)`. No new translator. |
+| Dialog | `WordLearningDialog` | One labeled `MeaningPanel` per language with its own loading/error/edit state; a failed language never hides another. Right-to-left languages use `TextDirection.Content`. |
+| Model | `SavedWord` | New `meanings: Map<String, String>` for languages other than `meaningLanguage`. `meaning` and `meaningLanguage` stay the primary meaning, so `savedWordId` (which hashes `meaningLanguage`) and every upstream consumer keep working. |
+| Storage | `VocabularyRepository.encodeWord/decodeWord` | Optional `meanings` JSON object inside the existing payload column. No SQL schema change; old rows decode with an empty map. |
+| Resave | `mergeResaved` | Languages merge; the newly saved text wins per language (so an edit sticks), earlier languages are kept, review schedule kept. |
+| Practice / Vocabulary | `SavedWordsScreen` | After reveal, each extra meaning shows with its language label and `dir=auto`; the edit view has one field per language. Reveal, grading and scheduling are untouched. |
+| TSV | `PracticeTransfer` | Trailing `meanings` column (`fa: text` per line, same codec as `sentenceTranslations`), read by name, so older files import. Backup JSON carries `meanings` through `encodeWord`. |
+| Anki | `ankiNoteFields` | Meaning field = primary meaning, then one `dir=auto` block per extra meaning labeled with its language. Fields and note type unchanged. |
+
+### Boundaries
+
+- There is no sentence-detail or sentence-tap screen in the product, so none is added. Sentence context is already stored per language (`sentence`, `translatedSentence`, `sentenceTranslations`) and exported.
+- Meanings are looked up only for the subtitle languages that are on; unchecking a slot hides nothing already saved and deletes nothing. Enabling a slot later looks up only the missing language when the word card opens for a saved word.
+- A language the translator does not support, or a blank reply, is shown as unavailable and never stored.
+- Word analysis (pronunciation, grammar, characters) stays tied to the tapped word's own language as before.
+
+### Plan
+
+1. Tests first (`SavedWordTest`, new `MeaningLanguagesTest`, `VocabularyCodecTest`, `PracticeTransferTest`, `AnkiNotesTest`).
+2. Model, resolver, codec, merge, TSV, Anki.
+3. Dialog and Practice UI.
+4. Cross-feature audit (AI assistant `SavedWord` constructors, import identity), then the full quality gate.
+
+### Acceptance criteria
+
+Those listed in the owner request of 2026-10-25 (16 items); the results are recorded below once run.
+
+### Implementation result (Revision 2)
+
+- `extraMeaningLanguages` (ui/TripleSubtitles.kt) resolves the languages from the existing slot state; `LearningWordSelection.extraMeaningLanguages` carries them; `SavedWord.meanings` stores them keyed by language code. `meaning` and `meaningLanguage` stay the primary meaning, so `savedWordId` and every existing saved word are unchanged.
+- Storage is the existing JSON payload: an optional `meanings` object, no SQL migration. Old rows decode with an empty map.
+- Word card: one labeled panel per language (stable slot order, content text direction), each with its own loading, error + Retry, and edit state. A saved word that lacks a newly enabled language looks up only that language when the card opens; languages saved earlier stay visible even after their slot is turned off. Save waits for pending lookups.
+- Vocabulary edits each language; Practice shows them after Reveal; search covers them.
+- TSV: trailing `meanings` column read by name. Backup JSON: `meanings` object. Anki: Meaning field = primary, then `<div dir="auto">fa: text</div>` per language (AnkiDroid and AnkiConnect share `ankiNoteFields`).
+- Deliberately unchanged: no sentence-detail screen exists, so none was added (sentences are stored and exported per language already); AI assistant tools still read and write only the primary meaning.
+
+### Validation result (Revision 2)
+
+| Check | Result |
+| --- | --- |
+| `formatCheck complexityCheck testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` | Passed locally |
+| New unit tests (`MeaningLanguagesTest`, `MeaningsTest`: resolver, JSON round trip, old payloads, merge, TSV round trip with Persian, newline and tab, old TSV, Anki field) | Passed |
+| `WordLearningDialogTest.everyEnabledLanguage...` (instrumented) | Compiles; **not run**: the only attached phone showed its PIN lock screen, so all 9 dialog tests aborted with "No compose hierarchies found" before reaching any assertion |
+| Managed-device tests, physical-device walkthrough | **Not run** |
+
+### Deferred
+
+- AI assistant `find_saved_words` / `edit_saved_word` ignore further-language meanings.
+- Clearing a language's text in the word card does not remove an earlier saved meaning (the Vocabulary edit view can).

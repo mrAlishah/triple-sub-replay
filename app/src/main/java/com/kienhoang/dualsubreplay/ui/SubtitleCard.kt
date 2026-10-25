@@ -162,7 +162,10 @@ internal fun CompactSubtitleCard(
                         )
                     }
                 }
-                thirdText?.let { ThirdLineText(it, fontScale, translatedColor, Modifier.padding(top = 2.dp)) }
+                thirdText?.let {
+                    val learn = wordLearningEnabled && tapToLearnEnabled
+                    ThirdLine(it, fontScale, translatedColor, learn, segment, highlightColor, onWordClick, onReplay)
+                }
             }
         }
     }

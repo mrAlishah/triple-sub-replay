@@ -10,12 +10,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -24,6 +27,7 @@ import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.*
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,6 +78,7 @@ internal fun SavedWordsScreen(
     val selected = words.firstOrNull { it.id == if (practice) queue.firstOrNull() else selectedId }
     var revealed by remember(selected?.id, practice) { mutableStateOf(false) }
     var editedMeaning by remember(selected?.id, selected?.meaning) { mutableStateOf(selected?.meaning.orEmpty()) }
+    val editedExtra = remember(selected?.id, selected?.meanings) { editableMeanings(selected) }
     val due = words.filter { it.dueAt <= now }.sortedBy { it.dueAt }
     val locale = currentInterfaceLocale()
     val searchLabel = stringResource(R.string.practice_search_label)
@@ -160,7 +165,7 @@ internal fun SavedWordsScreen(
                             Text(stringResource(R.string.practice_next_review, next), style = MaterialTheme.typography.bodySmall)
                         }
                         LazyColumn(Modifier.weight(1f)) {
-                            items(words.filter { it.word.contains(search, true) || it.meaning.contains(search, true) }, key = { it.id }) { word ->
+                            items(words.filter { it.matchesSearch(search) }, key = { it.id }) { word ->
                                 ListItem(headlineContent = { Text(word.word) }, supportingContent = { Text(word.meaning) },
                                     modifier = Modifier.clickable { selectedId = word.id }.testTag("saved_word_${word.id}"))
                                 HorizontalDivider()
@@ -187,16 +192,16 @@ internal fun SavedWordsScreen(
                         if (practice && !revealed) {
                             Button(onClick = { revealed = true }, modifier = Modifier.testTag("reveal_meaning")) { Text(showMeaningLabel) }
                         } else {
-                            if (practice) Text(selected.meaning, modifier = Modifier.testTag("review_meaning"))
-                            else {
-                                val meaningLabel = stringResource(R.string.practice_meaning_label, selected.meaningLanguage)
-                                OutlinedTextField(editedMeaning, { editedMeaning = it }, label = { Text(meaningLabel) })
-                                TextButton(enabled = !busy && editedMeaning != selected.meaning, onClick = { action {
-                                    repository.update(selected.id) { it.copy(meaning = editedMeaning.trim()) }
-                                } }) { Text(stringResource(R.string.practice_save_meaning)) }
+                            if (practice) {
+                                ReviewMeanings(selected, locale)
+                            } else {
+                                EditMeanings(selected, editedMeaning, { editedMeaning = it }, editedExtra, locale, !busy) {
+                                    action { repository.update(selected.id) { it.withMeanings(editedMeaning, editedExtra) } }
+                                }
                             }
                             Text(selected.sentence)
                             selected.translatedSentence?.let { Text(it) }
+                            selected.sentenceTranslations.values.forEach { Text(it) }
                             if (selected.translated) Text(originalSentenceNote, style = MaterialTheme.typography.bodySmall)
                             if (selected.online) TextButton(onClick = {
                                 pronouncer.stop(); onlinePreview = true; onOnline(selected)
@@ -235,3 +240,69 @@ internal fun SavedWordsScreen(
             }) { Text(deleteLabel) } }, dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(keepLabel) } })
     }
 }
+
+/** The further-language meanings of [word] as text fields' state, one entry per language. */
+private fun editableMeanings(word: SavedWord?): SnapshotStateMap<String, String> =
+    mutableStateMapOf<String, String>().apply { putAll(word?.meanings.orEmpty()) }
+
+/** Content direction lays a Persian or Arabic meaning out right-to-left whatever the interface language. */
+@Composable
+private fun meaningTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.Content)
+
+/** The answer side of a Practice card: the primary meaning, then each further language under its own label. */
+@Composable
+private fun ReviewMeanings(
+    word: SavedWord,
+    locale: Locale,
+) {
+    val style = meaningTextStyle()
+    Text(word.meaning, style = style, modifier = Modifier.testTag("review_meaning"))
+    word.meanings.forEach { (language, text) ->
+        val label = stringResource(R.string.practice_meaning_label, languageDisplayName(language, locale))
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(text, style = style, modifier = Modifier.testTag("review_meaning_$language"))
+    }
+}
+
+/** The Vocabulary edit view: the primary meaning, then one text field per further language, each edited on its own. */
+@Composable
+private fun EditMeanings(
+    word: SavedWord,
+    meaning: String,
+    onMeaning: (String) -> Unit,
+    edited: SnapshotStateMap<String, String>,
+    locale: Locale,
+    enabled: Boolean,
+    onSave: () -> Unit,
+) {
+    val style = meaningTextStyle()
+    val primaryLabel = stringResource(R.string.practice_meaning_label, word.meaningLanguage)
+    OutlinedTextField(meaning, onMeaning, textStyle = style, label = { Text(primaryLabel) })
+    val languages = edited.keys.toList()
+    languages.forEach { language ->
+        val label = stringResource(R.string.practice_meaning_label, languageDisplayName(language, locale))
+        OutlinedTextField(
+            value = edited[language].orEmpty(),
+            onValueChange = { edited[language] = it },
+            textStyle = style,
+            label = { Text(label) },
+            modifier = Modifier.testTag("saved_meaning_$language"),
+        )
+    }
+    val changed = meaning != word.meaning || edited.toMap() != word.meanings
+    TextButton(onClick = onSave, enabled = enabled && changed) { Text(stringResource(R.string.practice_save_meaning)) }
+}
+
+/** The edited texts as saved: trimmed, and a language whose field was emptied is dropped. */
+private fun SavedWord.withMeanings(
+    meaning: String,
+    edited: Map<String, String>,
+): SavedWord {
+    val kept = LinkedHashMap<String, String>()
+    for ((language, text) in edited) if (text.isNotBlank()) kept[language] = text.trim()
+    return copy(meaning = meaning.trim(), meanings = kept)
+}
+
+/** Whether the search text is in the word or in its meaning in any language. */
+private fun SavedWord.matchesSearch(search: String): Boolean =
+    word.contains(search, true) || meaning.contains(search, true) || meanings.values.any { it.contains(search, true) }

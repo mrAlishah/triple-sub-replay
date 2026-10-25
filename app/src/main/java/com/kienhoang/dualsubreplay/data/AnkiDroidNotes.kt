@@ -72,12 +72,22 @@ internal fun ankiSourceLink(
 internal fun ankiNoteFields(word: SavedWord): List<String> =
     listOf(
         ankiHtml(word.word),
-        ankiHtml(word.meaning),
+        ankiMeaningHtml(word),
         ankiHtml(word.reading.orEmpty()),
         ankiSentenceHtml(word.sentence, word.word),
-        ankiHtml(word.translatedSentence.orEmpty()),
+        ankiTranslationHtml(word),
         ankiSourceLink(word.videoId, word.startMs),
     )
+
+/** The Meaning field: the primary meaning, then each further language as its own labeled right-to-left-safe block. */
+internal fun ankiMeaningHtml(word: SavedWord): String =
+    ankiHtml(word.meaning) +
+        word.meanings.entries.joinToString("") { (language, text) -> "<div dir=\"auto\">${ankiHtml(language)}: ${ankiHtml(text)}</div>" }
+
+/** The Translation field: the second line, then each further sentence translation as its own right-to-left-safe block. */
+internal fun ankiTranslationHtml(word: SavedWord): String =
+    ankiHtml(word.translatedSentence.orEmpty()) +
+        word.sentenceTranslations.values.joinToString("") { "<div dir=\"auto\">${ankiHtml(it)}</div>" }
 
 /** The words of [words] that were not sent before, by id. */
 internal fun unsentAnkiWords(

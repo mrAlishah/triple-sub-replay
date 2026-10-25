@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
@@ -21,13 +22,18 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.data.LearningWordSelection
+import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
+import com.kienhoang.dualsubreplay.data.WordTap
+import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
@@ -112,22 +118,76 @@ internal fun DualSubUiState.thirdLanguageFor(source: String?): String? =
     thirdLanguageToTranslate(tripleSubtitlesEnabled, source, targetLanguage, thirdLanguage, translatedVisibility != CaptionVisibility.NEVER)
 
 /**
+ * The subtitle languages a tapped word should also get a meaning in, beside the [primary] one, in slot
+ * order (caption language, second line, third line): without the word's own language, the primary
+ * language and repeats. [third] is [thirdLanguageFor]'s answer, so an off or repeated slot never appears.
+ */
+internal fun extraMeaningLanguages(
+    wordLanguage: String,
+    primary: String,
+    source: String,
+    target: String,
+    secondShown: Boolean,
+    third: String?,
+): List<String> {
+    val skip = setOf(wordLanguage, primary).map(TranslationLanguages::normalize)
+    return listOfNotNull(source, target.takeIf { secondShown }, third)
+        .map(TranslationLanguages::normalize)
+        .distinct()
+        .filterNot { it in skip }
+}
+
+internal fun DualSubUiState.extraMeaningLanguagesFor(selection: LearningWordSelection): List<String> {
+    val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)
+    return extraMeaningLanguages(
+        wordLanguage = selection.wordLanguage,
+        primary = selection.meaningLanguage,
+        source = source,
+        target = targetLanguage,
+        secondShown = translatedVisibility != CaptionVisibility.NEVER,
+        third = thirdLanguageFor(source),
+    )
+}
+
+/**
  * Whether the third line shows: its checkbox is on, and, when the second line is not switched off, the
  * second line's play-mode and pause rules (listen first, hide until paused) apply to it too.
  */
 internal fun DualSubUiState.showThird(): Boolean =
     tripleSubtitlesEnabled && (translatedVisibility == CaptionVisibility.NEVER || showTranslation())
 
-/** Third-line texts by row id for [videoId]; ids are store indices, so they mean nothing for another video. */
 data class ThirdLines(
     val videoId: String? = null,
     val lines: Map<Long, String> = emptyMap(),
+    /** The language [lines] were translated into; null until the run starts. */
+    val language: String? = null,
 ) {
     fun textFor(
         activeVideoId: String?,
         segmentId: Long,
     ): String? = if (activeVideoId != null && activeVideoId == videoId) lines[segmentId] else null
 }
+
+internal fun thirdSentenceTranslations(
+    third: ThirdLines,
+    activeVideoId: String?,
+    segment: SubtitleSegment?,
+    source: String,
+    target: String,
+): Map<String, String> {
+    val language = third.language ?: return emptyMap()
+    val text = segment?.let { third.textFor(activeVideoId, it.id) }?.takeIf(String::isNotBlank) ?: return emptyMap()
+    return if (language == source || language == target) emptyMap() else mapOf(language to text)
+}
+
+internal fun DualSubUiState.thirdSentenceFor(selection: LearningWordSelection): Map<String, String> {
+    val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)
+    return thirdSentenceTranslations(thirdLines, activeVideoId, selection.segment, source, targetLanguage)
+}
+
+/** The third line of row [segmentId], only while it is in the language now chosen (a changed choice hides the old lines at once). */
+internal fun DualSubUiState.thirdLineFor(segmentId: Long): String? =
+    thirdLines.takeIf { it.language == thirdLanguage }?.textFor(activeVideoId, segmentId)
 
 /**
  * Translates the rows near playback into the third language with the same window loop as the second
@@ -179,28 +239,82 @@ internal fun List<Boolean>.forEachDirected(
     line: @Composable (Boolean) -> Unit,
 ) = forEach { second -> LineDirection(if (second) rtl.second else rtl.original) { line(second) } }
 
-/** The third line; its RTL checkbox decides the direction (on by default, for Persian). */
+/** The third line; its RTL checkbox decides the direction (on by default, for Persian). Tappable when [tap] is set. */
 @Composable
 internal fun ThirdLineText(
     text: String,
     fontScale: Float,
     color: Color,
     modifier: Modifier = Modifier,
+    tap: ThirdTap? = null,
 ) {
-    LineDirection(LocalTripleSubtitleControls.current.rtl.third) {
-        Text(
-            text = text,
-            modifier = modifier.fillMaxWidth().testTag("third_subtitle_line"),
-            style =
-                TextStyle(
-                    fontSize = (14f * fontScale).sp,
-                    lineHeight = (18f * fontScale).sp,
-                    color = color,
-                ),
-            overflow = TextOverflow.Ellipsis,
+    val style =
+        TextStyle(
+            fontSize = (14f * fontScale).sp,
+            lineHeight = (18f * fontScale).sp,
+            color = color,
         )
+    LineDirection(LocalTripleSubtitleControls.current.rtl.third) {
+        if (tap != null) {
+            SelectableSubtitleText(
+                text = text,
+                annotated = AnnotatedString(text),
+                style = style,
+                languageCode = tap.language,
+                segment = tap.segment,
+                translated = true,
+                highlightColor = tap.highlightColor,
+                onWordClick = tap.onWordClick,
+                onBlankTap = tap.onBlankTap,
+                modifier = modifier.fillMaxWidth().testTag("third_subtitle_line"),
+                overflow = TextOverflow.Ellipsis,
+                lineLanguage = tap.language,
+            )
+        } else {
+            Text(
+                text = text,
+                modifier = modifier.fillMaxWidth().testTag("third_subtitle_line"),
+                style = style,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
+
+/** The third line as the card and the overlay place it: below the others, tappable while [tappable] (word learning and tap to learn). */
+@Composable
+internal fun ThirdLine(
+    text: String,
+    fontScale: Float,
+    color: Color,
+    tappable: Boolean,
+    segment: SubtitleSegment?,
+    highlightColor: Color,
+    onWordClick: (WordTap) -> Unit,
+    onBlankTap: () -> Unit,
+) {
+    val language = LocalTripleSubtitleControls.current.language
+    val tap = thirdTapOrNull(tappable, language, segment, highlightColor, onWordClick, onBlankTap)
+    ThirdLineText(text, fontScale, color, Modifier.padding(top = 2.dp), tap)
+}
+
+/** Makes the third line tappable: the same tap-to-learn bar as the other lines, in the third language. */
+internal class ThirdTap(
+    val language: String,
+    val segment: SubtitleSegment?,
+    val highlightColor: Color,
+    val onWordClick: (WordTap) -> Unit,
+    val onBlankTap: () -> Unit,
+)
+
+internal fun thirdTapOrNull(
+    enabled: Boolean,
+    language: String,
+    segment: SubtitleSegment?,
+    highlightColor: Color,
+    onWordClick: (WordTap) -> Unit,
+    onBlankTap: () -> Unit,
+): ThirdTap? = if (enabled) ThirdTap(language, segment, highlightColor, onWordClick, onBlankTap) else null
 
 /**
  * The three subtitle slots of the Subtitle languages dialog: line 1 original, line 2 second, line 3 third.

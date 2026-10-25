@@ -214,9 +214,8 @@ android {
 
     buildTypes {
         debug {
-            if (previewApplicationIdSuffix.isNotBlank()) {
-                applicationIdSuffix = previewApplicationIdSuffix
-            }
+            // Fork: installs beside the official app; updateChannelFor treats it as a local build (no upstream updates).
+            applicationIdSuffix = previewApplicationIdSuffix.ifBlank { ".triple" }
         }
 
         release {

@@ -217,7 +217,8 @@ private fun SelectedWordDialog(
             existingWord = savedWords.firstOrNull { it.id == com.kienhoang.dualsubreplay.data.savedWordFrom(selection, "", false).id },
             autoPronounce = state.autoPronounce,
             onTranslateWord = { viewModel.translateSelection(selection) },
-            onSave = { meaning, online -> viewModel.saveWord(selection, meaning, online); Unit },
+            onTranslateMeaning = { language -> viewModel.translateSelection(selection, language) },
+            onSave = { meaning, online, meanings -> viewModel.saveWord(selection, meaning, online, meanings); Unit },
             onSpeak = {
                 webController.pause()
                 pronouncer.speak(spokenText(selection.token.text, selection.token.startIndex, selection.parts), selection.wordLanguage)

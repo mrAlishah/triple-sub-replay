@@ -36,7 +36,7 @@ class PracticeTransferTest {
         val withFa = word.copy(sentenceTranslations = mapOf("fa" to "خانه\nبزرگ", "ar" to "بيت"))
         val text = exportAnkiTsv(listOf(withFa))
         val header = text.lines().first { it.startsWith("#columns:") }
-        assertTrue(header.endsWith("\tsentenceTranslations"))
+        assertTrue(header.endsWith("\tsentenceTranslations\tmeanings"))
         val back = previewImport(parseTransfer(text), defaultTransferMapping(parseTransfer(text)), "en", "vi", emptyList()).words.single()
         assertEquals(mapOf("fa" to "خانه بزرگ", "ar" to "بيت"), back.sentenceTranslations)
         assertEquals(mapOf("fa" to "x"), decodeSentenceTranslationsText(encodeSentenceTranslations(mapOf("fa" to "x"))))

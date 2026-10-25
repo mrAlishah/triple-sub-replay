@@ -259,6 +259,7 @@ internal fun encodeWord(w: SavedWord): JSONObject =
         put("dueAt", w.dueAt)
         put("intervalMs", w.intervalMs)
         if (w.sentenceTranslations.isNotEmpty()) put("sentenceTranslations", JSONObject(w.sentenceTranslations))
+        if (w.meanings.isNotEmpty()) put("meanings", JSONObject(w.meanings))
     }
 
 internal fun decodeWord(j: JSONObject): SavedWord =
@@ -279,6 +280,7 @@ internal fun decodeWord(j: JSONObject): SavedWord =
         dueAt = j.optLong("dueAt"),
         intervalMs = j.optLong("intervalMs"),
         sentenceTranslations = decodeSentenceTranslations(j.optJSONObject("sentenceTranslations")),
+        meanings = decodeSentenceTranslations(j.optJSONObject("meanings")),
     )
 
 private fun decodeSentenceTranslations(json: JSONObject?): Map<String, String> {

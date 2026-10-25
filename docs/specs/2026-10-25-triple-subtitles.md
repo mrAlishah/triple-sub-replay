@@ -305,3 +305,69 @@ The backup JSON already carries the map (Revision 3).
 ### Validation
 Unit tests added: `AnkiDroidNotesTest`, `PracticeTransferTest`, `SavedWordTest`, `TripleSubtitlesTest`, `PersianTextTest`. Not run: instrumented tests,
 the tap bar and RTL layout on a device, AnkiDroid/AnkiConnect with a real collection, live YouTube.
+
+## Revision 2: word meanings in every enabled language
+
+### Status
+
+Owner request (2026-10-25), confirmed on a phone: with German as the original and English and Persian as the second and third lines, tapping "Aufstieg" showed only `Meaning (English)`. Authorizes local implementation and local commits; no push, PR, merge or release.
+
+### Root cause
+
+`learningSelection` (`data/SavedWord.kt`) gives every tap exactly one `meaningLanguage` (`target` for a source-language word, `source` otherwise), and `WordLearningDialog`, `saveWord`, `SavedWord`, the TSV/backup codecs, the Anki fields and Practice all carry that one meaning. The third language only ever reached the word as a *sentence* translation (`sentenceTranslations`). Nothing looked up or stored a word meaning in the third language.
+
+### Integration map
+
+| Concern | Where | Change |
+| --- | --- | --- |
+| Effective languages | `ui/TripleSubtitles.kt` (`thirdLanguageFor`, `thirdLanguageToTranslate`, `translatedVisibility`) | New `extraMeaningLanguages(...)`: ordered source, second, third, without duplicates, without the tapped word's language and without the primary meaning language. Reuses the existing slot state; no second source of truth. |
+| Selection | `LearningWordSelection` | New `extraMeaningLanguages: List<String> = emptyList()` (default keeps upstream callers and tests unchanged). Set in `AppViewModel.selectLearningWord`. |
+| Lookup | `AppViewModel.translateSelection` / `translateText` | Reused per language: `translateSelectionTo(selection, language)`. No new translator. |
+| Dialog | `WordLearningDialog` | One labeled `MeaningPanel` per language with its own loading/error/edit state; a failed language never hides another. Right-to-left languages use `TextDirection.Content`. |
+| Model | `SavedWord` | New `meanings: Map<String, String>` for languages other than `meaningLanguage`. `meaning` and `meaningLanguage` stay the primary meaning, so `savedWordId` (which hashes `meaningLanguage`) and every upstream consumer keep working. |
+| Storage | `VocabularyRepository.encodeWord/decodeWord` | Optional `meanings` JSON object inside the existing payload column. No SQL schema change; old rows decode with an empty map. |
+| Resave | `mergeResaved` | Languages merge; the newly saved text wins per language (so an edit sticks), earlier languages are kept, review schedule kept. |
+| Practice / Vocabulary | `SavedWordsScreen` | After reveal, each extra meaning shows with its language label and `dir=auto`; the edit view has one field per language. Reveal, grading and scheduling are untouched. |
+| TSV | `PracticeTransfer` | Trailing `meanings` column (`fa: text` per line, same codec as `sentenceTranslations`), read by name, so older files import. Backup JSON carries `meanings` through `encodeWord`. |
+| Anki | `ankiNoteFields` | Meaning field = primary meaning, then one `dir=auto` block per extra meaning labeled with its language. Fields and note type unchanged. |
+
+### Boundaries
+
+- There is no sentence-detail or sentence-tap screen in the product, so none is added. Sentence context is already stored per language (`sentence`, `translatedSentence`, `sentenceTranslations`) and exported.
+- Meanings are looked up only for the subtitle languages that are on; unchecking a slot hides nothing already saved and deletes nothing. Enabling a slot later looks up only the missing language when the word card opens for a saved word.
+- A language the translator does not support, or a blank reply, is shown as unavailable and never stored.
+- Word analysis (pronunciation, grammar, characters) stays tied to the tapped word's own language as before.
+
+### Plan
+
+1. Tests first (`SavedWordTest`, new `MeaningLanguagesTest`, `VocabularyCodecTest`, `PracticeTransferTest`, `AnkiNotesTest`).
+2. Model, resolver, codec, merge, TSV, Anki.
+3. Dialog and Practice UI.
+4. Cross-feature audit (AI assistant `SavedWord` constructors, import identity), then the full quality gate.
+
+### Acceptance criteria
+
+Those listed in the owner request of 2026-10-25 (16 items); the results are recorded below once run.
+
+### Implementation result (Revision 2)
+
+- `extraMeaningLanguages` (ui/TripleSubtitles.kt) resolves the languages from the existing slot state; `LearningWordSelection.extraMeaningLanguages` carries them; `SavedWord.meanings` stores them keyed by language code. `meaning` and `meaningLanguage` stay the primary meaning, so `savedWordId` and every existing saved word are unchanged.
+- Storage is the existing JSON payload: an optional `meanings` object, no SQL migration. Old rows decode with an empty map.
+- Word card: one labeled panel per language (stable slot order, content text direction), each with its own loading, error + Retry, and edit state. A saved word that lacks a newly enabled language looks up only that language when the card opens; languages saved earlier stay visible even after their slot is turned off. Save waits for pending lookups.
+- Vocabulary edits each language; Practice shows them after Reveal; search covers them.
+- TSV: trailing `meanings` column read by name. Backup JSON: `meanings` object. Anki: Meaning field = primary, then `<div dir="auto">fa: text</div>` per language (AnkiDroid and AnkiConnect share `ankiNoteFields`).
+- Deliberately unchanged: no sentence-detail screen exists, so none was added (sentences are stored and exported per language already); AI assistant tools still read and write only the primary meaning.
+
+### Validation result (Revision 2)
+
+| Check | Result |
+| --- | --- |
+| `formatCheck complexityCheck testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` | Passed locally |
+| New unit tests (`MeaningLanguagesTest`, `MeaningsTest`: resolver, JSON round trip, old payloads, merge, TSV round trip with Persian, newline and tab, old TSV, Anki field) | Passed |
+| `WordLearningDialogTest.everyEnabledLanguage...` (instrumented) | Compiles; **not run**: the only attached phone showed its PIN lock screen, so all 9 dialog tests aborted with "No compose hierarchies found" before reaching any assertion |
+| Managed-device tests, physical-device walkthrough | **Not run** |
+
+### Deferred
+
+- AI assistant `find_saved_words` / `edit_saved_word` ignore further-language meanings.
+- Clearing a language's text in the word card does not remove an earlier saved meaning (the Vocabulary edit view can).

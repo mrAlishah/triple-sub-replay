@@ -1119,19 +1119,17 @@ class AppViewModel internal constructor(
     fun selectLearningWord(tap: WordTap?) {
         val current = _state.value
         val source = com.kienhoang.dualsubreplay.data.learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
-        _state.update {
-            it.copy(
-                selectedLearningWord =
-                    tap?.let { selected ->
-                        com.kienhoang.dualsubreplay.data.learningSelection(
-                            if (current.liveFallback) selected.copy(segment = null) else selected,
-                            source,
-                            current.targetLanguage,
-                            current.activeVideoId.takeUnless { current.liveFallback },
-                        )
-                    },
-            )
-        }
+        val selection =
+            tap?.let { selected ->
+                com.kienhoang.dualsubreplay.data.learningSelection(
+                    if (current.liveFallback) selected.copy(segment = null) else selected,
+                    source,
+                    current.targetLanguage,
+                    current.activeVideoId.takeUnless { current.liveFallback },
+                )
+            }
+        val withMeanings = selection?.copy(extraMeaningLanguages = current.extraMeaningLanguagesFor(selection))
+        _state.update { it.copy(selectedLearningWord = withMeanings) }
     }
 
     fun setAutoPronounce(enabled: Boolean) {
@@ -1163,14 +1161,17 @@ class AppViewModel internal constructor(
         return translateText(language, if (language == source) current.targetLanguage else source, text)
     }
 
-    internal suspend fun translateSelection(selection: LearningWordSelection): String =
-        translateText(selection.wordLanguage, selection.meaningLanguage, selection.token.text)
+    internal suspend fun translateSelection(
+        selection: LearningWordSelection,
+        language: String = selection.meaningLanguage,
+    ): String = translateText(selection.wordLanguage, language, selection.token.text)
 
     internal suspend fun saveWord(
         selection: LearningWordSelection,
         meaning: String,
         online: Boolean,
-    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online, _state.value.thirdSentenceFor(selection)))
+        meanings: Map<String, String> = emptyMap(),
+    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online, _state.value.thirdSentenceFor(selection), meanings))
 
     suspend fun translateWord(word: String): String {
         val current = _state.value

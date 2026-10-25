@@ -30,6 +30,7 @@ import com.kienhoang.dualsubreplay.data.LearningWordSelection
 import com.kienhoang.dualsubreplay.data.PartOfSpeech
 import com.kienhoang.dualsubreplay.data.validClipRange
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -38,24 +39,29 @@ internal fun WordLearningDialog(
     selection: LearningWordSelection,
     autoPronounce: Boolean,
     onTranslateWord: suspend () -> String,
-    onSave: suspend (meaning: String, online: Boolean) -> Unit,
+    onSave: suspend (meaning: String, online: Boolean, meanings: Map<String, String>) -> Unit,
     onSpeak: () -> Unit,
     speechMessage: String?,
     onDismiss: () -> Unit,
     existingWord: com.kienhoang.dualsubreplay.data.SavedWord? = null,
     onSpeechSettings: (() -> Unit)? = null,
     onSpeakPart: (AnalyzedToken) -> Unit = {},
+    onTranslateMeaning: suspend (language: String) -> String = { "" },
 ) {
     var meaning by remember(selection) { mutableStateOf(existingWord?.meaning.orEmpty()) }
     var loading by remember(selection) { mutableStateOf(true) }
     var error by remember(selection) { mutableStateOf<Int?>(null) }
     var saved by remember(selection) { mutableStateOf(existingWord != null) }
+    val extras = remember(selection) { ExtraMeanings(existingWord?.meanings.orEmpty(), onTranslateMeaning) { saved = false } }
     var saving by remember(selection) { mutableStateOf(false) }
     var online by remember(selection) { mutableStateOf(existingWord?.online ?: true) }
     var characterPage by remember(selection) { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val canClip = validClipRange(selection.videoId, selection.segment?.startMs ?: -1, selection.segment?.endMs ?: -1)
 
+    LaunchedEffect(selection) {
+        extras.loadMissing(selection.extraMeaningLanguages)
+    }
     LaunchedEffect(selection) {
         if (autoPronounce) onSpeak()
         try {
@@ -101,6 +107,7 @@ internal fun WordLearningDialog(
                         },
                     )
                     error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+                    ExtraMeaningPanels(extras, selection.extraMeaningLanguages, enabled = !saving)
                     WordCardDetails(selection, speechMessage, onSpeechSettings)
                     CharacterSection(selection) { characterPage = it }
                     GrammarExplanations(selection, onAskedAi = onDismiss)
@@ -116,11 +123,11 @@ internal fun WordLearningDialog(
                             )
                         }
                     }
-                    SaveWordButton(saving = saving, saved = saved, enabled = !saving && !loading && !saved) {
+                    SaveWordButton(saving = saving, saved = saved, enabled = !saving && !loading && extras.loading.isEmpty() && !saved) {
                         saving = true
                         scope.launch {
                             try {
-                                onSave(meaning, online && canClip)
+                                onSave(meaning, online && canClip, extras.texts.toMap().filterValues { it.isNotBlank() })
                                 saved = true
                                 error = null
                             } catch (cancel: CancellationException) {
@@ -142,6 +149,86 @@ internal fun WordLearningDialog(
 }
 
 /**
+ * Meanings in the other subtitle languages: each loads, fails and is edited on its own, keyed by language
+ * code. [translate] looks one language up; [onChanged] runs whenever a text arrives or is edited.
+ */
+private class ExtraMeanings(
+    initial: Map<String, String>,
+    private val translate: suspend (String) -> String,
+    private val onChanged: () -> Unit,
+) {
+    val texts = mutableStateMapOf<String, String>().apply { putAll(initial) }
+    val loading = mutableStateListOf<String>()
+    val failed = mutableStateListOf<String>()
+    private val savedLanguages = initial.keys.toList()
+
+    /** The [selected] languages in slot order, then any other language the saved word already has a meaning in. */
+    fun languages(selected: List<String>): List<String> = selected + (savedLanguages - selected.toSet())
+
+    fun edit(
+        language: String,
+        text: String,
+    ) {
+        texts[language] = text
+        onChanged()
+    }
+
+    /** Looks up, all at once, every one of [languages] that has no text yet. */
+    suspend fun loadMissing(languages: List<String>) =
+        coroutineScope {
+            languages.filter { it !in texts }.forEach { language -> launch { lookUp(language) } }
+        }
+
+    /** A failure or a blank reply marks only this language as failed; the others are untouched. */
+    suspend fun lookUp(language: String) {
+        failed.remove(language)
+        loading.add(language)
+        try {
+            val text = translate(language).trim()
+            if (text.isEmpty()) failed.add(language) else edit(language, text)
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (_: Exception) {
+            failed.add(language)
+        } finally {
+            loading.remove(language)
+        }
+    }
+}
+
+@Composable
+private fun ExtraMeaningPanels(
+    extras: ExtraMeanings,
+    selected: List<String>,
+    enabled: Boolean,
+) {
+    val scope = rememberCoroutineScope()
+    extras.languages(selected).forEach { language ->
+        val busy = language in extras.loading
+        MeaningPanel(
+            meaning = extras.texts[language].orEmpty(),
+            language = languageDisplayName(language, currentInterfaceLocale()),
+            loading = busy,
+            enabled = enabled && !busy,
+            onChange = { extras.edit(language, it) },
+            tagSuffix = "_$language",
+        )
+        if (language in extras.failed) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.practice_word_translation_unavailable),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { scope.launch { extras.lookUp(language) } }, modifier = Modifier.testTag("retry_meaning_$language")) {
+                    Text(stringResource(R.string.practice_meaning_retry))
+                }
+            }
+        }
+    }
+}
+
+/**
  * The meaning, the answer the learner opened the card for: a tinted panel with an accent bar and
  * large bold text right under the word (owner request 2026-10-24). The pencil turns it into a
  * text field to correct the meaning before saving.
@@ -153,14 +240,17 @@ private fun MeaningPanel(
     loading: Boolean,
     enabled: Boolean,
     onChange: (String) -> Unit,
+    tagSuffix: String = "",
 ) {
     var editing by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
+    // Content direction so a Persian or Arabic meaning is laid out right-to-left whatever the interface language.
+    val direction = androidx.compose.ui.text.style.TextDirection.Content
     Surface(
         color = colors.primaryContainer,
         contentColor = colors.onPrimaryContainer,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().testTag("word_meaning_panel"),
+        modifier = Modifier.fillMaxWidth().testTag("word_meaning_panel$tagSuffix"),
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
             Box(Modifier.width(6.dp).fillMaxHeight().background(colors.primary))
@@ -177,19 +267,19 @@ private fun MeaningPanel(
                             meaning,
                             onChange,
                             enabled = enabled,
-                            textStyle = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 4.dp).testTag("word_meaning"),
+                            textStyle = MaterialTheme.typography.titleLarge.copy(textDirection = direction),
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 4.dp).testTag("word_meaning$tagSuffix"),
                         )
                     else ->
                         Text(
                             meaning.ifBlank { "…" },
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineSmall.copy(textDirection = direction),
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 2.dp).testTag("word_meaning_text"),
+                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, end = 4.dp).testTag("word_meaning_text$tagSuffix"),
                         )
                 }
             }
-            IconButton(onClick = { editing = !editing }, enabled = enabled, modifier = Modifier.testTag("edit_meaning")) {
+            IconButton(onClick = { editing = !editing }, enabled = enabled, modifier = Modifier.testTag("edit_meaning$tagSuffix")) {
                 Icon(
                     if (editing) Icons.Default.Check else Icons.Default.Edit,
                     contentDescription = stringResource(if (editing) R.string.practice_meaning_done else R.string.practice_meaning_edit),

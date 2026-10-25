@@ -118,6 +118,38 @@ internal fun DualSubUiState.thirdLanguageFor(source: String?): String? =
     thirdLanguageToTranslate(tripleSubtitlesEnabled, source, targetLanguage, thirdLanguage, translatedVisibility != CaptionVisibility.NEVER)
 
 /**
+ * The subtitle languages a tapped word should also get a meaning in, beside the [primary] one, in slot
+ * order (caption language, second line, third line): without the word's own language, the primary
+ * language and repeats. [third] is [thirdLanguageFor]'s answer, so an off or repeated slot never appears.
+ */
+internal fun extraMeaningLanguages(
+    wordLanguage: String,
+    primary: String,
+    source: String,
+    target: String,
+    secondShown: Boolean,
+    third: String?,
+): List<String> {
+    val skip = setOf(wordLanguage, primary).map(TranslationLanguages::normalize)
+    return listOfNotNull(source, target.takeIf { secondShown }, third)
+        .map(TranslationLanguages::normalize)
+        .distinct()
+        .filterNot { it in skip }
+}
+
+internal fun DualSubUiState.extraMeaningLanguagesFor(selection: LearningWordSelection): List<String> {
+    val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)
+    return extraMeaningLanguages(
+        wordLanguage = selection.wordLanguage,
+        primary = selection.meaningLanguage,
+        source = source,
+        target = targetLanguage,
+        secondShown = translatedVisibility != CaptionVisibility.NEVER,
+        third = thirdLanguageFor(source),
+    )
+}
+
+/**
  * Whether the third line shows: its checkbox is on, and, when the second line is not switched off, the
  * second line's play-mode and pause rules (listen first, hide until paused) apply to it too.
  */

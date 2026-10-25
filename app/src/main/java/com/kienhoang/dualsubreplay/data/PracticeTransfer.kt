@@ -24,6 +24,7 @@ internal val transferColumns =
 
 /** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
 internal const val TRANSLATIONS_COLUMN = "sentenceTranslations"
+internal const val MEANINGS_COLUMN = "meanings"
 
 /** One "language: text" line per translation; line breaks inside a text become spaces. */
 internal fun encodeSentenceTranslations(translations: Map<String, String>): String =
@@ -42,8 +43,9 @@ internal fun decodeSentenceTranslationsText(text: String): Map<String, String> {
 private fun translationsCell(
     document: TransferDocument,
     row: List<String>,
+    column: String = TRANSLATIONS_COLUMN,
 ): String {
-    val index = document.columns.indexOf(TRANSLATIONS_COLUMN)
+    val index = document.columns.indexOf(column)
     return if (index >= 0) row.getOrNull(index).orEmpty() else ""
 }
 
@@ -199,7 +201,7 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
     require(words.size <= MAX_TRANSFER_RECORDS) { "Export exceeds 20,000 records." }
 
     fun quote(value: String): String = "\"${value.replace("\"", "\"\"")}\""
-    return "#separator:Tab\n#html:false\n#columns:${(transferColumns + TRANSLATIONS_COLUMN).joinToString("\t")}\n" +
+    return "#separator:Tab\n#html:false\n#columns:${(transferColumns + TRANSLATIONS_COLUMN + MEANINGS_COLUMN).joinToString("\t")}\n" +
         words.joinToString("\n") { word ->
             listOf(
                 word.word,
@@ -213,6 +215,7 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
                 word.startMs.toString(),
                 word.endMs.toString(),
                 encodeSentenceTranslations(word.sentenceTranslations),
+                encodeSentenceTranslations(word.meanings),
             ).joinToString("\t", transform = ::quote)
         }
 }
@@ -272,6 +275,7 @@ internal fun previewImport(
                         false,
                         validClipRange(videoId, start, end),
                         sentenceTranslations = decodeSentenceTranslationsText(translationsCell(document, row)),
+                        meanings = decodeSentenceTranslationsText(translationsCell(document, row, MEANINGS_COLUMN)),
                     )
                 validateTransferWord(word)
                 val id =

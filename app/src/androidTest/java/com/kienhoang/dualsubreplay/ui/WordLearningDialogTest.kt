@@ -25,12 +25,40 @@ class WordLearningDialogTest {
         editor.commit()
     }
 
+    @Test
+    fun everyEnabledLanguageGetsItsOwnLabeledMeaningAndAFailureDoesNotHideTheOthers() {
+        var saved: Map<String, String>? = null
+        val triple = selection.copy(extraMeaningLanguages = listOf("fa", "ar"))
+        val translate: suspend (String) -> String = { language -> if (language == "ar") error("offline") else "صعود" }
+        compose.setContent {
+            DualSubTheme {
+                WordLearningDialog(
+                    selection = triple,
+                    autoPronounce = false,
+                    onTranslateWord = { "từ" },
+                    onSave = { _, _, meanings -> saved = meanings },
+                    onSpeak = {},
+                    speechMessage = null,
+                    onDismiss = {},
+                    onTranslateMeaning = translate,
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("word_meaning_text").assertTextEquals("từ")
+        compose.onNodeWithTag("word_meaning_text_fa").assertTextEquals("صعود")
+        compose.onNodeWithTag("retry_meaning_ar").assertExists()
+        compose.onNodeWithTag("save_word").performScrollTo().performClick()
+        compose.waitForIdle()
+        compose.runOnIdle { assertEquals(mapOf("fa" to "صعود"), saved) }
+    }
+
     @Test fun pronouncesOnceAndSavesOnlineClipChoiceWithoutOfflineOption() {
         var spoken = 0
         var saved: Pair<String, Boolean>? = null
         val recompose = mutableStateOf<String?>(null)
         compose.setContent { DualSubTheme {
-            WordLearningDialog(selection, true, { "từ" }, { meaning, online -> saved = Pair(meaning, online) },
+            WordLearningDialog(selection, true, { "từ" }, { meaning, online, _ -> saved = Pair(meaning, online) },
                 { spoken++ }, recompose.value, {})
         } }
         compose.waitForIdle()
@@ -53,7 +81,7 @@ class WordLearningDialogTest {
         val went = LanguageAwareTokenizer.tokenize("We went home.", "en").first { it.text == "went" }
         val wentSelection = selection.copy(token = went)
         compose.setContent {
-            DualSubTheme { WordLearningDialog(wentSelection, false, { "đi" }, { _, _ -> }, {}, null, {}) }
+            DualSubTheme { WordLearningDialog(wentSelection, false, { "đi" }, { _, _, _ -> }, {}, null, {}) }
         }
         compose.onNodeWithTag("dictionary_form").assertTextEquals("Dictionary form: go")
         compose.onNodeWithContentDescription("Word level: CEFR A1").assertIsDisplayed()
@@ -63,7 +91,7 @@ class WordLearningDialogTest {
     @Test fun manualSpeechWorksWhenAutomaticSpeechIsDisabled() {
         var spoken = 0
         compose.setContent { DualSubTheme {
-            WordLearningDialog(selection, false, { "từ" }, { _, _ -> }, { spoken++ }, null, {})
+            WordLearningDialog(selection, false, { "từ" }, { _, _, _ -> }, { spoken++ }, null, {})
         } }
         compose.waitForIdle()
         compose.runOnIdle { assertEquals(0, spoken) }
@@ -75,7 +103,7 @@ class WordLearningDialogTest {
         var saved: Pair<String, Boolean>? = null
         compose.setContent { DualSubTheme {
             WordLearningDialog(selection.copy(videoId = null, segment = null), false, { "từ" },
-                { meaning, online -> saved = Pair(meaning, online) }, {}, null, {})
+                { meaning, online, _ -> saved = Pair(meaning, online) }, {}, null, {})
         } }
         compose.onNodeWithTag("offline_clip_choice").assertDoesNotExist()
         compose.onNodeWithTag("online_clip_choice").assertDoesNotExist()
@@ -94,7 +122,7 @@ class WordLearningDialogTest {
                     selection = selection,
                     autoPronounce = false,
                     onTranslateWord = { "từ" },
-                    onSave = { _, _ -> },
+                    onSave = { _, _, _ -> },
                     onSpeak = { spoken++ },
                     speechMessage = "No installed speech engine has a voice for this language.",
                     onDismiss = {},
@@ -131,7 +159,7 @@ class WordLearningDialogTest {
                     selection = phrase,
                     autoPronounce = false,
                     onTranslateWord = { "mong chờ" },
-                    onSave = { _, _ -> },
+                    onSave = { _, _, _ -> },
                     onSpeak = {},
                     speechMessage = null,
                     onDismiss = { dismissed++ },
@@ -164,7 +192,7 @@ class WordLearningDialogTest {
                 segment = SubtitleSegment(1, 1000, 3000, "葉っぱが落ちた", null),
             )
         compose.setContent {
-            DualSubTheme { WordLearningDialog(leaf, false, { "lá cây" }, { _, _ -> }, {}, null, {}) }
+            DualSubTheme { WordLearningDialog(leaf, false, { "lá cây" }, { _, _, _ -> }, {}, null, {}) }
         }
         compose.onNodeWithTag("word_meaning_panel").assertIsDisplayed()
         compose.onNodeWithTag("word_meaning_text").assertTextEquals("lá cây")
@@ -205,7 +233,7 @@ class WordLearningDialogTest {
                 segment = SubtitleSegment(1, 1000, 3000, "树叶掉了", null),
             )
         compose.setContent {
-            DualSubTheme { WordLearningDialog(leaves, false, { "lá cây" }, { _, _ -> }, {}, null, {}) }
+            DualSubTheme { WordLearningDialog(leaves, false, { "lá cây" }, { _, _, _ -> }, {}, null, {}) }
         }
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("hanzi_row_叶")).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("hanzi_row_树").performScrollTo().assertIsDisplayed()

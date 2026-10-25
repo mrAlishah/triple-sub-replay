@@ -21,6 +21,8 @@ data class LearningWordSelection(
     val segment: SubtitleSegment?,
     val translated: Boolean,
     val parts: List<AnalyzedToken> = listOf(token),
+    /** Further subtitle languages to give a meaning in, beside [meaningLanguage], in subtitle-slot order. */
+    val extraMeaningLanguages: List<String> = emptyList(),
 ) {
     val isPhrase: Boolean get() = parts.size > 1
 }
@@ -67,6 +69,8 @@ data class SavedWord(
     val intervalMs: Long = 0,
     /** Further translations of [sentence] by language code (the third subtitle line). Only real translations, never placeholders. */
     val sentenceTranslations: Map<String, String> = emptyMap(),
+    /** The word's meaning in further languages by language code, beside [meaning] in [meaningLanguage]. Only real texts, never placeholders. */
+    val meanings: Map<String, String> = emptyMap(),
 )
 
 enum class ReviewRating { AGAIN, HARD, GOOD, EASY }
@@ -104,13 +108,19 @@ internal fun savedWordId(
 
 /** Saving a word again keeps its review schedule and every translation already stored (new languages are added). */
 internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
-    new.copy(dueAt = old.dueAt, intervalMs = old.intervalMs, sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations)
+    new.copy(
+        dueAt = old.dueAt,
+        intervalMs = old.intervalMs,
+        sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations,
+        meanings = old.meanings + new.meanings,
+    )
 
 internal fun savedWordFrom(
     selection: LearningWordSelection,
     meaning: String,
     online: Boolean,
     sentenceTranslations: Map<String, String> = emptyMap(),
+    meanings: Map<String, String> = emptyMap(),
 ): SavedWord {
     val segment = selection.segment
     val word = selection.token.text.trim()
@@ -120,5 +130,13 @@ internal fun savedWordFrom(
         meaning.trim(), segment?.originalText.orEmpty(), segment?.translatedText, selection.videoId,
         segment?.startMs ?: 0, segment?.endMs ?: 0, selection.translated,
         online = online && hasClip,
-        sentenceTranslations = sentenceTranslations.filterValues { it.isNotBlank() })
+        sentenceTranslations = sentenceTranslations.filterValues { it.isNotBlank() },
+        meanings = cleanMeanings(meanings, selection.meaningLanguage))
+}
+
+/** Trimmed real texts only: no blank placeholder and no second copy of the [primary] language. */
+private fun cleanMeanings(meanings: Map<String, String>, primary: String): Map<String, String> {
+    val result = LinkedHashMap<String, String>()
+    for ((language, text) in meanings) if (text.isNotBlank() && language != primary) result[language] = text.trim()
+    return result
 }

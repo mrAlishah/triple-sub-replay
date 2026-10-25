@@ -151,4 +151,7 @@
     <string name="settings_google_wait_2">2 秒</string>
     <string name="settings_google_wait_4">4 秒</string>
     <string name="settings_google_wait_8">8 秒</string>
+    <string name="settings_triple_title">3 言語字幕</string>
+    <string name="settings_triple_description">翻訳の下に、動画本来の字幕から翻訳した 3 行目を表示します。</string>
+    <string name="settings_triple_language_title">3 行目の言語</string>
 </resources>

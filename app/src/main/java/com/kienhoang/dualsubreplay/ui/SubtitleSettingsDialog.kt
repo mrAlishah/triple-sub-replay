@@ -541,6 +541,7 @@ internal fun SubtitleSettingsDialog(
                         if (translationEngineActions != null) {
                             OnlineTranslationSettingsRows(onlineTranslation, translationEngineActions)
                         }
+                        LocalTripleSubtitleControls.current?.let { TripleSubtitleSettings(it) }
                         SettingsSwitchRow(
                             title = stringResource(R.string.settings_natural_flow_title),
                             description = stringResource(R.string.settings_natural_flow_description),

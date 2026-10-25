@@ -151,4 +151,7 @@
     <string name="settings_google_wait_2">2 giây</string>
     <string name="settings_google_wait_4">4 giây</string>
     <string name="settings_google_wait_8">8 giây</string>
+    <string name="settings_triple_title">Phụ đề ba dòng</string>
+    <string name="settings_triple_description">Hiện dòng thứ ba dưới bản dịch, dịch từ phụ đề gốc của video.</string>
+    <string name="settings_triple_language_title">Ngôn ngữ thứ ba</string>
 </resources>

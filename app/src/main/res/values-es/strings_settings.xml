@@ -151,4 +151,7 @@
     <string name="settings_google_wait_2">2 s</string>
     <string name="settings_google_wait_4">4 s</string>
     <string name="settings_google_wait_8">8 s</string>
+    <string name="settings_triple_title">Subtítulos triples</string>
+    <string name="settings_triple_description">Muestra una tercera línea bajo la traducción, traducida desde los subtítulos del propio vídeo.</string>
+    <string name="settings_triple_language_title">Tercer idioma</string>
 </resources>

@@ -941,6 +941,7 @@ internal fun SubtitleTimeline(
                     isDownloadingTranslationModel = state.isDownloadingTranslationModel,
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
+                    thirdText = state.thirdLines.textFor(state.activeVideoId, segment.id),
                 )
             }
         }

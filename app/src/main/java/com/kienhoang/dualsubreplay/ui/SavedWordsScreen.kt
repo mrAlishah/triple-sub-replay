@@ -197,6 +197,7 @@ internal fun SavedWordsScreen(
                             }
                             Text(selected.sentence)
                             selected.translatedSentence?.let { Text(it) }
+                            selected.sentenceTranslations.values.forEach { Text(it) }
                             if (selected.translated) Text(originalSentenceNote, style = MaterialTheme.typography.bodySmall)
                             if (selected.online) TextButton(onClick = {
                                 pronouncer.stop(); onlinePreview = true; onOnline(selected)

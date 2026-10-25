@@ -1159,7 +1159,7 @@ class AppViewModel internal constructor(
         selection: LearningWordSelection,
         meaning: String,
         online: Boolean,
-    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online))
+    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online, _state.value.thirdSentenceFor(selection)))
 
     suspend fun translateWord(word: String): String {
         val current = _state.value
@@ -1650,11 +1650,11 @@ class AppViewModel internal constructor(
         source: String,
         scope: CoroutineScope,
     ): Job? {
-        publishThirdLines(videoId, generation, emptyMap())
+        publishThirdLines(videoId, generation, emptyMap(), null)
         val third = _state.value.thirdLanguageFor(source) ?: return null
         val translate: suspend (String) -> String = { text -> translateThird(videoId, generation, source, third, text, scope) }
         return scope.launch {
-            runThirdLanguage(store, playbackRequests, translate) { lines -> publishThirdLines(videoId, generation, lines) }
+            runThirdLanguage(store, playbackRequests, translate) { lines -> publishThirdLines(videoId, generation, lines, third) }
         }
     }
 
@@ -1685,9 +1685,10 @@ class AppViewModel internal constructor(
         videoId: String,
         generation: Long,
         lines: Map<Long, String>,
+        language: String?,
     ) {
         _state.update { current ->
-            if (isCurrentLoad(current, videoId, generation)) current.copy(thirdLines = ThirdLines(videoId, lines)) else current
+            if (isCurrentLoad(current, videoId, generation)) current.copy(thirdLines = ThirdLines(videoId, lines, language)) else current
         }
     }
 

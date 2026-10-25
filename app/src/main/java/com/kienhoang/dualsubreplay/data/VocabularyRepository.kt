@@ -100,10 +100,7 @@ internal class VocabularyRepository internal constructor(
                     if (old == null) {
                         word
                     } else {
-                        word.copy(
-                            dueAt = old.dueAt,
-                            intervalMs = old.intervalMs,
-                        )
+                        mergeResaved(old, word)
                     }
                 if (old == null) {
                     val rowId =
@@ -261,6 +258,7 @@ internal fun encodeWord(w: SavedWord): JSONObject =
         put("online", w.online)
         put("dueAt", w.dueAt)
         put("intervalMs", w.intervalMs)
+        if (w.sentenceTranslations.isNotEmpty()) put("sentenceTranslations", JSONObject(w.sentenceTranslations))
     }
 
 internal fun decodeWord(j: JSONObject): SavedWord =
@@ -280,4 +278,14 @@ internal fun decodeWord(j: JSONObject): SavedWord =
         online = j.optBoolean("online", false),
         dueAt = j.optLong("dueAt"),
         intervalMs = j.optLong("intervalMs"),
+        sentenceTranslations = decodeSentenceTranslations(j.optJSONObject("sentenceTranslations")),
     )
+
+private fun decodeSentenceTranslations(json: JSONObject?): Map<String, String> {
+    val result = LinkedHashMap<String, String>()
+    json?.keys()?.forEach { language ->
+        val text = json.optString(language)
+        if (text.isNotBlank()) result[language] = text
+    }
+    return result
+}

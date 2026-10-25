@@ -61,6 +61,8 @@ data class SavedWord(
     val online: Boolean = true,
     val dueAt: Long = 0,
     val intervalMs: Long = 0,
+    /** Further translations of [sentence] by language code (the third subtitle line). Only real translations, never placeholders. */
+    val sentenceTranslations: Map<String, String> = emptyMap(),
 )
 
 enum class ReviewRating { AGAIN, HARD, GOOD, EASY }
@@ -95,7 +97,16 @@ internal fun savedWordId(
         .joinToString("") { "%02x".format(it) }
 }
 
-internal fun savedWordFrom(selection: LearningWordSelection, meaning: String, online: Boolean): SavedWord {
+/** Saving a word again keeps its review schedule and every translation already stored (new languages are added). */
+internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
+    new.copy(dueAt = old.dueAt, intervalMs = old.intervalMs, sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations)
+
+internal fun savedWordFrom(
+    selection: LearningWordSelection,
+    meaning: String,
+    online: Boolean,
+    sentenceTranslations: Map<String, String> = emptyMap(),
+): SavedWord {
     val segment = selection.segment
     val word = selection.token.text.trim()
     val id = savedWordId(word, selection.wordLanguage, selection.meaningLanguage, selection.videoId, segment)
@@ -103,5 +114,6 @@ internal fun savedWordFrom(selection: LearningWordSelection, meaning: String, on
     return SavedWord(id, word, selection.token.reading, selection.wordLanguage, selection.meaningLanguage,
         meaning.trim(), segment?.originalText.orEmpty(), segment?.translatedText, selection.videoId,
         segment?.startMs ?: 0, segment?.endMs ?: 0, selection.translated,
-        online = online && hasClip)
+        online = online && hasClip,
+        sentenceTranslations = sentenceTranslations.filterValues { it.isNotBlank() })
 }

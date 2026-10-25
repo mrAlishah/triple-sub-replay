@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.data.LearningWordSelection
+import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
 import kotlinx.coroutines.CancellationException
@@ -118,15 +120,37 @@ internal fun DualSubUiState.thirdLanguageFor(source: String?): String? =
 internal fun DualSubUiState.showThird(): Boolean =
     tripleSubtitlesEnabled && (translatedVisibility == CaptionVisibility.NEVER || showTranslation())
 
-/** Third-line texts by row id for [videoId]; ids are store indices, so they mean nothing for another video. */
 data class ThirdLines(
     val videoId: String? = null,
     val lines: Map<Long, String> = emptyMap(),
+    /** The language [lines] were translated into; null until the run starts. */
+    val language: String? = null,
 ) {
     fun textFor(
         activeVideoId: String?,
         segmentId: Long,
     ): String? = if (activeVideoId != null && activeVideoId == videoId) lines[segmentId] else null
+}
+
+/**
+ * What a saved word keeps of the third line: the real translation of [segment] in its own language, or nothing.
+ * Pending, failed, other-video and same-language lines (the word's two languages already have a place) give nothing.
+ */
+internal fun thirdSentenceTranslations(
+    third: ThirdLines,
+    activeVideoId: String?,
+    segment: SubtitleSegment?,
+    wordLanguage: String,
+    meaningLanguage: String,
+): Map<String, String> {
+    val language = third.language ?: return emptyMap()
+    val text = segment?.let { third.textFor(activeVideoId, it.id) }?.takeIf(String::isNotBlank) ?: return emptyMap()
+    return if (language == wordLanguage || language == meaningLanguage) emptyMap() else mapOf(language to text)
+}
+
+internal fun DualSubUiState.thirdSentenceFor(selection: LearningWordSelection): Map<String, String> {
+    val (word, meaning) = selection.wordLanguage to selection.meaningLanguage
+    return thirdSentenceTranslations(thirdLines, activeVideoId, selection.segment, word, meaning)
 }
 
 /**

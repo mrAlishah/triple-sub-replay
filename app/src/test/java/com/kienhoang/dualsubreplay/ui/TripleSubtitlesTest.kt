@@ -51,6 +51,19 @@ class TripleSubtitlesTest {
     }
 
     @Test
+    fun savedWordKeepsTheThirdLineOnlyWhenItIsRealAndOfAnotherLanguage() {
+        val row = SubtitleSegment(7, 0, 1000, "Haus", "house")
+        val lines = ThirdLines("v1", mapOf(7L to "خانه"), "fa")
+        assertEquals(mapOf("fa" to "خانه"), thirdSentenceTranslations(lines, "v1", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v2", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", row.copy(id = 8), "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", null, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines, "v1", row, "fa", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines.copy(language = "en"), "v1", row, "de", "en"))
+        assertEquals(emptyMap<String, String>(), thirdSentenceTranslations(lines.copy(language = null), "v1", row, "de", "en"))
+    }
+
+    @Test
     fun everyRowGetsItsOwnThirdLineFromTheSourceText() =
         runBlocking {
             withStore { store ->

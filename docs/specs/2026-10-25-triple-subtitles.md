@@ -224,3 +224,47 @@ Owner request: every subtitle slot gets an **RTL** checkbox, so any language can
   read `LocalTripleSubtitleControls.current.rtl`, so no composable signature changed. The card needs one changed line
   (`lines.forEachDirected(slotRtl)`) and the overlay one changed call; the original and translated line composables are untouched.
 - Not verified on a device: how tap-to-learn word flow and highlighting look inside an RTL line.
+
+## Revision 3: vocabulary and Practice integration
+
+Owner request: Triple subtitles must reach the learning workflow, not only subtitle rendering. Revision 1 and 2 already
+cover the dialog UX (slots, checkboxes, RTL, no separate toggle); this revision audits the rest and changes only what is needed.
+
+### Findings (Caption → Word → Save → Storage → Practice → Export)
+- Word language is decided by the tapped line (`learningSelection`): original line = source language, second line = target. The third line is plain
+  text (non-goal kept), so a word is never attributed to the third language. The saved-word id has no third-line input, so hiding or changing
+  slots cannot create duplicates or change identity.
+- Storage is one JSON `payload` per row in the `words` table (`VocabularyRepository`). Optional keys need no schema change or migration;
+  older builds ignore an unknown key and newer builds read old rows without it (`LegacyVocabularyUpgradeTest`).
+- SRS (`reviewInterval`, `reviewWord`, `dueAt`, `intervalMs`) never reads language fields; it is untouched.
+- Only one gap: `SavedWord.translatedSentence` holds the second line only, so the third line was lost on save.
+
+### Decision
+`SavedWord.sentenceTranslations: Map<languageCode, text>` (additive, written only when non-empty). Captured in `AppViewModel.saveWord` from
+`ThirdLines` (which now records its `language`) by `thirdSentenceTranslations`: only a real, non-blank line of the current video and row, in a language
+different from the word's two languages. Re-saving uses `mergeResaved`: keeps SRS state and every stored translation, adds new languages.
+Rollback: stop writing the key; stored data stays valid. Limits: a translation that arrives after saving is added only by saving again;
+word-level Persian meanings need a lookup the app does not have for Persian and are not claimed.
+
+### Integration classification
+| Point | Class | Evidence |
+| --- | --- | --- |
+| Subtitle languages dialog, slot checkboxes, RTL, persistence, dedup (`thirdLanguageToTranslate`) | No change | Revisions 1-2; `TripleSubtitlesTest` |
+| All slots unchecked | No change | Allowed, same as hiding both lines today |
+| Word save (`AppViewModel.saveWord`) | Must change | third line lost otherwise |
+| Saved-word storage codec, re-save merge | Must change | `encodeWord`, `decodeWord`, `VocabularyRepository.save` |
+| Practice and saved-word card | Should change | extra translations shown after reveal; layout unchanged |
+| SRS, statistics (`ProgressScreen`) | No change | no language input |
+| Backup JSON export/import | No change needed | uses the same codec; old backups lack the key |
+| CSV/TSV and Anki (AnkiDroid, AnkiConnect) | Future scope | fixed column/note-type layout; a new field would break users' mappings and note types |
+| AI assistant save tool (`aiSavedWord`) and AI subtitle context | Future scope | assistant reads two-line captions; third line not exposed |
+| Word taps on the third line, Persian analysis | Future scope | no Persian tokenizer, none added |
+| Live fallback captions | No change | no segments, so no third line |
+| Playback, replay, seeking | No change | rows unchanged |
+| Backup rules, prefs | No change | `rtl_*`, `triple_*`, `third_language` are ordinary preferences |
+
+Upstream touchpoints added: `SavedWord` (one defaulted field, `mergeResaved`, one parameter), `VocabularyRepository` (codec, one call),
+`AppViewModel.saveWord`/`publishThirdLines`, `SavedWordsScreen` (one line). A smaller change was not viable: the row JSON is the only store.
+
+### Validation (this revision)
+Unit tests added in `SavedWordTest` and `TripleSubtitlesTest`. Instrumented tests, device, and live YouTube were not run.

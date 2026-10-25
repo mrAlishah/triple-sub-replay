@@ -11,5 +11,6 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Changed
 
+- **RTL checkbox per subtitle slot.** Each slot in the Subtitle languages dialog has an RTL checkbox that shows that line right-to-left (flush right). Only the Third slot is on by default, for Persian; unchecked slots keep upstream's automatic direction.
 - **Default second language.** The translation language now defaults to English instead of Vietnamese.
 - **Debug build identity.** The debug app is called "Triple Sub Replay" and installs as `com.kienhoang.dualsubreplay.triple`, beside the original app, and is never offered upstream updates.

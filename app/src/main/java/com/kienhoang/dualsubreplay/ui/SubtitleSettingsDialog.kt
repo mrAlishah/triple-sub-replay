@@ -235,6 +235,7 @@ private fun LanguagePickerButtons(
     val slots = LocalTripleSubtitleControls.current
     val locale = currentInterfaceLocale()
     SubtitleSlotRow(
+        slot = SubtitleSlot.ORIGINAL,
         label = R.string.settings_slot_original,
         checked = slots.originalEnabled,
         onCheckedChange = slots.onOriginalEnabledChange,
@@ -244,6 +245,7 @@ private fun LanguagePickerButtons(
     )
     Spacer(Modifier.height(12.dp))
     SubtitleSlotRow(
+        slot = SubtitleSlot.SECOND,
         label = R.string.settings_slot_second,
         checked = slots.secondEnabled,
         onCheckedChange = slots.onSecondEnabledChange,
@@ -253,6 +255,7 @@ private fun LanguagePickerButtons(
     )
     Spacer(Modifier.height(12.dp))
     SubtitleSlotRow(
+        slot = SubtitleSlot.THIRD,
         label = R.string.settings_slot_third,
         checked = slots.enabled,
         onCheckedChange = slots.onEnabledChange,

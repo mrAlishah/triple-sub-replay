@@ -154,4 +154,5 @@
     <string name="settings_slot_original">Original subtitle</string>
     <string name="settings_slot_second">Second subtitle</string>
     <string name="settings_slot_third">Third subtitle</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

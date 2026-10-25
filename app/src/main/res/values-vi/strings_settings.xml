@@ -154,4 +154,5 @@
     <string name="settings_slot_original">Phụ đề gốc</string>
     <string name="settings_slot_second">Phụ đề thứ hai</string>
     <string name="settings_slot_third">Phụ đề thứ ba</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

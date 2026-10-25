@@ -119,6 +119,7 @@ class SubtitleUiTest {
         var second by mutableStateOf(true)
         var third by mutableStateOf(false)
         var thirdLanguage by mutableStateOf("fa")
+        var rtl by mutableStateOf(SlotRtl())
         composeRule.setContent {
             val controls =
                 TripleSubtitleControls(
@@ -130,6 +131,8 @@ class SubtitleUiTest {
                     onSecondEnabledChange = { second = it },
                     onEnabledChange = { third = it },
                     onLanguageChange = { thirdLanguage = it },
+                    rtl = rtl,
+                    onRtlChange = { slot, value -> rtl = rtl.with(slot, value) },
                 )
             DualSubTheme {
                 CompositionLocalProvider(LocalTripleSubtitleControls provides controls) {
@@ -150,6 +153,10 @@ class SubtitleUiTest {
         composeRule.onNodeWithTag("target_language_checkbox").assertIsOn()
         composeRule.onNodeWithTag("third_language_checkbox").assertIsOff()
         composeRule.onNodeWithText("Persian").assertIsDisplayed()
+        composeRule.onNodeWithTag("source_language_rtl").assertIsOff()
+        composeRule.onNodeWithTag("third_language_rtl").assertIsOn()
+        composeRule.onNodeWithTag("target_language_rtl").performClick()
+        composeRule.runOnIdle { assertTrue(rtl.second) }
         composeRule.onNodeWithTag("third_language_checkbox").performClick()
         composeRule.onNodeWithTag("target_language_checkbox").performClick()
         composeRule.runOnIdle {

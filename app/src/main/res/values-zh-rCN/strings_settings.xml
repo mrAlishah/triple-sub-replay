@@ -154,4 +154,5 @@
     <string name="settings_slot_original">原文字幕</string>
     <string name="settings_slot_second">第二字幕</string>
     <string name="settings_slot_third">第三字幕</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

@@ -162,6 +162,7 @@ data class DualSubUiState(
     val tripleSubtitlesEnabled: Boolean = false,
     val thirdLanguage: String = DEFAULT_THIRD_LANGUAGE,
     val thirdLines: ThirdLines = ThirdLines(),
+    val slotRtl: SlotRtl = SlotRtl(),
 )
 
 /** [state] translating with Google again, without the fallback and its reasons. */
@@ -566,6 +567,7 @@ class AppViewModel internal constructor(
                 googleWait = storedGoogleWait(preferences.getString(GOOGLE_WAIT_PREFERENCE, null)),
                 tripleSubtitlesEnabled = preferences.getBoolean(TRIPLE_SUBTITLES_PREFERENCE, false),
                 thirdLanguage = storedThirdLanguage(preferences.getString(THIRD_LANGUAGE_PREFERENCE, null)),
+                slotRtl = storedSlotRtl(preferences),
             ),
         )
     val state: StateFlow<DualSubUiState> = _state.asStateFlow()
@@ -1209,6 +1211,15 @@ class AppViewModel internal constructor(
         _state.update { it.copy(thirdLanguage = normalized) }
     }
 
+    /** The RTL checkbox of one subtitle slot in the Subtitle languages dialog. */
+    fun setSlotRtl(
+        slot: SubtitleSlot,
+        rtl: Boolean,
+    ) {
+        preferences.edit().putBoolean(slot.rtlPreference, rtl).apply()
+        _state.update { it.copy(slotRtl = it.slotRtl.with(slot, rtl)) }
+    }
+
     /** Settings → Translation → Wait for Google; the next row Google translates uses it. */
     fun setGoogleWait(wait: GoogleWait) {
         preferences.edit().putString(GOOGLE_WAIT_PREFERENCE, wait.storageValue).apply()
@@ -1330,6 +1341,7 @@ class AppViewModel internal constructor(
                 onlineTranslationFailureDetail = null,
                 tripleSubtitlesEnabled = false,
                 thirdLanguage = DEFAULT_THIRD_LANGUAGE,
+                slotRtl = SlotRtl(),
             )
         }
         _state.value.activeVideoId?.let { loadVideo(it, showPanel = _state.value.subtitlePanelVisible) }

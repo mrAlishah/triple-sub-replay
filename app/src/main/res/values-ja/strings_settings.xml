@@ -154,4 +154,5 @@
     <string name="settings_slot_original">原文の字幕</string>
     <string name="settings_slot_second">2 つ目の字幕</string>
     <string name="settings_slot_third">3 つ目の字幕</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

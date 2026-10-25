@@ -210,3 +210,17 @@ block on the full settings page), not in separate settings.
 - If Original is off and the third language equals the caption language, nothing is shown for the third slot (it would need an identity "translation").
 - Not verified: the dialog on a device or emulator, RTL rendering, rotation, live YouTube. The new `SubtitleUiTest` case
   compiles (`assembleDebugAndroidTest`) but was not run.
+
+## Revision 2: RTL checkbox per slot
+
+Owner request: every subtitle slot gets an **RTL** checkbox, so any language can be shown right-to-left.
+
+- Each slot row in the Subtitle languages dialog shows `[ ] <slot>` and `[ ] RTL`. Checked forces that line right-to-left
+  (flush right, words flowing from the right). Unchecked leaves the layout alone: the text's own script decides, exactly
+  as upstream does, so Arabic or Persian in an unchecked slot still lays out right-to-left on its own.
+- Defaults: Original off, Second off, **Third on** (Persian). This replaces Revision 1's fixed "third line is always content-directed".
+- Saved in `rtl_original`, `rtl_second`, `rtl_third`; all three are in `TRIPLE_SETTING_KEYS`, so Reset all settings clears them.
+- Implementation: `SlotRtl` in `DualSubUiState`; `LineDirection` provides `LayoutDirection.Rtl` around a line. The card and the video overlay
+  read `LocalTripleSubtitleControls.current.rtl`, so no composable signature changed. The card needs one changed line
+  (`lines.forEachDirected(slotRtl)`) and the overlay one changed call; the original and translated line composables are untouched.
+- Not verified on a device: how tap-to-learn word flow and highlighting look inside an RTL line.

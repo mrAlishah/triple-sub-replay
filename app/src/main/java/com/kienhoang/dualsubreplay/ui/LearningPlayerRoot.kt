@@ -512,7 +512,14 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             TranslationEngineActions(viewModel::setTranslationEngine, viewModel::tryGoogleTranslationAgain, viewModel::setGoogleWait)
         }
     val tripleControls =
-        remember(viewModel, state.originalVisibility, state.translatedVisibility, state.tripleSubtitlesEnabled, state.thirdLanguage) {
+        remember(
+            viewModel,
+            state.originalVisibility,
+            state.translatedVisibility,
+            state.tripleSubtitlesEnabled,
+            state.thirdLanguage,
+            state.slotRtl,
+        ) {
             TripleSubtitleControls(
                 originalEnabled = state.originalVisibility != CaptionVisibility.NEVER,
                 secondEnabled = state.translatedVisibility != CaptionVisibility.NEVER,
@@ -522,6 +529,8 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 onSecondEnabledChange = { viewModel.setCaptionVisibility(false, slotVisibility(it)) },
                 onEnabledChange = viewModel::setTripleSubtitlesEnabled,
                 onLanguageChange = viewModel::setThirdLanguage,
+                rtl = state.slotRtl,
+                onRtlChange = viewModel::setSlotRtl,
             )
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
@@ -856,7 +865,14 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
-                subtitleLineOrder(originalLine, translationLine, translationPosition).forEachIndexed { index, line ->
+                val slotRtl = LocalTripleSubtitleControls.current.rtl
+                val directed =
+                    subtitleLineOrder(
+                        withDirection(slotRtl.original, originalLine),
+                        withDirection(slotRtl.second, translationLine),
+                        translationPosition,
+                    )
+                directed.forEachIndexed { index, line ->
                     if (index > 0) Spacer(Modifier.size(2.dp))
                     line()
                 }

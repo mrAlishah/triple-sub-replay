@@ -183,6 +183,22 @@ class TripleSubtitlesTest {
     }
 
     @Test
+    fun rtlDefaultsToOnlyTheThirdLineAndEachSlotIsSetAlone() {
+        val defaults = SlotRtl()
+        assertEquals(listOf(false, false, true), SubtitleSlot.entries.map { defaults[it] })
+        val changed = defaults.with(SubtitleSlot.SECOND, true).with(SubtitleSlot.THIRD, false)
+        assertEquals(listOf(false, true, false), SubtitleSlot.entries.map { changed[it] })
+        assertEquals(SlotRtl(), DualSubUiState().slotRtl)
+    }
+
+    @Test
+    fun rtlPreferencesHaveDistinctKeysThatReset() {
+        val keys = SubtitleSlot.entries.map { it.rtlPreference }
+        assertEquals(keys.size, keys.distinct().size)
+        assertTrue(RESETTABLE_SETTING_KEYS.containsAll(keys))
+    }
+
+    @Test
     fun aThirdLanguageThatMatchesAHiddenSecondLineIsStillRequested() {
         assertNull(thirdLanguageToTranslate(true, source = "de", target = "en", third = "en", secondShown = true))
         assertEquals("en", thirdLanguageToTranslate(true, source = "de", target = "en", third = "en", secondShown = false))

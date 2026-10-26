@@ -25,6 +25,7 @@ internal val transferColumns =
 /** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
 internal const val TRANSLATIONS_COLUMN = "sentenceTranslations"
 internal const val MEANINGS_COLUMN = "meanings"
+internal const val NOTES_COLUMN = "desc"
 
 /** One "language: text" line per translation; line breaks inside a text become spaces. */
 internal fun encodeSentenceTranslations(translations: Map<String, String>): String =
@@ -201,7 +202,8 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
     require(words.size <= MAX_TRANSFER_RECORDS) { "Export exceeds 20,000 records." }
 
     fun quote(value: String): String = "\"${value.replace("\"", "\"\"")}\""
-    return "#separator:Tab\n#html:false\n#columns:${(transferColumns + TRANSLATIONS_COLUMN + MEANINGS_COLUMN).joinToString("\t")}\n" +
+    val columns = (transferColumns + TRANSLATIONS_COLUMN + MEANINGS_COLUMN + NOTES_COLUMN).joinToString("\t")
+    return "#separator:Tab\n#html:false\n#columns:$columns\n" +
         words.joinToString("\n") { word ->
             listOf(
                 word.word,
@@ -216,6 +218,7 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
                 word.endMs.toString(),
                 encodeSentenceTranslations(word.sentenceTranslations),
                 encodeSentenceTranslations(word.meanings),
+                word.personalNotes,
             ).joinToString("\t", transform = ::quote)
         }
 }
@@ -276,6 +279,7 @@ internal fun previewImport(
                         validClipRange(videoId, start, end),
                         sentenceTranslations = decodeSentenceTranslationsText(translationsCell(document, row)),
                         meanings = decodeSentenceTranslationsText(translationsCell(document, row, MEANINGS_COLUMN)),
+                        personalNotes = translationsCell(document, row, NOTES_COLUMN),
                     )
                 validateTransferWord(word)
                 val id =

@@ -23,6 +23,9 @@
     <string name="practice_meaning_label">Nghĩa (%1$s)</string>
     <string name="practice_meaning_retry">Thử lại</string>
     <string name="practice_save_meaning">Lưu nghĩa</string>
+    <string name="practice_notes_label">Desc</string>
+    <string name="practice_save_notes">Lưu ghi chú</string>
+    <string name="practice_notes_unsaved">Thay đổi chưa lưu</string>
     <string name="practice_video_uses_original_sentence">Video ví dụ dùng câu gốc.</string>
     <string name="practice_play_online_example">Phát ví dụ trực tuyến</string>
     <string name="practice_online_example">Ví dụ trực tuyến</string>

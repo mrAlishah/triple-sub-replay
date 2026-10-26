@@ -71,9 +71,12 @@ data class SavedWord(
     val sentenceTranslations: Map<String, String> = emptyMap(),
     /** The word's meaning in further languages by language code, beside [meaning] in [meaningLanguage]. Only real texts, never placeholders. */
     val meanings: Map<String, String> = emptyMap(),
+    /** The user's own multiline notes ("Desc" in Anki). Never filled in automatically; empty for older words. */
+    val personalNotes: String = "",
 )
 
 enum class ReviewRating { AGAIN, HARD, GOOD, EASY }
+
 internal const val DAY_MS = 86_400_000L
 
 internal fun reviewInterval(previous: Long, rating: ReviewRating): Long = when (rating) {
@@ -106,6 +109,12 @@ internal fun savedWordId(
         .joinToString("") { "%02x".format(it) }
 }
 
+/** An imported word with no notes keeps the notes already saved for it; a file never clears them. */
+internal fun keepSavedNotes(
+    imported: SavedWord,
+    existing: SavedWord,
+): SavedWord = imported.copy(personalNotes = imported.personalNotes.ifBlank { existing.personalNotes })
+
 /** Saving a word again keeps its review schedule and every translation already stored (new languages are added). */
 internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
     new.copy(
@@ -113,6 +122,7 @@ internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
         intervalMs = old.intervalMs,
         sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations,
         meanings = (old.meanings + new.meanings).filterValues { it.isNotBlank() },
+        personalNotes = new.personalNotes.ifBlank { old.personalNotes },
     )
 
 internal fun savedWordFrom(

@@ -29,8 +29,11 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun intervalLabel(interval: Long): String {
@@ -79,6 +82,7 @@ internal fun SavedWordsScreen(
     var revealed by remember(selected?.id, practice) { mutableStateOf(false) }
     var editedMeaning by remember(selected?.id, selected?.meaning) { mutableStateOf(selected?.meaning.orEmpty()) }
     val editedExtra = remember(selected?.id, selected?.meanings) { editableMeanings(selected) }
+    var editedNotes by remember(selected?.id, selected?.personalNotes) { mutableStateOf(selected?.personalNotes.orEmpty()) }
     val due = words.filter { it.dueAt <= now }.sortedBy { it.dueAt }
     val locale = currentInterfaceLocale()
     val searchLabel = stringResource(R.string.practice_search_label)
@@ -110,6 +114,16 @@ internal fun SavedWordsScreen(
     }
     fun returnFromVideo() { onPause(); onlinePreview = false }
 
+    // Leaving by Back, Close or the system back saves notes still being edited; the save outlives this screen.
+    fun keepNotes() {
+        val word = selected ?: return
+        val notes = editedNotes
+        if (notes == word.personalNotes) return
+        scope.launch(start = CoroutineStart.ATOMIC) {
+            withContext(NonCancellable) { runCatching { repository.update(word.id) { it.copy(personalNotes = notes) } } }
+        }
+    }
+
     if (onlinePreview) {
         BackHandler { returnFromVideo() }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -126,12 +140,18 @@ internal fun SavedWordsScreen(
         return
     }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = {
+        keepNotes()
+        onDismiss()
+    }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth(0.96f).fillMaxHeight(0.9f), shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(stringResource(R.string.practice_title), style = MaterialTheme.typography.titleLarge)
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.practice_close)) }
+                    TextButton(onClick = {
+                        keepNotes()
+                        onDismiss()
+                    }) { Text(stringResource(R.string.practice_close)) }
                 }
                 error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
                 if (malformed > 0) {
@@ -202,6 +222,9 @@ internal fun SavedWordsScreen(
                             Text(selected.sentence)
                             selected.translatedSentence?.let { Text(it) }
                             selected.sentenceTranslations.values.forEach { Text(it) }
+                            PersonalNotesEditor(editedNotes, { editedNotes = it }, editedNotes != selected.personalNotes, !busy) {
+                                action { repository.update(selected.id) { it.copy(personalNotes = editedNotes) } }
+                            }
                             if (selected.translated) Text(originalSentenceNote, style = MaterialTheme.typography.bodySmall)
                             if (selected.online) TextButton(onClick = {
                                 pronouncer.stop(); onlinePreview = true; onOnline(selected)
@@ -210,7 +233,9 @@ internal fun SavedWordsScreen(
                                 ReviewRating.entries.forEach { rating ->
                                     OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("review_${rating.name.lowercase()}"), onClick = {
                                         action {
-                                            repository.update(selected.id) { reviewWord(it, rating, System.currentTimeMillis()) }
+                                            repository.update(selected.id) {
+                                                reviewWord(it.copy(personalNotes = editedNotes), rating, System.currentTimeMillis())
+                                            }
                                             queue = queue.drop(1); pronouncer.stop()
                                         }
                                     }) { Text(ratingText(rating, reviewInterval(selected.intervalMs, rating))) }
@@ -221,7 +246,12 @@ internal fun SavedWordsScreen(
                         }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { selectedId = null; practice = false; pronouncer.stop() }) { Text(backLabel) }
+                        TextButton(onClick = {
+                            keepNotes()
+                            selectedId = null
+                            practice = false
+                            pronouncer.stop()
+                        }) { Text(backLabel) }
                         if (!practice) TextButton(enabled = !busy, onClick = { confirmDelete = selected }) { Text(deleteWordLabel) }
                     }
                 }
@@ -305,4 +335,5 @@ private fun SavedWord.withMeanings(
 
 /** Whether the search text is in the word or in its meaning in any language. */
 private fun SavedWord.matchesSearch(search: String): Boolean =
-    word.contains(search, true) || meaning.contains(search, true) || meanings.values.any { it.contains(search, true) }
+    word.contains(search, true) || meaning.contains(search, true) || meanings.values.any { it.contains(search, true) } ||
+        personalNotes.contains(search, true)

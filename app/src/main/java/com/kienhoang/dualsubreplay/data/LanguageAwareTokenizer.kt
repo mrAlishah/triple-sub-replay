@@ -449,7 +449,8 @@ object LanguageAwareTokenizer {
      */
     fun tokenizeWordsWithOffsets(text: String): List<AnalyzedToken> {
         val tokens = mutableListOf<AnalyzedToken>()
-        val regex = Regex("[\\p{L}\\p{M}\\p{N}'-]+")
+        // The zero-width non-joiner keeps Persian half-space words whole.
+        val regex = Regex("[\\p{L}\\p{M}\\p{N}'\u200C-]+")
         regex.findAll(text).forEach { match ->
             tokens += AnalyzedToken(
                 text = match.value,

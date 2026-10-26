@@ -16,4 +16,5 @@ tools/promo-video/.cache/
 tools/promo-video/out/
 Screenshot*.png
 __pycache__/
+
 .serena

@@ -195,6 +195,7 @@ class SubtitleWordHighlightTest {
                 LOCK_OVERLAY_TO_VIDEO_PREFERENCE,
                 PRELOAD_MODELS_ENABLED_PREFERENCE,
                 NATURAL_SUBTITLES_PREFERENCE,
+                HIDE_SOUND_CUES_PREFERENCE,
                 WORD_LEARNING_ENABLED_PREFERENCE,
                 WORD_LEARNING_TARGET_PREFERENCE,
                 TAP_TO_LEARN_PREFERENCE,
@@ -229,6 +230,7 @@ class SubtitleWordHighlightTest {
                 SubtitleSlot.ORIGINAL.rtlPreference,
                 SubtitleSlot.SECOND.rtlPreference,
                 SubtitleSlot.THIRD.rtlPreference,
+                RECENT_TARGET_LANGUAGES_PREFERENCE,
             )
         assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())
         assertEquals(RESETTABLE_SETTING_KEYS.size, RESETTABLE_SETTING_KEYS.distinct().size)

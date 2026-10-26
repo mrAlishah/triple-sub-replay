@@ -82,7 +82,12 @@
     <string name="study_known_words_offer_confirm">开启</string>
     <string name="study_known_words_offer_dismiss">暂不</string>
     <string name="study_send_to_app_title">单词发送到</string>
-    <string name="study_ankidroid_description">卡片会放入 DualSub Replay 牌组。请让 AnkiDroid 在后台保持打开:在许多手机上,AnkiDroid 只在运行时接收卡片。</string>
+    <string name="study_ankidroid_description">卡片会放入 TripleSub Replay 牌组。请让 AnkiDroid 在后台保持打开:在许多手机上,AnkiDroid 只在运行时接收卡片。</string>
+    <string name="study_anki_deck_failed">无法在 AnkiDroid 中创建 TripleSub Replay 牌组。</string>
+    <string name="study_anki_note_type_failed">无法在 AnkiDroid 中创建 TripleSub Replay v2 笔记类型。</string>
+    <string name="study_anki_note_type_conflict">AnkiDroid 中已有同名但字段不同的 TripleSub Replay v2 笔记类型,因此没有发送任何内容。请在 AnkiDroid 中重命名或删除该笔记类型后重试。</string>
+    <string name="study_anki_insert_failed">AnkiDroid 没有确认新卡片,因此未标记为已发送。请重试。</string>
+    <string name="study_anki_wrong_deck">卡片已添加到 AnkiDroid,但 AnkiDroid 没有把它移到 TripleSub Replay 牌组。请在该笔记类型自己的牌组中查找。</string>
     <string name="study_ankiconnect_description">发送到本机的 AnkiConnect(127.0.0.1:8765),AnkiConnect Android 应用、Yomitan 和 asbplayer 都使用这个地址。请先打开一次 AnkiConnect Android,让它的服务器运行。如果 AnkiConnect 无法创建 DualSub Replay 笔记类型,卡片会使用 Anki 的 Basic 笔记类型。</string>
     <string name="study_ankiconnect_deck_title">AnkiConnect 牌组</string>
     <string name="study_ankiconnect_deck_value">牌组:%1$s</string>

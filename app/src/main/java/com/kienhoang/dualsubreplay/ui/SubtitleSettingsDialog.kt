@@ -180,6 +180,7 @@ private fun showLanguagePickerIfOpen(
     picker: LanguagePickerState,
     sourcePreference: String,
     targetLanguage: String,
+    recentTargetLanguages: List<String>,
     sourceChoices: List<LanguageChoice>,
     onSourceChange: (String) -> Unit,
     onTargetChange: (String) -> Unit,
@@ -207,6 +208,7 @@ private fun showLanguagePickerIfOpen(
         },
         onDismiss = picker::close,
         testTagPrefix = mode.name.lowercase(),
+        recentCodes = if (source) emptyList() else recentLanguagesToShow(recentTargetLanguages, targetLanguage),
     )
     return true
 }
@@ -249,6 +251,7 @@ internal fun QuickLanguageSettingsDialog(
     onSourceChange: (String) -> Unit,
     onTargetChange: (String) -> Unit,
     onOpenAllSettings: () -> Unit,
+    recentTargetLanguages: List<String> = emptyList(),
     onDismiss: () -> Unit,
 ) {
     val languagePicker = remember { LanguagePickerState() }
@@ -260,6 +263,7 @@ internal fun QuickLanguageSettingsDialog(
             picker = languagePicker,
             sourcePreference = sourcePreference,
             targetLanguage = targetLanguage,
+            recentTargetLanguages = recentTargetLanguages,
             sourceChoices = sourceChoices,
             onSourceChange = onSourceChange,
             onTargetChange = onTargetChange,
@@ -315,6 +319,7 @@ internal fun SubtitleSettingsDialog(
     targetLanguage: String,
     availableSourceLanguages: List<CaptionLanguage>,
     fontScale: Float,
+    recentTargetLanguages: List<String> = emptyList(),
     portraitPanelOffsetFraction: Float = DEFAULT_PORTRAIT_PANEL_OFFSET_FRACTION,
     onPortraitPanelOffsetFractionChange: (Float) -> Unit = {},
     onResetPortraitPanelPosition: () -> Unit = {},
@@ -334,6 +339,8 @@ internal fun SubtitleSettingsDialog(
     onPreloadModelsChange: (Boolean) -> Unit = {},
     naturalSubtitlesEnabled: Boolean = true,
     onNaturalSubtitlesChange: (Boolean) -> Unit = {},
+    hideSoundCues: Boolean = true,
+    onHideSoundCuesChange: (Boolean) -> Unit = {},
     onlineTranslation: OnlineTranslationSettings = OnlineTranslationSettings(),
     wordLearningEnabled: Boolean = true,
     onWordLearningChange: (Boolean) -> Unit = {},
@@ -373,6 +380,7 @@ internal fun SubtitleSettingsDialog(
             picker = languagePicker,
             sourcePreference = sourcePreference,
             targetLanguage = targetLanguage,
+            recentTargetLanguages = recentTargetLanguages,
             sourceChoices = sourceChoices,
             onSourceChange = onSourceChange,
             onTargetChange = onTargetChange,
@@ -547,6 +555,13 @@ internal fun SubtitleSettingsDialog(
                             checked = naturalSubtitlesEnabled,
                             onCheckedChange = onNaturalSubtitlesChange,
                             testTag = "natural_subtitles_switch",
+                        )
+                        SettingsSwitchRow(
+                            title = stringResource(R.string.settings_hide_sound_cues_title),
+                            description = stringResource(R.string.settings_hide_sound_cues_description),
+                            checked = hideSoundCues,
+                            onCheckedChange = onHideSoundCuesChange,
+                            testTag = "hide_sound_cues_switch",
                         )
                         SettingsSwitchRow(
                             title = stringResource(R.string.settings_preload_models_title),

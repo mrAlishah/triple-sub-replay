@@ -28,6 +28,7 @@ import com.kienhoang.dualsubreplay.data.PageTranscriptSource
 import com.kienhoang.dualsubreplay.data.PageTranslationSource
 import com.kienhoang.dualsubreplay.data.RecentCaptionTracks
 import com.kienhoang.dualsubreplay.data.SavedWord
+import com.kienhoang.dualsubreplay.data.SoundCues
 import com.kienhoang.dualsubreplay.data.SubtitleMerger
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
@@ -99,6 +100,8 @@ data class DualSubUiState(
     val subtitlePanelVisible: Boolean = true,
     val sourcePreference: String = "auto",
     val targetLanguage: String = "vi",
+    /** Recent "Translate to" picks, newest first; see [recentLanguagesToShow]. */
+    val recentTargetLanguages: List<String> = emptyList(),
     val onboardingCompleted: Boolean = false,
     val guideCompleted: Boolean = false,
     val dailyGoalPromptCompleted: Boolean = false,
@@ -135,6 +138,7 @@ data class DualSubUiState(
     val lockOverlayToVideo: Boolean = false,
     val preloadModelsEnabled: Boolean = true,
     val naturalSubtitlesEnabled: Boolean = true,
+    val hideSoundCues: Boolean = true,
     val wordLearningEnabled: Boolean = true,
     val wordLearningTarget: String = DEFAULT_WORD_LEARNING_TARGET,
     val wordLearningActiveOnly: Boolean = true,
@@ -333,6 +337,7 @@ internal const val PRELOAD_MODELS_ENABLED_PREFERENCE = "preload_translation_mode
 /** After a switch away from Google, how long a row waits for YouTube's own translation before the device translates it. */
 private const val YOUTUBE_TRANSLATION_WAIT_MS = 1_000L
 internal const val NATURAL_SUBTITLES_PREFERENCE = "enhanced_natural_subtitles"
+internal const val HIDE_SOUND_CUES_PREFERENCE = "hide_sound_cues"
 internal const val WORD_LEARNING_ENABLED_PREFERENCE = "word_learning_mode_enabled"
 internal const val WORD_LEARNING_TARGET_PREFERENCE = "word_learning_target"
 
@@ -479,6 +484,8 @@ class AppViewModel internal constructor(
                         .getString("target_language", "vi")
                         ?.takeIf(TranslationLanguages::isSupported)
                         ?: "vi",
+                recentTargetLanguages =
+                    parseRecentLanguages(preferences.getString(RECENT_TARGET_LANGUAGES_PREFERENCE, null)),
                 onboardingCompleted = preferences.getBoolean("onboarding_completed", false),
                 guideCompleted =
                     initialGuideCompleted(
@@ -540,6 +547,7 @@ class AppViewModel internal constructor(
                     storedFeatureEnabled(
                         preferences.getBoolean(NATURAL_SUBTITLES_PREFERENCE, true),
                     ),
+                hideSoundCues = preferences.getBoolean(HIDE_SOUND_CUES_PREFERENCE, true),
                 wordLearningEnabled =
                     storedFeatureEnabled(
                         preferences.getBoolean(WORD_LEARNING_ENABLED_PREFERENCE, true),
@@ -750,7 +758,7 @@ class AppViewModel internal constructor(
         val accepted =
             liveCaption?.takeIf {
                 liveTranslationGate.key != null &&
-                    liveTranslationKey(it, videoId, current.targetLanguage) == liveTranslationGate.key &&
+                    liveTranslationKey(it, videoId, current.targetLanguage, current.hideSoundCues) == liveTranslationGate.key &&
                     it.revision != rejectedLiveRevision
             }
         liveCaptionProgress = accepted?.let { reconcileLiveCaptionProgress(liveCaptionProgress, it) }
@@ -803,7 +811,13 @@ class AppViewModel internal constructor(
         seek: Boolean,
     ) {
         if (seek) rejectedLiveRevision = sample?.revision
-        val key = liveTranslationKey(sample?.takeUnless { it.revision == rejectedLiveRevision }, videoId, _state.value.targetLanguage)
+        val key =
+            liveTranslationKey(
+                sample?.takeUnless { it.revision == rejectedLiveRevision },
+                videoId,
+                _state.value.targetLanguage,
+                _state.value.hideSoundCues,
+            )
         if (!liveTranslationGate.update(key, seek)) return
         liveTranslationJob?.cancel()
         val ticket = liveTranslationGate.generation
@@ -909,10 +923,15 @@ class AppViewModel internal constructor(
     fun setTargetLanguage(language: String) {
         val normalized = TranslationLanguages.normalize(language)
         if (!TranslationLanguages.isSupported(normalized) || _state.value.targetLanguage == normalized) return
-        preferences.edit().putString("target_language", normalized).apply()
+        val recent = rememberRecentLanguage(_state.value.recentTargetLanguages, _state.value.targetLanguage, normalized)
+        preferences
+            .edit()
+            .putString("target_language", normalized)
+            .putString(RECENT_TARGET_LANGUAGES_PREFERENCE, encodeRecentLanguages(recent))
+            .apply()
         liveTranslationJob?.cancel()
         liveTranslationGate.reset()
-        _state.update { it.copy(targetLanguage = normalized, liveTranslated = null) }
+        _state.update { it.copy(targetLanguage = normalized, recentTargetLanguages = recent, liveTranslated = null) }
     }
 
     fun completeOnboarding(
@@ -1081,6 +1100,15 @@ class AppViewModel internal constructor(
     fun setNaturalSubtitlesEnabled(enabled: Boolean) {
         preferences.edit().putBoolean(NATURAL_SUBTITLES_PREFERENCE, enabled).apply()
         _state.update { it.copy(naturalSubtitlesEnabled = enabled) }
+        val videoId = _state.value.activeVideoId
+        if (videoId != null) {
+            loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
+        }
+    }
+
+    fun setHideSoundCues(enabled: Boolean) {
+        preferences.edit().putBoolean(HIDE_SOUND_CUES_PREFERENCE, enabled).apply()
+        _state.update { it.copy(hideSoundCues = enabled) }
         val videoId = _state.value.activeVideoId
         if (videoId != null) {
             loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
@@ -1283,6 +1311,7 @@ class AppViewModel internal constructor(
             current.copy(
                 sourcePreference = "auto",
                 targetLanguage = "vi",
+                recentTargetLanguages = emptyList(),
                 fontScale = 1f,
                 portraitPanelOffsetFraction = DEFAULT_PORTRAIT_PANEL_OFFSET_FRACTION,
                 landscapeSplitEnabled = true,
@@ -1299,6 +1328,7 @@ class AppViewModel internal constructor(
                 lockOverlayToVideo = false,
                 preloadModelsEnabled = true,
                 naturalSubtitlesEnabled = true,
+                hideSoundCues = true,
                 wordLearningEnabled = true,
                 wordLearningTarget = DEFAULT_WORD_LEARNING_TARGET,
                 wordLearningActiveOnly = true,
@@ -1491,7 +1521,9 @@ class AppViewModel internal constructor(
         onStored: (SubtitleStore) -> Unit,
     ): CaptionTrackResult {
         currentCoroutineContext().ensureActive()
-        val merged = SubtitleMerger.merge(track.cues, enhancedNaturalFlow = natural)
+        // A track of nothing but sound descriptions keeps them rather than failing as empty.
+        val cues = if (_state.value.hideSoundCues) SoundCues.filter(track.cues).ifEmpty { track.cues } else track.cues
+        val merged = SubtitleMerger.merge(cues, enhancedNaturalFlow = natural)
         if (merged.isEmpty()) throw CaptionUnavailableException("This caption track contains no readable text.")
         onStored(SubtitleStore.create(subtitleDirectory, merged))
         // Do not retain every raw cue across the long-lived translation coroutine.
@@ -1723,7 +1755,8 @@ class AppViewModel internal constructor(
             } catch (error: IOException) {
                 emptyList()
             }
-        val translations = if (cues == null) emptyMap() else youTubeRowTranslations(rows, cues, targetLanguage)
+        val shownCues = if (cues != null && _state.value.hideSoundCues) SoundCues.filter(cues) else cues
+        val translations = if (shownCues == null) emptyMap() else youTubeRowTranslations(rows, shownCues, targetLanguage)
         _state.update { current ->
             if (!isCurrentLoad(current, videoId, generation)) current else current.copy(youTubeTranslationFallback = translations.isNotEmpty())
         }

@@ -141,7 +141,7 @@ internal fun WordLearningDialog(
                         }
                     }
                     if (saved) Text(stringResource(R.string.practice_saved_to_vocabulary), modifier = Modifier.testTag("word_saved"))
-                    StudyWordActions(selection, meaning)
+                    StudyWordActions(selection, meaning, extras.activeTexts(selection), online && canClip, extras.loading.isNotEmpty())
                     if (selection.isPhrase) WordByWord(selection.parts, onSpeakPart)
                 }
             }
@@ -165,6 +165,9 @@ private class ExtraMeanings(
     val loading = mutableStateListOf<String>()
     val failed = mutableStateListOf<String>()
     private val savedLanguages = initial.keys.toList()
+
+    /** The texts of the languages now selected, so a language dropped from the subtitle slots is not sent. */
+    fun activeTexts(selection: LearningWordSelection): Map<String, String> = texts.filterKeys { it in selection.extraMeaningLanguages }
 
     /** The [selected] languages in slot order, then any other language the saved word already has a meaning in. */
     fun languages(selected: List<String>): List<String> = selected + (savedLanguages - selected.toSet())

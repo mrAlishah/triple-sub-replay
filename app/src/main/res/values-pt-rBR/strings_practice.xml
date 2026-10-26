@@ -23,6 +23,9 @@
     <string name="practice_meaning_label">Significado (%1$s)</string>
     <string name="practice_meaning_retry">Tentar de novo</string>
     <string name="practice_save_meaning">Salvar significado</string>
+    <string name="practice_notes_label">Desc</string>
+    <string name="practice_save_notes">Salvar notas</string>
+    <string name="practice_notes_unsaved">Alterações não salvas</string>
     <string name="practice_video_uses_original_sentence">O vídeo de exemplo usa a frase original.</string>
     <string name="practice_play_online_example">Reproduzir exemplo on-line</string>
     <string name="practice_online_example">Exemplo on-line</string>

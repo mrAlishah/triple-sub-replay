@@ -23,6 +23,9 @@
     <string name="practice_meaning_label">Meaning (%1$s)</string>
     <string name="practice_meaning_retry">Retry</string>
     <string name="practice_save_meaning">Save meaning</string>
+    <string name="practice_notes_label">Desc</string>
+    <string name="practice_save_notes">Save notes</string>
+    <string name="practice_notes_unsaved">Unsaved changes</string>
     <string name="practice_video_uses_original_sentence">Video example uses the original sentence.</string>
     <string name="practice_play_online_example">Play online example</string>
     <string name="practice_online_example">Online example</string>

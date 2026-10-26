@@ -1,11 +1,8 @@
 package com.kienhoang.dualsubreplay.data
 
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -95,8 +92,22 @@ internal fun unsentAnkiWords(
     sent: (String) -> Boolean,
 ): List<SavedWord> = words.distinctBy { it.id }.filterNot { sent(it.id) }
 
-/** Why a send stopped: AnkiDroid missing or not permitted, nothing answering at AnkiConnect's address, or a refusal. */
-internal enum class AnkiProblem { NOT_INSTALLED, NO_PERMISSION, NOT_RUNNING, FAILED }
+/**
+ * Why a send stopped: AnkiDroid missing or not permitted, nothing answering at AnkiConnect's address, a refusal,
+ * or (AnkiDroid) the step that failed: the deck, the note type, a note type of the same name with other fields,
+ * or a note AnkiDroid did not confirm.
+ */
+internal enum class AnkiProblem {
+    NOT_INSTALLED,
+    NO_PERMISSION,
+    NOT_RUNNING,
+    FAILED,
+    DECK_FAILED,
+    NOTE_TYPE_FAILED,
+    NOTE_TYPE_CONFLICT,
+    INSERT_FAILED,
+    WRONG_DECK,
+}
 
 /**
  * What one send did: notes added, words sent before (skipped), and any problem that stopped it,
@@ -110,16 +121,18 @@ internal data class AnkiSendResult(
 )
 
 /**
- * Adds notes to AnkiDroid through its content provider: a "DualSub Replay" deck and note type are
- * made the first time. Which words were sent is kept on the phone, so a word is not sent twice.
+ * Adds notes to AnkiDroid through its content provider ([AnkiDroidSender]): a "TripleSub Replay" deck and a
+ * "TripleSub Replay v2" note type are made the first time (the older "DualSub Replay" deck and note type are left
+ * alone). Which words were sent is kept on the phone, so a word is not sent twice.
  */
 internal class AnkiDroidNotes(
     context: Context,
 ) {
     private val context = context.applicationContext
     private val resolver = this.context.contentResolver
-    private val sentIds = this.context.getSharedPreferences("ankidroid_sent", 0)
-    private val base = Uri.parse("content://$ANKIDROID_AUTHORITY")
+
+    // Its own list for the TripleSub Replay v2 note type: words sent before to the older DualSub Replay type can be sent again.
+    private val sentIds = this.context.getSharedPreferences("ankidroid_sent_v2", 0)
 
     fun installed(): Boolean =
         runCatching { context.packageManager.resolveContentProvider(ANKIDROID_AUTHORITY, 0) != null }.getOrDefault(false)
@@ -141,90 +154,10 @@ internal class AnkiDroidNotes(
         withContext(Dispatchers.IO) {
             if (!installed()) return@withContext AnkiSendResult(problem = AnkiProblem.NOT_INSTALLED)
             if (!permitted()) return@withContext AnkiSendResult(problem = AnkiProblem.NO_PERMISSION)
-            val unsent = unsentAnkiWords(words, ::wasSent)
-            val skipped = words.distinctBy { it.id }.size - unsent.size
-            if (unsent.isEmpty()) return@withContext AnkiSendResult(skipped = skipped)
-            try {
-                val deck = deckId() ?: return@withContext AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
-                val noteType = noteTypeId(deck) ?: return@withContext AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
-                var sent = 0
-                for (word in unsent) {
-                    if (!addNote(noteType, deck, word)) return@withContext AnkiSendResult(sent, skipped, AnkiProblem.FAILED)
-                    sentIds.edit().putBoolean(word.id, true).apply()
-                    sent++
-                }
-                AnkiSendResult(sent, skipped)
-            } catch (cancel: CancellationException) {
-                throw cancel
-            } catch (_: Exception) {
-                // AnkiDroid refused (a revoked permission, a locked collection, or another version's provider).
-                AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
-            }
+            AnkiDroidSender(
+                ContentProviderAnkiDroid(resolver),
+                ::wasSent,
+                { id -> sentIds.edit().putBoolean(id, true).apply() },
+            ).send(words)
         }
-
-    private fun deckId(): Long? {
-        val decks = Uri.withAppendedPath(base, "decks")
-        resolver.query(decks, arrayOf("deck_id", "deck_name"), null, null, null)?.use { cursor ->
-            val id = cursor.getColumnIndex("deck_id")
-            val name = cursor.getColumnIndex("deck_name")
-            while (id >= 0 && name >= 0 && cursor.moveToNext()) {
-                if (cursor.getString(name) == ANKI_DECK_NAME) return cursor.getLong(id)
-            }
-        }
-        val created = resolver.insert(decks, ContentValues().apply { put("deck_name", ANKI_DECK_NAME) })
-        return created?.lastPathSegment?.toLongOrNull()
-    }
-
-    private fun noteTypeId(deck: Long): Long? {
-        val models = Uri.withAppendedPath(base, "models")
-        val fields = ANKI_FIELDS.joinToString(ANKI_FIELD_SEPARATOR)
-        resolver.query(models, arrayOf("_id", "name", "field_names"), null, null, null)?.use { cursor ->
-            val id = cursor.getColumnIndex("_id")
-            val name = cursor.getColumnIndex("name")
-            val names = cursor.getColumnIndex("field_names")
-            while (id >= 0 && name >= 0 && names >= 0 && cursor.moveToNext()) {
-                if (cursor.getString(name) == ANKI_NOTE_TYPE_NAME && cursor.getString(names) == fields) return cursor.getLong(id)
-            }
-        }
-        val values =
-            ContentValues().apply {
-                put("name", ANKI_NOTE_TYPE_NAME)
-                put("field_names", fields)
-                put("num_cards", 1)
-                put("css", ANKI_CSS)
-                put("deck_id", deck)
-                put("sort_field_index", 0)
-            }
-        val id = resolver.insert(models, values)?.lastPathSegment?.toLongOrNull() ?: return null
-        // The card shows the word with its sentence; AnkiDroid's own layout (word, then meaning) stays if this is refused.
-        runCatching {
-            val template =
-                ContentValues().apply {
-                    put("question_format", ANKI_QUESTION_FORMAT)
-                    put("answer_format", ANKI_ANSWER_FORMAT)
-                }
-            resolver.update(Uri.withAppendedPath(models, "$id/templates/0"), template, null, null)
-        }
-        return id
-    }
-
-    private fun addNote(
-        noteType: Long,
-        deck: Long,
-        word: SavedWord,
-    ): Boolean {
-        val values =
-            ContentValues().apply {
-                put("mid", noteType)
-                put("flds", ankiNoteFields(word).joinToString(ANKI_FIELD_SEPARATOR))
-                put("tags", ANKI_TAG)
-            }
-        val notes =
-            Uri
-                .withAppendedPath(base, "notes")
-                .buildUpon()
-                .appendQueryParameter("deckId", deck.toString())
-                .build()
-        return resolver.insert(notes, values) != null
-    }
 }

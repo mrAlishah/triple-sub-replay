@@ -106,29 +106,35 @@ internal fun ankiConnectFields(
     fieldNames: List<String>,
     word: SavedWord,
 ): Map<String, String> {
-    val values = ankiNoteFields(word)
-    if (fieldNames == ANKI_FIELDS) return ANKI_FIELDS.zip(values).toMap()
+    val values = tripleNoteFields(word)
+    if (fieldNames == TRIPLE_FIELDS) return TRIPLE_FIELDS.zip(values).toMap()
+    // The older six-field type has no field for the third meaning, so it stays inside Meaning there.
+    if (fieldNames == ANKI_FIELDS) return ANKI_FIELDS.zip(ankiNoteFields(word)).toMap()
     if (fieldNames.isEmpty()) return emptyMap()
-    val front = listOf(values[0], values[3]).filter { it.isNotBlank() }.joinToString("<br><br>")
-    val back = listOf(values[2], values[1], values[4], values[5]).filter { it.isNotBlank() }.joinToString("<br>")
+    val front = listOf(values[0], values[4]).filter { it.isNotBlank() }.joinToString("<br><br>")
+    val back =
+        listOf(values[3], values[1], values[2], values[5], values[6], values[8], values[7])
+            .filter {
+                it.isNotBlank()
+            }.joinToString("<br>")
     if (fieldNames.size == 1) return mapOf(fieldNames[0] to listOf(front, back).filter { it.isNotBlank() }.joinToString("<hr>"))
     return mapOf(fieldNames[0] to front, fieldNames[1] to back)
 }
 
-/** The DualSub Replay note type, made where AnkiConnect can make one (desktop Anki). */
+/** The TripleSub Replay note type, made where AnkiConnect can make one (desktop Anki). */
 internal fun ankiConnectNoteTypeParams(): JSONObject =
     JSONObject()
-        .put("modelName", ANKI_NOTE_TYPE_NAME)
-        .put("inOrderFields", JSONArray(ANKI_FIELDS))
-        .put("css", ANKI_CSS)
+        .put("modelName", TRIPLE_NOTE_TYPE_NAME)
+        .put("inOrderFields", JSONArray(TRIPLE_FIELDS))
+        .put("css", TRIPLE_CSS)
         .put("isCloze", false)
         .put(
             "cardTemplates",
             JSONArray().put(
                 JSONObject()
                     .put("Name", "Card 1")
-                    .put("Front", ANKI_QUESTION_FORMAT)
-                    .put("Back", ANKI_ANSWER_FORMAT),
+                    .put("Front", TRIPLE_QUESTION_FORMAT)
+                    .put("Back", TRIPLE_ANSWER_FORMAT),
             ),
         )
 
@@ -217,11 +223,14 @@ internal class AnkiConnectNotes(
 
     private suspend fun noteType(): Pair<String, List<String>>? {
         var names = ankiConnectNames(call("modelNames"))
-        if (ANKI_NOTE_TYPE_NAME !in names) {
+        if (TRIPLE_NOTE_TYPE_NAME !in names) {
             tryCall("createModel", ankiConnectNoteTypeParams())
             names = ankiConnectNames(call("modelNames"))
         }
-        val name = ANKI_NOTE_TYPE_NAME.takeIf { it in names } ?: ankiConnectFallbackNoteType(names) ?: return null
+        // AnkiConnect Android cannot make a note type: the older six-field one, then Basic, take the card.
+        val name =
+            listOf(TRIPLE_NOTE_TYPE_NAME, ANKI_NOTE_TYPE_NAME).firstOrNull { it in names }
+                ?: ankiConnectFallbackNoteType(names) ?: return null
         return name to ankiConnectNames(call("modelFieldNames", JSONObject().put("modelName", name)))
     }
 

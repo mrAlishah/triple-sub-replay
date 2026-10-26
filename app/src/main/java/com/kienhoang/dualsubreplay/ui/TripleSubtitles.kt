@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.LearningWordSelection
+import com.kienhoang.dualsubreplay.data.SavedWord
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
 import com.kienhoang.dualsubreplay.data.WordTap
@@ -137,11 +138,26 @@ internal fun extraMeaningLanguages(
         .filterNot { it in skip }
 }
 
-internal fun DualSubUiState.extraMeaningLanguagesFor(selection: LearningWordSelection): List<String> {
+internal fun DualSubUiState.extraMeaningLanguagesFor(selection: LearningWordSelection): List<String> =
+    extraMeaningLanguagesFor(selection.wordLanguage, selection.meaningLanguage)
+
+/** [word] with only the meanings and sentence translations of the subtitle languages that are on now, as the word card sends it. */
+internal fun SavedWord.withActiveLanguages(state: DualSubUiState): SavedWord {
+    val active = state.extraMeaningLanguagesFor(wordLanguage, meaningLanguage)
+    return copy(
+        meanings = meanings.filterKeys { TranslationLanguages.normalize(it) in active },
+        sentenceTranslations = sentenceTranslations.filterKeys { TranslationLanguages.normalize(it) in active },
+    )
+}
+
+private fun DualSubUiState.extraMeaningLanguagesFor(
+    wordLanguage: String,
+    primary: String,
+): List<String> {
     val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)
     return extraMeaningLanguages(
-        wordLanguage = selection.wordLanguage,
-        primary = selection.meaningLanguage,
+        wordLanguage = wordLanguage,
+        primary = primary,
         source = source,
         target = targetLanguage,
         secondShown = translatedVisibility != CaptionVisibility.NEVER,

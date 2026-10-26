@@ -116,7 +116,7 @@ class AnkiConnectNotesTest {
     fun anotherNoteTypeGetsTheWordAndSentenceOnTheFrontAndTheRestOnTheBack() {
         val fields = ankiConnectFields(listOf("Front", "Back"), word("1"))
         assertEquals("猫<br><br><b>猫</b>が好き", fields["Front"])
-        assertTrue(fields.getValue("Back").startsWith("ねこ<br>cat<br>I like cats<br><a href="))
+        assertTrue(fields.getValue("Back").startsWith("ねこ<br>cat<br><span dir=\"auto\">I like cats</span><br><a href="))
         assertEquals(ANKI_FIELDS, ankiConnectFields(ANKI_FIELDS, word("1")).keys.toList())
     }
 
@@ -129,9 +129,35 @@ class AnkiConnectNotesTest {
             assertEquals(AnkiSendResult(sent = 2), result)
             val note = anki.notes.first()
             assertEquals(ANKI_DECK_NAME, note.getString("deckName"))
-            assertEquals(ANKI_NOTE_TYPE_NAME, note.getString("modelName"))
+            assertEquals(TRIPLE_NOTE_TYPE_NAME, note.getString("modelName"))
             assertEquals("猫", note.getJSONObject("fields").getString("Word"))
             assertEquals(ANKI_TAG, note.getJSONArray("tags").getString(0))
+        }
+
+    @Test
+    fun ankiConnectAndroidKeepsUsingTheOlderSixFieldTypeWithTheThirdMeaningInsideMeaning() =
+        runBlocking {
+            val anki =
+                FakeAnkiConnect(
+                    listOf("Default"),
+                    mapOf(ANKI_NOTE_TYPE_NAME to ANKI_FIELDS, "Basic" to listOf("Front", "Back")),
+                    canMake = false,
+                )
+            val notes = AnkiConnectNotes(MemorySentWords(), { anki.answer(it) })
+            val third = word("1").copy(meanings = mapOf("fa" to "گربه"))
+            assertEquals(AnkiSendResult(sent = 1), notes.send(listOf(third), chosenDeck = null))
+            val note = anki.notes.single()
+            assertEquals(ANKI_NOTE_TYPE_NAME, note.getString("modelName"))
+            assertEquals(
+                ANKI_FIELDS,
+                note
+                    .getJSONObject("fields")
+                    .keys()
+                    .asSequence()
+                    .toList()
+                    .sortedBy { ANKI_FIELDS.indexOf(it) },
+            )
+            assertTrue(note.getJSONObject("fields").getString("Meaning").contains("گربه"))
         }
 
     @Test

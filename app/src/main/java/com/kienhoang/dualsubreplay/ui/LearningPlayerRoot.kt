@@ -513,6 +513,28 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         remember(viewModel) {
             TranslationEngineActions(viewModel::setTranslationEngine, viewModel::tryGoogleTranslationAgain, viewModel::setGoogleWait)
         }
+    val tripleControls =
+        remember(
+            viewModel,
+            state.originalVisibility,
+            state.translatedVisibility,
+            state.tripleSubtitlesEnabled,
+            state.thirdLanguage,
+            state.slotRtl,
+        ) {
+            TripleSubtitleControls(
+                originalEnabled = state.originalVisibility != CaptionVisibility.NEVER,
+                secondEnabled = state.translatedVisibility != CaptionVisibility.NEVER,
+                enabled = state.tripleSubtitlesEnabled,
+                language = state.thirdLanguage,
+                onOriginalEnabledChange = { viewModel.setCaptionVisibility(true, slotVisibility(it)) },
+                onSecondEnabledChange = { viewModel.setCaptionVisibility(false, slotVisibility(it)) },
+                onEnabledChange = viewModel::setTripleSubtitlesEnabled,
+                onLanguageChange = viewModel::setThirdLanguage,
+                rtl = state.slotRtl,
+                onRtlChange = viewModel::setSlotRtl,
+            )
+        }
     val aiViewModel: AiAssistantViewModel = viewModel()
     val aiAssistant = remember(aiViewModel) { AiAssistantHost(aiViewModel.controller) { aiViewModel.guide } }
     val studySavedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
@@ -521,6 +543,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         LocalPhraseSelection provides phraseSelection,
         LocalLanguageDownloads provides viewModel.languageDownloads,
         LocalTranslationEngineActions provides translationEngineActions,
+        LocalTripleSubtitleControls provides tripleControls,
         LocalAiAssistant provides aiAssistant,
         LocalStudyTools provides studyTools,
     ) {
@@ -848,9 +871,22 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
-                subtitleLineOrder(originalLine, translationLine, translationPosition).forEachIndexed { index, line ->
+                val slotRtl = LocalTripleSubtitleControls.current.rtl
+                val directed =
+                    subtitleLineOrder(
+                        withDirection(slotRtl.original, originalLine),
+                        withDirection(slotRtl.second, translationLine),
+                        translationPosition,
+                    )
+                directed.forEachIndexed { index, line ->
                     if (index > 0) Spacer(Modifier.size(2.dp))
                     line()
+                }
+                content.thirdText?.let {
+                    val learn = wordLearningEnabled && tapToLearnEnabled
+                    ThirdLine(it, fontScale, translatedColor, learn, content.segment, highlightColor, onWordClick) {
+                        overlayActionsVisible = !overlayActionsVisible
+                    }
                 }
                 onRetryTranscript?.let { retry ->
                     // The overlay stays dark on every app theme, so the button takes a light subtitle color.

@@ -22,6 +22,34 @@ internal val transferColumns =
         "endMs",
     )
 
+/** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
+internal const val TRANSLATIONS_COLUMN = "sentenceTranslations"
+internal const val MEANINGS_COLUMN = "meanings"
+internal const val NOTES_COLUMN = "desc"
+
+/** One "language: text" line per translation; line breaks inside a text become spaces. */
+internal fun encodeSentenceTranslations(translations: Map<String, String>): String =
+    translations.entries.joinToString("\n") { (language, text) -> "$language: ${text.replace(Regex("\\s*[\\r\\n]+\\s*"), " ")}" }
+
+internal fun decodeSentenceTranslationsText(text: String): Map<String, String> {
+    val result = LinkedHashMap<String, String>()
+    text.lineSequence().forEach { line ->
+        val language = line.substringBefore(':', "").trim()
+        val translation = line.substringAfter(':', "").trim()
+        if (language.matches(Regex("[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*")) && translation.isNotEmpty()) result[language] = translation
+    }
+    return result
+}
+
+private fun translationsCell(
+    document: TransferDocument,
+    row: List<String>,
+    column: String = TRANSLATIONS_COLUMN,
+): String {
+    val index = document.columns.indexOf(column)
+    return if (index >= 0) row.getOrNull(index).orEmpty() else ""
+}
+
 internal data class TransferDocument(
     val backup: List<SavedWord>? = null,
     val rows: List<List<String>> = emptyList(),
@@ -174,7 +202,8 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
     require(words.size <= MAX_TRANSFER_RECORDS) { "Export exceeds 20,000 records." }
 
     fun quote(value: String): String = "\"${value.replace("\"", "\"\"")}\""
-    return "#separator:Tab\n#html:false\n#columns:${transferColumns.joinToString("\t")}\n" +
+    val columns = (transferColumns + TRANSLATIONS_COLUMN + MEANINGS_COLUMN + NOTES_COLUMN).joinToString("\t")
+    return "#separator:Tab\n#html:false\n#columns:$columns\n" +
         words.joinToString("\n") { word ->
             listOf(
                 word.word,
@@ -187,6 +216,9 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
                 word.videoId?.let { "https://www.youtube.com/watch?v=$it" }.orEmpty(),
                 word.startMs.toString(),
                 word.endMs.toString(),
+                encodeSentenceTranslations(word.sentenceTranslations),
+                encodeSentenceTranslations(word.meanings),
+                word.personalNotes,
             ).joinToString("\t", transform = ::quote)
         }
 }
@@ -245,6 +277,9 @@ internal fun previewImport(
                         end,
                         false,
                         validClipRange(videoId, start, end),
+                        sentenceTranslations = decodeSentenceTranslationsText(translationsCell(document, row)),
+                        meanings = decodeSentenceTranslationsText(translationsCell(document, row, MEANINGS_COLUMN)),
+                        personalNotes = translationsCell(document, row, NOTES_COLUMN),
                     )
                 validateTransferWord(word)
                 val id =

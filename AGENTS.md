@@ -1,4 +1,19 @@
 # AGENTS.md
+# Personal SoT Bootstrap
+
+- Repository: `mrAlishah/myPersonal-SoT`
+- Ref: `main`
+- Entrypoint: `workspace/adapters/runtime_entrypoint.md`
+- Local checkout: `~/Projects/myPersonal-SoT`
+
+Before coding or mutating Git:
+1. Resolve the current SoT from local `main` without switching branches.
+2. Otherwise use authenticated private GitHub access.
+3. Follow the canonical entrypoint and its referenced contracts.
+4. Load `workspace/context/personal/policies/development_conventions.md`.
+5. Do not use stale or copied policies.
+
+If canonical instructions are unavailable, report and stop dependent mutations.
 
 ## Project
 

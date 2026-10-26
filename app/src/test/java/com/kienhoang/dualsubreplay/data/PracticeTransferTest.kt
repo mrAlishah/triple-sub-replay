@@ -32,6 +32,19 @@ class PracticeTransferTest {
         file.writeText(exportAnkiTsv(listOf(word)))
     }
 
+    @Test fun tsvCarriesSentenceTranslationsInATrailingColumnAndOldFilesStillImport() {
+        val withFa = word.copy(sentenceTranslations = mapOf("fa" to "خانه\nبزرگ", "ar" to "بيت"))
+        val text = exportAnkiTsv(listOf(withFa))
+        val header = text.lines().first { it.startsWith("#columns:") }
+        assertTrue(header.endsWith("\tsentenceTranslations\tmeanings\tdesc"))
+        val back = previewImport(parseTransfer(text), defaultTransferMapping(parseTransfer(text)), "en", "vi", emptyList()).words.single()
+        assertEquals(mapOf("fa" to "خانه بزرگ", "ar" to "بيت"), back.sentenceTranslations)
+        assertEquals(mapOf("fa" to "x"), decodeSentenceTranslationsText(encodeSentenceTranslations(mapOf("fa" to "x"))))
+        val oldDoc = parseTransfer("#separator:Tab\n#html:false\n#columns:word\tmeaning\n\"Haus\"\t\"house\"")
+        val oldWords = previewImport(oldDoc, defaultTransferMapping(oldDoc), "en", "vi", emptyList()).words
+        assertEquals(emptyMap<String, String>(), oldWords.single().sentenceTranslations)
+    }
+
     @Test fun readsRealAnki268Export() {
         val text = requireNotNull(javaClass.getResource("/anki-26.8-export.tsv")).readText()
 

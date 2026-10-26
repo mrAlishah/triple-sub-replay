@@ -153,4 +153,8 @@
     <string name="settings_google_wait_2">2 s</string>
     <string name="settings_google_wait_4">4 s</string>
     <string name="settings_google_wait_8">8 s</string>
+    <string name="settings_slot_original">Legenda original</string>
+    <string name="settings_slot_second">Segunda legenda</string>
+    <string name="settings_slot_third">Terceira legenda</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

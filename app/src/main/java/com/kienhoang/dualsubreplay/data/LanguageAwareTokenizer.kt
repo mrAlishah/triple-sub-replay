@@ -50,13 +50,13 @@ object LanguageAwareTokenizer {
     private val KANA_REGEX = Regex("[\\u3040-\\u30FF]")
 
     /**
-     * A word is letters, marks and digits, joined by apostrophes (straight or curly), hyphens or
-     * the zero-width non-joiner, Persian's half-space inside words such as می‌خواهم. No `\b`:
-     * Android's ICU engine finds no word boundary before an invisible format character such as a
-     * zero-width space, so `\b[\w'-]+\b` silently dropped the word in front of one
+     * A word is letters, marks and digits, joined by apostrophes (straight or curly), hyphens or, between two
+     * letters, a zero-width non-joiner (Persian "می‌خواهم" is one word).
+     * No `\b`: Android's ICU engine finds no word boundary before an invisible format character
+     * such as a zero-width space, so `\b[\w'-]+\b` silently dropped the word in front of one
      * and that word could not be colored or tapped.
      */
-    private val SPACED_WORD_REGEX = Regex("[\\p{L}\\p{M}\\p{N}_]+(?:['\u2019\u200C-]+[\\p{L}\\p{M}\\p{N}_]+)*")
+    private val SPACED_WORD_REGEX = Regex("[\\p{L}\\p{M}\\p{N}_]+(?:['\\u200C\u2019-]+[\\p{L}\\p{M}\\p{N}_]+)*")
 
     // Common Japanese particles and auxiliary grammar words
     private val JAPANESE_PARTICLES = setOf(

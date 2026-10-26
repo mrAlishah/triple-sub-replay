@@ -71,8 +71,10 @@ internal fun CompactSubtitleCard(
     showOriginal: Boolean = true,
     showTranslation: Boolean = true,
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
+    thirdText: String? = null,
 ) {
-    if (!showOriginal && !showTranslation) return
+    if (!showOriginal && !showTranslation && thirdText == null) return
+    val slotRtl = LocalTripleSubtitleControls.current.rtl
     val rowState = stringResource(if (active) R.string.player_active_subtitle else R.string.player_subtitle)
     OutlinedCard(
         modifier =
@@ -121,7 +123,7 @@ internal fun CompactSubtitleCard(
                 val isSentenceEligibleForPos = !wordLearningActiveOnly || active
                 // true marks the translation line.
                 val lines = subtitleLineOrder(false.takeIf { showOriginal }, true.takeIf { showTranslation }, translationPosition)
-                lines.forEach { translated ->
+                lines.forEachDirected(slotRtl) { translated ->
                     if (translated) {
                         TranslatedCardText(
                             segment,
@@ -161,6 +163,10 @@ internal fun CompactSubtitleCard(
                             onReplay,
                         )
                     }
+                }
+                thirdText?.let {
+                    val learn = wordLearningEnabled && tapToLearnEnabled
+                    ThirdLine(it, fontScale, translatedColor, learn, segment, highlightColor, onWordClick, onReplay)
                 }
             }
         }

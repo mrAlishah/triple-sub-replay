@@ -37,6 +37,7 @@ import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.YouTubeCaptionProvider
 import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
 import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
+import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import com.kienhoang.dualsubreplay.data.savedWordFrom
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 import com.kienhoang.dualsubreplay.translation.DEFAULT_TRANSLATION_ENGINE
@@ -99,7 +100,7 @@ data class DualSubUiState(
     val activeVideoId: String? = null,
     val subtitlePanelVisible: Boolean = true,
     val sourcePreference: String = "auto",
-    val targetLanguage: String = "vi",
+    val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
     /** Recent "Translate to" picks, newest first; see [recentLanguagesToShow]. */
     val recentTargetLanguages: List<String> = emptyList(),
     val onboardingCompleted: Boolean = false,
@@ -162,6 +163,11 @@ data class DualSubUiState(
     val youTubeTranslationFallback: Boolean = false,
     /** Why Google failed (English diagnostic text, e.g. the HTTP status), shown in the top-right problem details. */
     val onlineTranslationFailureDetail: String? = null,
+    /** Settings → Translation → Triple subtitles (fork): a third line, translated from the caption language. */
+    val tripleSubtitlesEnabled: Boolean = false,
+    val thirdLanguage: String = DEFAULT_THIRD_LANGUAGE,
+    val thirdLines: ThirdLines = ThirdLines(),
+    val slotRtl: SlotRtl = SlotRtl(),
 )
 
 /** [state] translating with Google again, without the fallback and its reasons. */
@@ -481,9 +487,9 @@ class AppViewModel internal constructor(
                     ),
                 targetLanguage =
                     preferences
-                        .getString("target_language", "vi")
+                        .getString("target_language", DEFAULT_SECOND_LANGUAGE)
                         ?.takeIf(TranslationLanguages::isSupported)
-                        ?: "vi",
+                        ?: DEFAULT_SECOND_LANGUAGE,
                 recentTargetLanguages =
                     parseRecentLanguages(preferences.getString(RECENT_TARGET_LANGUAGES_PREFERENCE, null)),
                 onboardingCompleted = preferences.getBoolean("onboarding_completed", false),
@@ -568,6 +574,9 @@ class AppViewModel internal constructor(
                     ),
                 translationEngine = storedTranslationEngine(preferences.getString(TRANSLATION_ENGINE_PREFERENCE, null)),
                 googleWait = storedGoogleWait(preferences.getString(GOOGLE_WAIT_PREFERENCE, null)),
+                tripleSubtitlesEnabled = preferences.getBoolean(TRIPLE_SUBTITLES_PREFERENCE, false),
+                thirdLanguage = storedThirdLanguage(preferences.getString(THIRD_LANGUAGE_PREFERENCE, null)),
+                slotRtl = storedSlotRtl(preferences),
             ),
         )
     val state: StateFlow<DualSubUiState> = _state.asStateFlow()
@@ -1138,19 +1147,17 @@ class AppViewModel internal constructor(
     fun selectLearningWord(tap: WordTap?) {
         val current = _state.value
         val source = com.kienhoang.dualsubreplay.data.learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
-        _state.update {
-            it.copy(
-                selectedLearningWord =
-                    tap?.let { selected ->
-                        com.kienhoang.dualsubreplay.data.learningSelection(
-                            if (current.liveFallback) selected.copy(segment = null) else selected,
-                            source,
-                            current.targetLanguage,
-                            current.activeVideoId.takeUnless { current.liveFallback },
-                        )
-                    },
-            )
-        }
+        val selection =
+            tap?.let { selected ->
+                com.kienhoang.dualsubreplay.data.learningSelection(
+                    if (current.liveFallback) selected.copy(segment = null) else selected,
+                    source,
+                    current.targetLanguage,
+                    current.activeVideoId.takeUnless { current.liveFallback },
+                )
+            }
+        val withMeanings = selection?.copy(extraMeaningLanguages = current.extraMeaningLanguagesFor(selection))
+        _state.update { it.copy(selectedLearningWord = withMeanings) }
     }
 
     fun setAutoPronounce(enabled: Boolean) {
@@ -1172,14 +1179,27 @@ class AppViewModel internal constructor(
         }
     }
 
-    internal suspend fun translateSelection(selection: LearningWordSelection): String =
-        translateText(selection.wordLanguage, selection.meaningLanguage, selection.token.text)
+    /** Translates [text] from the third subtitle line into the learning language (or the second language if that is the same). */
+    internal suspend fun translateThirdLine(
+        text: String,
+        language: String,
+    ): String {
+        val current = _state.value
+        val source = learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
+        return translateText(language, if (language == source) current.targetLanguage else source, text)
+    }
+
+    internal suspend fun translateSelection(
+        selection: LearningWordSelection,
+        language: String = selection.meaningLanguage,
+    ): String = translateText(selection.wordLanguage, language, selection.token.text)
 
     internal suspend fun saveWord(
         selection: LearningWordSelection,
         meaning: String,
         online: Boolean,
-    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online))
+        meanings: Map<String, String> = emptyMap(),
+    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online, _state.value.thirdSentenceFor(selection), meanings))
 
     suspend fun translateWord(word: String): String {
         val current = _state.value
@@ -1216,6 +1236,28 @@ class AppViewModel internal constructor(
         _state.update { it.copy(translationEngine = engine) }
         val videoId = _state.value.activeVideoId
         if (changed && videoId != null) loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
+    }
+
+    /** Settings → Translation → Triple subtitles. The running translation restarts through [followStoredTranslation]. */
+    fun setTripleSubtitlesEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(TRIPLE_SUBTITLES_PREFERENCE, enabled).apply()
+        _state.update { it.copy(tripleSubtitlesEnabled = enabled) }
+    }
+
+    /** Settings → Translation → Third language. */
+    fun setThirdLanguage(language: String) {
+        val normalized = storedThirdLanguage(language)
+        preferences.edit().putString(THIRD_LANGUAGE_PREFERENCE, normalized).apply()
+        _state.update { it.copy(thirdLanguage = normalized) }
+    }
+
+    /** The RTL checkbox of one subtitle slot in the Subtitle languages dialog. */
+    fun setSlotRtl(
+        slot: SubtitleSlot,
+        rtl: Boolean,
+    ) {
+        preferences.edit().putBoolean(slot.rtlPreference, rtl).apply()
+        _state.update { it.copy(slotRtl = it.slotRtl.with(slot, rtl)) }
     }
 
     /** Settings → Translation → Wait for Google; the next row Google translates uses it. */
@@ -1310,7 +1352,7 @@ class AppViewModel internal constructor(
         _state.update { current ->
             current.copy(
                 sourcePreference = "auto",
-                targetLanguage = "vi",
+                targetLanguage = DEFAULT_SECOND_LANGUAGE,
                 recentTargetLanguages = emptyList(),
                 fontScale = 1f,
                 portraitPanelOffsetFraction = DEFAULT_PORTRAIT_PANEL_OFFSET_FRACTION,
@@ -1339,6 +1381,9 @@ class AppViewModel internal constructor(
                 onDeviceFallback = false,
                 youTubeTranslationFallback = false,
                 onlineTranslationFailureDetail = null,
+                tripleSubtitlesEnabled = false,
+                thirdLanguage = DEFAULT_THIRD_LANGUAGE,
+                slotRtl = SlotRtl(),
             )
         }
         _state.value.activeVideoId?.let { loadVideo(it, showPanel = _state.value.subtitlePanelVisible) }
@@ -1547,7 +1592,7 @@ class AppViewModel internal constructor(
         val googleRequests = CoroutineScope(coroutineContext + SupervisorJob(coroutineContext.job))
         var shown: Pair<CaptionFormat, String>? = null
         _state
-            .map { Triple(it.captionFormat, it.targetLanguage, it.onDeviceFallback) }
+            .map { Triple(it.captionFormat, it.targetLanguage, it.onDeviceFallback to it.thirdLanguageFor(sourceLanguage)) }
             .distinctUntilChanged()
             .collectLatest { (format, target) ->
                 // Only the engine changed: the rows stay on screen until the other engine's lines replace them.
@@ -1570,6 +1615,7 @@ class AppViewModel internal constructor(
     ) {
         val sourceLanguage = source.first
         var displayStore: SubtitleStore? = null
+        var thirdLine: Job? = null
         liveCaptionTracker.reset()
         captionHighlightResolver.reset()
         showPreparingSubtitles(keepRows)
@@ -1601,6 +1647,7 @@ class AppViewModel internal constructor(
                     )
             }
             val store = checkNotNull(displayStore)
+            thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests)
             try {
                 if (_state.value.translatesWithGoogle()) {
                     followGoogleTranslation(store, videoId, generation, sourceLanguage to targetLanguage, googleRequests) { prefetch, translate ->
@@ -1630,7 +1677,62 @@ class AppViewModel internal constructor(
                 }
             }
         } finally {
+            thirdLine?.cancel()
             withContext(NonCancellable + Dispatchers.IO) { displayStore?.close() }
+        }
+    }
+
+    /**
+     * The fork's third line (see [runThirdLanguage]): one more window loop on the same display [store], so
+     * its row ids match [DualSubUiState.segments]. Null when the mode is off or would repeat another line.
+     * It runs in [scope] (the load's Google scope) and is cancelled when this translation run ends.
+     */
+    private fun startThirdLine(
+        store: SubtitleStore,
+        videoId: String,
+        generation: Long,
+        source: String,
+        scope: CoroutineScope,
+    ): Job? {
+        publishThirdLines(videoId, generation, emptyMap(), null)
+        val third = _state.value.thirdLanguageFor(source) ?: return null
+        val translate: suspend (String) -> String = { text -> translateThird(videoId, generation, source, third, text, scope) }
+        return scope.launch {
+            runThirdLanguage(store, playbackRequests, translate) { lines -> publishThirdLines(videoId, generation, lines, third) }
+        }
+    }
+
+    /** Google first (an error or a blank line goes on-device), or on-device only when Google is off for this video. */
+    private suspend fun translateThird(
+        videoId: String,
+        generation: Long,
+        source: String,
+        third: String,
+        text: String,
+        googleRequests: CoroutineScope,
+    ): String {
+        if (_state.value.translatesWithGoogle()) {
+            val viaGoogle =
+                try {
+                    awaitWithin(googleRequests, currentGoogleWaitMs()) { googleTranslator.translate(source, third, text) }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    null
+                }
+            if (viaGoogle != null) return viaGoogle
+        }
+        return translateOnDevice(videoId, generation, source, third, text)
+    }
+
+    private fun publishThirdLines(
+        videoId: String,
+        generation: Long,
+        lines: Map<Long, String>,
+        language: String?,
+    ) {
+        _state.update { current ->
+            if (isCurrentLoad(current, videoId, generation)) current.copy(thirdLines = ThirdLines(videoId, lines, language)) else current
         }
     }
 

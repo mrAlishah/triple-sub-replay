@@ -119,6 +119,14 @@ internal class StudyTools(
     var ankiInstalled by mutableStateOf(false)
         internal set
 
+    /** The personal notes of saved words by id, so Send from the word card carries notes written in Practice. */
+    var savedNotes by mutableStateOf<Map<String, String>>(emptyMap())
+        internal set
+
+    /** The open video's state, for the third subtitle line's translation of a tapped word's sentence. */
+    var uiState by mutableStateOf<DualSubUiState?>(null)
+        internal set
+
     /**
      * Send to shows while its setting is on and AnkiDroid is installed, or AnkiConnect was picked
      * (in Settings, for phones without AnkiDroid).
@@ -200,6 +208,7 @@ internal fun rememberStudyTools(
                 .mapNotNull { knownWordKey(it.word) }
                 .toSet()
         }
+    val savedNotes = remember(savedWords) { savedWords.filter { it.personalNotes.isNotEmpty() }.associate { it.id to it.personalNotes } }
     val lines = remember(state.segments) { state.segments.map { it.originalText } }
     val revision = tokenizerRevision()
     val videoId = state.activeVideoId
@@ -218,6 +227,8 @@ internal fun rememberStudyTools(
     CountPlayedLines(tools, state, language, lineKeys, learning, settings)
     SideEffect {
         tools.settings = settings
+        tools.uiState = state
+        tools.savedNotes = savedNotes
         tools.language = language
         tools.wordsLanguage = wordsLanguage
         tools.known = known
@@ -323,6 +334,9 @@ private fun ComprehensionDialog(
 internal fun StudyWordActions(
     selection: LearningWordSelection,
     meaning: String,
+    meanings: Map<String, String> = emptyMap(),
+    online: Boolean = false,
+    pending: Boolean = false,
 ) {
     val tools = LocalStudyTools.current ?: return
     val context = LocalContext.current
@@ -353,7 +367,7 @@ internal fun StudyWordActions(
                 modifier = Modifier.testTag("known_word_toggle"),
             )
         }
-        if (tools.sendToAvailable) SendToButton(tools, selection, meaning)
+        if (tools.sendToAvailable) SendToButton(tools, selection, meaning, meanings, online, pending)
     }
     val seen = if (showKnown && !known && tools.settings.knownWordsMode == KnownWordsMode.AUTO) tools.seen[key] ?: 0 else 0
     if (seen > 0) {
@@ -401,6 +415,19 @@ private fun KnownWordsOfferDialog(
     )
 }
 
+/** The word Send to builds from the card: what the card shows, plus the personal notes saved for the same word. */
+internal fun wordToSend(
+    selection: LearningWordSelection,
+    meaning: String,
+    meanings: Map<String, String>,
+    online: Boolean,
+    thirdSentence: Map<String, String>,
+    savedNotes: Map<String, String>,
+): SavedWord {
+    val built = savedWordFrom(selection, meaning, online, thirdSentence, meanings)
+    return built.copy(personalNotes = savedNotes[built.id].orEmpty())
+}
+
 /**
  * The word card's split Send to button (owner design 2026-10-23): the main part sends to the app
  * last picked (AnkiDroid at first) and names it; ▾ lists the apps, and picking one remembers it
@@ -411,10 +438,14 @@ private fun SendToButton(
     tools: StudyTools,
     selection: LearningWordSelection,
     meaning: String,
+    meanings: Map<String, String>,
+    online: Boolean,
+    pending: Boolean,
 ) {
     val context = LocalContext.current
     val preferences = remember(context) { studyPreferences(context) }
-    val word = savedWordFrom(selection, meaning, online = false)
+    val third = tools.uiState?.thirdSentenceFor(selection).orEmpty()
+    val word = wordToSend(selection, meaning, meanings, online, third, tools.savedNotes)
     val app = tools.settings.sendTo
     val scope = rememberCoroutineScope()
     var sending by remember(selection) { mutableStateOf(false) }
@@ -446,7 +477,7 @@ private fun SendToButton(
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             FilterChip(
                 selected = sent,
-                enabled = !sending && !sent && meaning.isNotBlank(),
+                enabled = !sending && !sent && meaning.isNotBlank() && !pending,
                 onClick = { start(app) },
                 label = {
                     Text(
@@ -470,7 +501,7 @@ private fun SendToButton(
             Box {
                 FilterChip(
                     selected = false,
-                    enabled = !sending && meaning.isNotBlank(),
+                    enabled = !sending && meaning.isNotBlank() && !pending,
                     onClick = { menu = true },
                     label = { Icon(Icons.Default.ArrowDropDown, contentDescription = stringResource(R.string.study_send_to_choose)) },
                     shape = SEND_TO_MENU_SHAPE,
@@ -535,7 +566,7 @@ private fun SendProblemAction(
     problem: AnkiProblem?,
 ) {
     when {
-        app == FlashcardApp.ANKIDROID && problem == AnkiProblem.FAILED ->
+        app == FlashcardApp.ANKIDROID && problem in ANKIDROID_RETRY_PROBLEMS ->
             TextButton(onClick = { tools.anki.open() }, modifier = Modifier.testTag("open_ankidroid")) {
                 Text(stringResource(R.string.study_anki_open))
             }
@@ -545,6 +576,16 @@ private fun SendProblemAction(
             }
     }
 }
+
+/** The text of a failed AnkiDroid step, with the kind of error AnkiDroid raised (never its message) when there is one. */
+private fun stageText(
+    resources: Resources,
+    text: Int,
+    detail: String?,
+): String = resources.getString(text).let { if (detail.isNullOrBlank()) it else "$it ($detail)" }
+
+private val ANKIDROID_RETRY_PROBLEMS =
+    setOf(AnkiProblem.FAILED, AnkiProblem.DECK_FAILED, AnkiProblem.NOTE_TYPE_FAILED, AnkiProblem.INSERT_FAILED)
 
 /** What stopped a send to [app], with AnkiConnect's own words when it gave some. */
 internal fun sendProblemText(
@@ -557,6 +598,11 @@ internal fun sendProblemText(
         AnkiProblem.NOT_INSTALLED -> resources.getString(R.string.study_anki_not_installed)
         AnkiProblem.NO_PERMISSION -> resources.getString(R.string.study_anki_permission_denied)
         AnkiProblem.NOT_RUNNING -> resources.getString(R.string.study_ankiconnect_not_running)
+        AnkiProblem.DECK_FAILED -> stageText(resources, R.string.study_anki_deck_failed, result.detail)
+        AnkiProblem.NOTE_TYPE_FAILED -> stageText(resources, R.string.study_anki_note_type_failed, result.detail)
+        AnkiProblem.NOTE_TYPE_CONFLICT -> resources.getString(R.string.study_anki_note_type_conflict)
+        AnkiProblem.INSERT_FAILED -> stageText(resources, R.string.study_anki_insert_failed, result.detail)
+        AnkiProblem.WRONG_DECK -> resources.getString(R.string.study_anki_wrong_deck)
         AnkiProblem.FAILED ->
             when {
                 app == FlashcardApp.ANKIDROID -> resources.getString(R.string.study_anki_failed)
@@ -583,7 +629,8 @@ internal fun AnkiSendAllButton(
     var menu by remember { mutableStateOf(false) }
     val app = tools.settings.sendTo
     val send: (FlashcardApp) -> Unit = { to ->
-        scope.launch { onResult(sendResultText(resources, to, tools.send(to, words))) }
+        val active = tools.uiState?.let { state -> words.map { it.withActiveLanguages(state) } } ?: words
+        scope.launch { onResult(sendResultText(resources, to, tools.send(to, active))) }
     }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->

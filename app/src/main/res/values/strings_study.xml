@@ -37,7 +37,12 @@
     <string name="study_send_to_app_title">Send words to</string>
     <string name="study_app_ankidroid" translatable="false">AnkiDroid</string>
     <string name="study_app_ankiconnect" translatable="false">AnkiConnect</string>
-    <string name="study_ankidroid_description">Cards go to a DualSub Replay deck. Keep AnkiDroid open in the background: on many phones it only accepts cards while it is running.</string>
+    <string name="study_ankidroid_description">Cards go to a TripleSub Replay deck. Keep AnkiDroid open in the background: on many phones it only accepts cards while it is running.</string>
+    <string name="study_anki_deck_failed">Could not create the TripleSub Replay deck in AnkiDroid.</string>
+    <string name="study_anki_note_type_failed">Could not create the TripleSub Replay v2 note type in AnkiDroid.</string>
+    <string name="study_anki_note_type_conflict">AnkiDroid already has a note type named TripleSub Replay v2 with different fields, so nothing was sent. Rename or delete that note type in AnkiDroid, then try again.</string>
+    <string name="study_anki_insert_failed">AnkiDroid did not confirm the new card, so it was not marked as sent. Try again.</string>
+    <string name="study_anki_wrong_deck">The card was added to AnkiDroid, but AnkiDroid would not move it into the TripleSub Replay deck. Look for it in the note type\'s own deck.</string>
     <string name="study_ankiconnect_description">Sends to AnkiConnect on this phone (127.0.0.1:8765), which the AnkiConnect Android app, Yomitan and asbplayer use. Open AnkiConnect Android once so its server runs. Where AnkiConnect cannot make a DualSub Replay note type, cards use Anki\'s Basic note type.</string>
     <string name="study_ankiconnect_deck_title">AnkiConnect deck</string>
     <string name="study_ankiconnect_deck_value">Deck: %1$s</string>

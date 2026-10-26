@@ -153,4 +153,8 @@
     <string name="settings_google_wait_2">2 s</string>
     <string name="settings_google_wait_4">4 s</string>
     <string name="settings_google_wait_8">8 s</string>
+    <string name="settings_slot_original">Original subtitle</string>
+    <string name="settings_slot_second">Second subtitle</string>
+    <string name="settings_slot_third">Third subtitle</string>
+    <string name="settings_slot_rtl">RTL</string>
 </resources>

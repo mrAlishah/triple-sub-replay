@@ -225,6 +225,11 @@ class SubtitleWordHighlightTest {
                 SKIP_ADS_PREFERENCE,
                 SKIP_SPONSORS_PREFERENCE,
                 ALWAYS_SKIP_SPONSORS_PREFERENCE,
+                TRIPLE_SUBTITLES_PREFERENCE,
+                THIRD_LANGUAGE_PREFERENCE,
+                SubtitleSlot.ORIGINAL.rtlPreference,
+                SubtitleSlot.SECOND.rtlPreference,
+                SubtitleSlot.THIRD.rtlPreference,
                 RECENT_TARGET_LANGUAGES_PREFERENCE,
             )
         assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())

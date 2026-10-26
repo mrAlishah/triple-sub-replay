@@ -48,6 +48,15 @@ class AnkiDroidNotesTest {
         assertEquals("it&#39;s", ankiSentenceHtml("it's", ""))
     }
 
+    @Test fun extraTranslationsJoinTheTranslationFieldWithoutChangingTheNoteType() {
+        val plain = word("a")
+        assertEquals(ankiHtml(plain.translatedSentence.orEmpty()), ankiTranslationHtml(plain))
+        val withFa = plain.copy(sentenceTranslations = mapOf("fa" to "خانه <b>"))
+        assertEquals(ankiHtml(plain.translatedSentence.orEmpty()) + "<div dir=\"auto\">خانه &lt;b&gt;</div>", ankiTranslationHtml(withFa))
+        assertEquals(ankiTranslationHtml(withFa), ankiNoteFields(withFa)[4])
+        assertEquals(ANKI_FIELDS.size, ankiNoteFields(withFa).size)
+    }
+
     @Test
     fun theSourceLinksOnlyToAYouTubeVideoId() {
         assertEquals("", ankiSourceLink(null, 0))

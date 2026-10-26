@@ -223,7 +223,7 @@ private fun showLanguagePickerIfOpen(
         },
         onDismiss = picker::close,
         testTagPrefix = mode.name.lowercase(),
-        recentCodes = if (source) emptyList() else recentLanguagesToShow(recentTargetLanguages, targetLanguage),
+        recentCodes = if (mode == LanguagePickerMode.TARGET) recentLanguagesToShow(recentTargetLanguages, targetLanguage) else emptyList(),
     )
     return true
 }

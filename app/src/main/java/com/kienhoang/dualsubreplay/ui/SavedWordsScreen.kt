@@ -225,6 +225,21 @@ internal fun SavedWordsScreen(
                             PersonalNotesEditor(editedNotes, { editedNotes = it }, editedNotes != selected.personalNotes, !busy) {
                                 action { repository.update(selected.id) { it.copy(personalNotes = editedNotes) } }
                             }
+                            val studyTools = LocalStudyTools.current
+                            if (studyTools != null && studyTools.settings.ankiDroid && studyTools.ankiInstalled) {
+                                PracticeSendToAnki(
+                                    wordId = selected.id,
+                                    canSend = (if (practice) selected.meaning else editedMeaning).isNotBlank(),
+                                    alreadySent = studyTools.wasSent(FlashcardApp.ANKIDROID, selected.id),
+                                    needsPermission = { studyTools.needsPermission(FlashcardApp.ANKIDROID) },
+                                    prepare = {
+                                        repository.update(selected.id) {
+                                            it.withPendingEdits(practice, editedMeaning, editedExtra, editedNotes)
+                                        }
+                                    },
+                                    send = { studyTools.send(FlashcardApp.ANKIDROID, listOf(it)) },
+                                )
+                            }
                             if (selected.translated) Text(originalSentenceNote, style = MaterialTheme.typography.bodySmall)
                             if (selected.online) TextButton(onClick = {
                                 pronouncer.stop(); onlinePreview = true; onOnline(selected)
@@ -322,6 +337,17 @@ private fun EditMeanings(
     val changed = meaning != word.meaning || edited.toMap() != word.meanings
     TextButton(onClick = onSave, enabled = enabled && changed) { Text(stringResource(R.string.practice_save_meaning)) }
 }
+
+/**
+ * [this] with the edits still pending in the details view: the meaning fields (Vocabulary view only, they are
+ * read-only in a review) and the notes. Used to save them before a send, so the sent note is never stale.
+ */
+internal fun SavedWord.withPendingEdits(
+    practice: Boolean,
+    meaning: String,
+    edited: Map<String, String>,
+    notes: String,
+): SavedWord = (if (practice) this else withMeanings(meaning, edited)).copy(personalNotes = notes)
 
 /** The edited texts as saved: trimmed, and a language whose field was emptied is dropped. */
 private fun SavedWord.withMeanings(

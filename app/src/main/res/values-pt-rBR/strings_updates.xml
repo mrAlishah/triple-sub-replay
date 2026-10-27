@@ -31,4 +31,8 @@
     <string name="updates_auto_title">Atualizar automaticamente</string>
     <string name="updates_auto_description">Uma vez por dia, ao abrir o app, procura uma versão nova no GitHub, baixa pelo Wi-Fi e instala quando você sai do app, nunca enquanto um vídeo está tocando.</string>
     <string name="updates_auto_unavailable">Esta cópia do app não pode se atualizar sozinha.</string>
+    <string name="updates_links_heading">Versões no GitHub</string>
+    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
+    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_description">Abrir as versões de %1$s no GitHub</string>
 </resources>

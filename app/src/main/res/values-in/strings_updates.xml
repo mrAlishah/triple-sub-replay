@@ -31,4 +31,8 @@
     <string name="updates_auto_title">Perbarui otomatis</string>
     <string name="updates_auto_description">Sekali sehari saat Anda membuka aplikasi, memeriksa versi baru di GitHub, mengunduhnya lewat Wi-Fi, dan memasangnya saat Anda keluar dari aplikasi, tidak pernah saat video diputar.</string>
     <string name="updates_auto_unavailable">Salinan aplikasi ini tidak bisa memperbarui dirinya sendiri.</string>
+    <string name="updates_links_heading">Rilis GitHub</string>
+    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
+    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_description">Buka rilis %1$s di GitHub</string>
 </resources>

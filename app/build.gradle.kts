@@ -1,9 +1,29 @@
 import java.io.InputStream
+import java.util.Properties
 import java.util.zip.ZipFile
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+val releaseLinkProperties =
+    Properties().apply {
+        val file = rootProject.file("release-links.properties")
+        if (!file.isFile) throw GradleException("release-links.properties is missing from the repository root")
+        file.inputStream().use(::load)
+    }
+
+// Fails the build when a key is missing or is not a plausible GitHub owner/repository name.
+fun releasesUrl(prefix: String): String {
+    fun part(key: String): String {
+        val value = releaseLinkProperties.getProperty("$prefix.$key")?.trim().orEmpty()
+        if (!Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,99}").matches(value) || value.endsWith(".git")) {
+            throw GradleException("release-links.properties: '$prefix.$key' is missing or invalid: '$value'")
+        }
+        return value
+    }
+    return "https://github.com/${part("owner")}/${part("repo")}/releases"
 }
 
 val appVersionCode = 35
@@ -182,6 +202,8 @@ android {
     compileSdk = 37
 
     defaultConfig {
+        buildConfigField("String", "UPSTREAM_RELEASES_URL", "\"${releasesUrl("upstream")}\"")
+        buildConfigField("String", "FORK_RELEASES_URL", "\"${releasesUrl("fork")}\"")
         applicationId = "com.kienhoang.dualsubreplay"
         minSdk = 26
         targetSdk = 36

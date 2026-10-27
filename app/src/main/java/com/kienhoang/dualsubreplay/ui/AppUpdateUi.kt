@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
@@ -33,6 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.BuildConfig
 import com.kienhoang.dualsubreplay.R
@@ -106,7 +110,7 @@ internal fun AppUpdateDialogHost(channel: UpdateChannel = AppUpdater.channel(Loc
         AlertDialog(
             onDismissRequest = close,
             title = { Text(stringResource(R.string.updates_check)) },
-            text = { UpdateMessage(stringResource(R.string.updates_unsupported), noBrowser) },
+            text = { UpdateDialogBody(noBrowser, open) { UpdateMessage(stringResource(R.string.updates_unsupported)) } },
             confirmButton = { UpdateButton(R.string.updates_open_github, "update_open_github") { open(UPDATE_RELEASES_PAGE_URL) } },
             dismissButton = { UpdateButton(R.string.updates_close, "update_close", close) },
         )
@@ -116,7 +120,7 @@ internal fun AppUpdateDialogHost(channel: UpdateChannel = AppUpdater.channel(Loc
     AlertDialog(
         onDismissRequest = close,
         title = { Text(stringResource(R.string.updates_check)) },
-        text = { UpdateDialogText(current, noBrowser) },
+        text = { UpdateDialogBody(noBrowser, open) { UpdateDialogText(current) } },
         confirmButton = { UpdateConfirmButton(current, close) },
         dismissButton = {
             when (current) {
@@ -146,25 +150,21 @@ private fun UpdateButton(
 }
 
 @Composable
-private fun UpdateDialogText(
-    current: UpdateState,
-    noBrowser: Boolean,
-) {
+private fun UpdateDialogText(current: UpdateState) {
     val context = LocalContext.current
     when (current) {
         UpdateState.Idle, UpdateState.Checking -> Busy(stringResource(R.string.updates_checking), null)
-        UpdateState.UpToDate -> UpdateMessage(stringResource(R.string.updates_up_to_date, BuildConfig.VERSION_NAME), noBrowser)
+        UpdateState.UpToDate -> UpdateMessage(stringResource(R.string.updates_up_to_date, BuildConfig.VERSION_NAME))
         is UpdateState.Available ->
             UpdateMessage(
                 stringResource(R.string.updates_available, current.update.versionName, BuildConfig.VERSION_NAME) +
                     sizeLine(context, current.update.sizeBytes) + "\n\n" + stringResource(R.string.updates_first_time_note),
-                noBrowser,
             )
         is UpdateState.Downloading ->
             Busy(stringResource(R.string.updates_downloading, current.update.versionName), current.progress ?: -1f)
-        is UpdateState.Ready -> UpdateMessage(stringResource(R.string.updates_ready, current.update.versionName), noBrowser)
+        is UpdateState.Ready -> UpdateMessage(stringResource(R.string.updates_ready, current.update.versionName))
         is UpdateState.Installing -> Busy(stringResource(R.string.updates_installing), null)
-        is UpdateState.Failed -> UpdateMessage(stringResource(current.problem.messageRes), noBrowser)
+        is UpdateState.Failed -> UpdateMessage(stringResource(current.problem.messageRes))
     }
 }
 
@@ -211,16 +211,51 @@ private val UpdateProblem.messageRes: Int
         }
 
 @Composable
-private fun UpdateMessage(
-    text: String,
+private fun UpdateMessage(text: String) {
+    Text(text, modifier = Modifier.testTag("update_message"))
+}
+
+/** The dialog's content with the GitHub Releases links under it, in every state; it scrolls on small screens. */
+@Composable
+private fun UpdateDialogBody(
     noBrowser: Boolean,
+    open: (String) -> Unit,
+    content: @Composable () -> Unit,
 ) {
-    Column {
-        Text(text, modifier = Modifier.testTag("update_message"))
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        content()
+        Spacer(Modifier.size(16.dp))
+        Text(
+            stringResource(R.string.updates_links_heading),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ReleaseLink(R.string.updates_link_upstream, "update_link_upstream", BuildConfig.UPSTREAM_RELEASES_URL, open)
+        ReleaseLink(R.string.updates_link_fork, "update_link_fork", BuildConfig.FORK_RELEASES_URL, open)
         if (noBrowser) {
-            Spacer(Modifier.size(8.dp))
-            Text(stringResource(R.string.navigation_no_browser), style = MaterialTheme.typography.bodySmall)
+            Text(
+                stringResource(R.string.navigation_no_browser),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
+    }
+}
+
+@Composable
+private fun ReleaseLink(
+    label: Int,
+    tag: String,
+    url: String,
+    open: (String) -> Unit,
+) {
+    val name = stringResource(label)
+    val description = stringResource(R.string.updates_link_description, name)
+    TextButton(
+        onClick = { open(url) },
+        modifier = Modifier.fillMaxWidth().testTag(tag).semantics { contentDescription = description },
+    ) {
+        Text(name, modifier = Modifier.fillMaxWidth())
     }
 }
 

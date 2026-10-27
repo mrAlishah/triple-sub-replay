@@ -125,3 +125,12 @@ GitHub.", so people visit GitHub and download every release by hand.
 - Device tests (`AppUpdateUiTest`, updated `NavigationRecoveryUiTest`): CI only.
 - Not verified yet: a real install on a phone (preview build N updating itself to build N+1), the
   Android 12+ no-confirmation path, and Update automatically on a real phone. Owner's phone test.
+
+## GitHub Releases links (fork request 2026-10-27)
+
+The Check for updates dialog also shows a **GitHub Releases** section in every state (Checking, Up to date, Available, Failed, local build): **DualSub Replay (Original / Upstream)** and **TripleSub Replay (Fork)**. Each opens its releases page in the browser (`openExternalPage`; "no browser" shows the existing message under the links). They are navigation only, not APK sources.
+
+- Config: `release-links.properties` at the repository root, keys `upstream.owner`, `upstream.repo`, `fork.owner`, `fork.repo` (public, committed, no secrets, no runtime file).
+- Gradle (`app/build.gradle.kts`, `releasesUrl`) reads it, builds `https://github.com/<owner>/<repo>/releases`, and writes `BuildConfig.UPSTREAM_RELEASES_URL` and `BuildConfig.FORK_RELEASES_URL` in every build type. A missing key or a value outside letters, digits, `.`, `_`, `-` fails the build with a message naming the key. To point at other repositories, edit that file.
+- Unchanged: the automatic updater still uses `UPDATE_REPOSITORY` (upstream releases API), `OFFICIAL_APPLICATION_ID`, SHA-256 and package checks, version-code comparison and `PackageInstaller`. The fork's APK has other signing, ids and assets, so the fork link is never an update source; making it one needs its own reviewed design. Fork builds with another application id keep today's behavior (no channel, links only).
+- Verified: unit tests (`ReleaseLinksTest`), a deliberately bad and a missing `fork.repo` fail the build, the release `BuildConfig` holds both URLs, `AppUpdateUiTest.bothGitHubReleaseLinksShowInEveryState` compiles. Not run: instrumented tests, tapping the links, a physical device.

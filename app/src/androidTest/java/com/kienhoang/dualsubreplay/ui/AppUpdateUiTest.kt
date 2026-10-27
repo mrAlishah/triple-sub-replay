@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,6 +15,7 @@ import com.kienhoang.dualsubreplay.data.UpdateChannel
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
 import com.kienhoang.dualsubreplay.update.APP_AUTO_UPDATE_PREFERENCE
 import com.kienhoang.dualsubreplay.update.AppUpdater
+import com.kienhoang.dualsubreplay.update.UpdateProblem
 import com.kienhoang.dualsubreplay.update.UpdateState
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -92,5 +94,44 @@ class AppUpdateUiTest {
         composeRule.onNodeWithTag("update_open_github").assertIsDisplayed()
         composeRule.onNodeWithTag("update_close").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodes(hasTestTag("update_message")).fetchSemanticsNodes().isEmpty() }
+    }
+
+    private fun assertBothLinks(
+        state: UpdateState,
+        channel: UpdateChannel,
+    ) {
+        AppUpdater.showForTest(state)
+        composeRule.setContent { DualSubTheme { AppUpdateDialogHost(channel = channel) } }
+        composeRule.onNodeWithTag("update_link_upstream").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("DualSub Replay (Original / Upstream)").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open DualSub Replay (Original / Upstream) releases on GitHub").assertExists()
+        composeRule.onNodeWithTag("update_link_fork").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("TripleSub Replay (Fork)").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open TripleSub Replay (Fork) releases on GitHub").assertExists()
+    }
+
+    @Test
+    fun bothLinksShowWhileChecking() {
+        assertBothLinks(UpdateState.Checking, UpdateChannel.Official)
+    }
+
+    @Test
+    fun bothLinksShowWhenUpToDate() {
+        assertBothLinks(UpdateState.UpToDate, UpdateChannel.Official)
+    }
+
+    @Test
+    fun bothLinksShowWhenAnUpdateIsAvailable() {
+        assertBothLinks(UpdateState.Available(update), UpdateChannel.Official)
+    }
+
+    @Test
+    fun bothLinksShowWhenTheCheckFailed() {
+        assertBothLinks(UpdateState.Failed(UpdateProblem.OFFLINE, null), UpdateChannel.Official)
+    }
+
+    @Test
+    fun bothLinksShowWhenTheBuildCannotUpdateItself() {
+        assertBothLinks(UpdateState.Idle, UpdateChannel.None)
     }
 }

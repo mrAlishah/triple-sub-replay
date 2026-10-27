@@ -14,7 +14,7 @@ Approved by the fork owner (2026-10-27) for local implementation and local commi
 
 ## Non-goals
 
-No data migration. `SavedWord.meaning`/`meanings`/`personalNotes`, JSON/TSV keys, the Anki fields `Meaning 1`, `Meaning 2`, `Desc` and the note type `TripleSub Replay v2` are unchanged. No new translation provider.
+No data migration. `SavedWord.meaning`/`meanings`/`personalNotes` and the JSON backup keys are unchanged. The Anki fields and TSV columns were renamed afterwards, see [the follow-up spec](2026-10-27-anki-field-names-follow-subtitle-roles.md). No new translation provider.
 
 ## Design
 

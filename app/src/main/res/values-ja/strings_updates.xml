@@ -32,7 +32,7 @@
     <string name="updates_auto_description">1 日 1 回、アプリを開いたときに GitHub で新しいバージョンを確認し、Wi-Fi でダウンロードして、アプリを離れたときにインストールします。動画の再生中にはインストールしません。</string>
     <string name="updates_auto_unavailable">このアプリは自動で更新できません。</string>
     <string name="updates_links_heading">GitHub リリース</string>
-    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
-    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_upstream">DualSub Replay (Original)</string>
+    <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">GitHub で %1$s のリリースを開く</string>
 </resources>

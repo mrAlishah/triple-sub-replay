@@ -32,7 +32,7 @@
     <string name="updates_auto_description">Una vez al día, al abrir la app, busca una versión nueva en GitHub, la descarga con Wi-Fi y la instala cuando sales de la app, nunca mientras se reproduce un vídeo.</string>
     <string name="updates_auto_unavailable">Esta copia de la app no puede actualizarse sola.</string>
     <string name="updates_links_heading">Versiones en GitHub</string>
-    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
-    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_upstream">DualSub Replay (Original)</string>
+    <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Abrir las versiones de %1$s en GitHub</string>
 </resources>

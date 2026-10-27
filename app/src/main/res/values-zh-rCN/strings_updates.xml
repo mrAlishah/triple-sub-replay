@@ -32,7 +32,7 @@
     <string name="updates_auto_description">每天打开应用时检查一次 GitHub 上的新版本，在 Wi-Fi 下下载，并在你离开应用时安装；视频播放时不会安装。</string>
     <string name="updates_auto_unavailable">这个应用无法自行更新。</string>
     <string name="updates_links_heading">GitHub 发布页</string>
-    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
-    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_upstream">DualSub Replay (Original)</string>
+    <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">在 GitHub 上打开 %1$s 的发布页</string>
 </resources>

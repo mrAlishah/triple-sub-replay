@@ -32,7 +32,7 @@
     <string name="updates_auto_description">Mỗi ngày một lần khi bạn mở ứng dụng, kiểm tra phiên bản mới trên GitHub, tải về khi có Wi-Fi và cài khi bạn rời ứng dụng, không bao giờ cài khi video đang phát.</string>
     <string name="updates_auto_unavailable">Bản ứng dụng này không tự cập nhật được.</string>
     <string name="updates_links_heading">Bản phát hành trên GitHub</string>
-    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
-    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_upstream">DualSub Replay (Original)</string>
+    <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Mở các bản phát hành của %1$s trên GitHub</string>
 </resources>

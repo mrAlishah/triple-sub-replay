@@ -32,7 +32,7 @@
     <string name="updates_auto_description">하루에 한 번 앱을 열 때 GitHub에서 새 버전을 확인하고, Wi-Fi에서 다운로드한 뒤 앱을 나갈 때 설치합니다. 동영상 재생 중에는 설치하지 않습니다.</string>
     <string name="updates_auto_unavailable">이 앱은 스스로 업데이트할 수 없습니다.</string>
     <string name="updates_links_heading">GitHub 릴리스</string>
-    <string name="updates_link_upstream">DualSub Replay (Original / Upstream)</string>
-    <string name="updates_link_fork">TripleSub Replay (Fork)</string>
+    <string name="updates_link_upstream">DualSub Replay (Original)</string>
+    <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">GitHub에서 %1$s 릴리스 열기</string>
 </resources>

@@ -230,8 +230,8 @@ private fun UpdateDialogBody(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        ReleaseLink(R.string.updates_link_upstream, "update_link_upstream", BuildConfig.UPSTREAM_RELEASES_URL, open)
         ReleaseLink(R.string.updates_link_fork, "update_link_fork", BuildConfig.FORK_RELEASES_URL, open)
+        ReleaseLink(R.string.updates_link_upstream, "update_link_upstream", BuildConfig.UPSTREAM_RELEASES_URL, open)
         if (noBrowser) {
             Text(
                 stringResource(R.string.navigation_no_browser),

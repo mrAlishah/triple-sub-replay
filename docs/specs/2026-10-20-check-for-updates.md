@@ -128,7 +128,7 @@ GitHub.", so people visit GitHub and download every release by hand.
 
 ## GitHub Releases links (fork request 2026-10-27)
 
-The Check for updates dialog also shows a **GitHub Releases** section in every state (Checking, Up to date, Available, Failed, local build): **DualSub Replay (Original / Upstream)** and **TripleSub Replay (Fork)**. Each opens its releases page in the browser (`openExternalPage`; "no browser" shows the existing message under the links). They are navigation only, not APK sources.
+The Check for updates dialog also shows a **GitHub Releases** section in every state (Checking, Up to date, Available, Failed, local build): **TripleSub Replay (Forked)** first, then **DualSub Replay (Original)**. Each opens its releases page in the browser (`openExternalPage`; "no browser" shows the existing message under the links). They are navigation only, not APK sources.
 
 - Config: `release-links.properties` at the repository root, keys `upstream.owner`, `upstream.repo`, `fork.owner`, `fork.repo` (public, committed, no secrets, no runtime file).
 - Gradle (`app/build.gradle.kts`, `releasesUrl`) reads it, builds `https://github.com/<owner>/<repo>/releases`, and writes `BuildConfig.UPSTREAM_RELEASES_URL` and `BuildConfig.FORK_RELEASES_URL` in every build type. A missing key or a value outside letters, digits, `.`, `_`, `-` fails the build with a message naming the key. To point at other repositories, edit that file.

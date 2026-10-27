@@ -103,11 +103,11 @@ class AppUpdateUiTest {
         AppUpdater.showForTest(state)
         composeRule.setContent { DualSubTheme { AppUpdateDialogHost(channel = channel) } }
         composeRule.onNodeWithTag("update_link_upstream").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("DualSub Replay (Original / Upstream)").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Open DualSub Replay (Original / Upstream) releases on GitHub").assertExists()
+        composeRule.onNodeWithText("DualSub Replay (Original)").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open DualSub Replay (Original) releases on GitHub").assertExists()
         composeRule.onNodeWithTag("update_link_fork").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("TripleSub Replay (Fork)").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Open TripleSub Replay (Fork) releases on GitHub").assertExists()
+        composeRule.onNodeWithText("TripleSub Replay (Forked)").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open TripleSub Replay (Forked) releases on GitHub").assertExists()
     }
 
     @Test

@@ -237,9 +237,9 @@ class AnkiDroidSenderTest {
         assertEquals(TRIPLE_FIELDS.size, fields.size)
         assertEquals(tripleNoteFields(word()), fields)
         val byName = TRIPLE_FIELDS.zip(fields).toMap()
-        assertEquals("injured", byName["Meaning 1"])
-        assertEquals("مجروح شد", byName["Meaning 2"])
-        assertEquals("a &lt;b&gt; &amp; c<br>line 2", byName["Desc"])
+        assertEquals("injured", byName["Subtitle 1"])
+        assertEquals("مجروح شد", byName["Subtitle 2"])
+        assertEquals("a &lt;b&gt; &amp; c<br>line 2", byName["Text"])
         assertTrue(byName.getValue("Translation").contains("او از مجروحان مراقبت می‌کند."))
         assertTrue(byName.getValue("Sentence").contains("<b>Verletzten</b>"))
     }

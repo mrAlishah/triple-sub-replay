@@ -29,10 +29,10 @@ class AnkiTripleNoteTest {
 
     @Test
     fun theTypeIsVersionedAndHasTheNineFieldsInOrder() {
-        assertEquals("TripleSub Replay v2", TRIPLE_NOTE_TYPE_NAME)
+        assertEquals("TripleSub Replay v3", TRIPLE_NOTE_TYPE_NAME)
         assertTrue(TRIPLE_NOTE_TYPE_NAME != ANKI_NOTE_TYPE_NAME)
         assertEquals(
-            listOf("Word", "Meaning 1", "Meaning 2", "Reading", "Sentence", "Translation", "Desc", "Source", "Online Example"),
+            listOf("Word", "Subtitle 1", "Subtitle 2", "Reading", "Sentence", "Translation", "Text", "Source", "Online Example"),
             TRIPLE_FIELDS,
         )
         assertEquals(TRIPLE_FIELDS.size, tripleNoteFields(german).size)
@@ -41,9 +41,9 @@ class AnkiTripleNoteTest {
     @Test
     fun eachMeaningHasItsOwnFieldWithoutAnyLanguageLabel() {
         val f = fields(german)
-        assertEquals("injured", f["Meaning 1"])
-        assertEquals("مجروح شد", f["Meaning 2"])
-        assertFalse(f.getValue("Meaning 2").contains("fa"))
+        assertEquals("injured", f["Subtitle 1"])
+        assertEquals("مجروح شد", f["Subtitle 2"])
+        assertFalse(f.getValue("Subtitle 2").contains("fa"))
     }
 
     @Test
@@ -70,8 +70,8 @@ class AnkiTripleNoteTest {
 
     @Test
     fun descKeepsLineBreaksAndIsEscapedAndEmptyStaysEmpty() {
-        assertEquals("Plural of der Verletzte.<br><br>دستور &lt;نکته&gt;", fields(german)["Desc"])
-        assertEquals("", fields(german.copy(personalNotes = ""))["Desc"])
+        assertEquals("Plural of der Verletzte.<br><br>دستور &lt;نکته&gt;", fields(german)["Text"])
+        assertEquals("", fields(german.copy(personalNotes = ""))["Text"])
     }
 
     @Test
@@ -103,9 +103,9 @@ class AnkiTripleNoteTest {
 
     @Test
     fun theCardShowsMeaning2DescAndTheExampleOnlyWhenFilled() {
-        listOf("Meaning 2", "Desc", "Online Example").forEach {
+        listOf("Subtitle 2", "Text", "Online Example").forEach {
             assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{#$it}}") && TRIPLE_ANSWER_FORMAT.contains("{{/$it}}"))
         }
-        assertFalse(TRIPLE_QUESTION_FORMAT.contains("Meaning") || TRIPLE_QUESTION_FORMAT.contains("Desc"))
+        assertFalse(TRIPLE_QUESTION_FORMAT.contains("Meaning") || TRIPLE_QUESTION_FORMAT.contains("Text"))
     }
 }

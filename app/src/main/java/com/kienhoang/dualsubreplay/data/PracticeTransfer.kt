@@ -11,10 +11,10 @@ internal const val MAX_TRANSFER_RECORDS = 20_000
 internal val transferColumns =
     listOf(
         "word",
-        "meaning",
+        "subtitle1",
         "reading",
         "wordLanguage",
-        "meaningLanguage",
+        "subtitle1Language",
         "sentence",
         "translatedSentence",
         "source",
@@ -24,8 +24,22 @@ internal val transferColumns =
 
 /** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
 internal const val TRANSLATIONS_COLUMN = "sentenceTranslations"
-internal const val MEANINGS_COLUMN = "meanings"
-internal const val NOTES_COLUMN = "desc"
+internal const val MEANINGS_COLUMN = "subtitle2"
+internal const val NOTES_COLUMN = "text"
+
+/** Header names of files exported before the Subtitle 1/2 and Text names; still read so old exports import. */
+private val LEGACY_COLUMNS =
+    mapOf(
+        "subtitle1" to "meaning",
+        "subtitle1Language" to "meaningLanguage",
+        MEANINGS_COLUMN to "meanings",
+        NOTES_COLUMN to "desc",
+    )
+
+private fun columnIndex(
+    columns: List<String>,
+    name: String,
+): Int = columns.indexOf(name).takeIf { it >= 0 } ?: columns.indexOf(LEGACY_COLUMNS[name])
 
 /** One "language: text" line per translation; line breaks inside a text become spaces. */
 internal fun encodeSentenceTranslations(translations: Map<String, String>): String =
@@ -46,7 +60,7 @@ private fun translationsCell(
     row: List<String>,
     column: String = TRANSLATIONS_COLUMN,
 ): String {
-    val index = document.columns.indexOf(column)
+    val index = columnIndex(document.columns, column)
     return if (index >= 0) row.getOrNull(index).orEmpty() else ""
 }
 
@@ -225,9 +239,9 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
 
 internal fun defaultTransferMapping(document: TransferDocument): Map<String, Int> =
     transferColumns.associateWith { name ->
-        document.columns.indexOf(name).takeIf { it >= 0 } ?: when (name) {
+        columnIndex(document.columns, name).takeIf { it >= 0 } ?: when (name) {
             "word" -> 0
-            "meaning" -> 1
+            "subtitle1" -> 1
             else -> -1
         }
     }
@@ -268,8 +282,8 @@ internal fun previewImport(
                         field("word").trim(),
                         field("reading").ifBlank { null },
                         field("wordLanguage").ifBlank { wordLanguage }.trim(),
-                        field("meaningLanguage").ifBlank { meaningLanguage }.trim(),
-                        field("meaning").trim(),
+                        field("subtitle1Language").ifBlank { meaningLanguage }.trim(),
+                        field("subtitle1").trim(),
                         field("sentence"),
                         field("translatedSentence").ifBlank { null },
                         videoId,

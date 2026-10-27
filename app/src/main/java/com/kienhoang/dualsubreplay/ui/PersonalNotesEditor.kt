@@ -23,8 +23,7 @@ import com.kienhoang.dualsubreplay.R
 internal const val NOTES_MAX_VISIBLE_LINES = 6
 
 /**
- * The user's own multiline notes for a saved word, labelled "Text" in the app (the Anki "Desc" field keeps
- * its name). Enter adds a line, text lays
+ * The user's own multiline notes for a saved word, labelled "Text" in the app and in Anki. Enter adds a line, text lays
  * out by its own direction so Persian reads right-to-left, and nothing is saved until Save (or Back, or a
  * review rating) is pressed; unsaved edits are flagged.
  */

@@ -94,8 +94,8 @@
     <string name="study_send_to_app_title">Enviar palavras para</string>
     <string name="study_ankidroid_description">Os cartões vão para um baralho TripleSub Replay. Deixe o AnkiDroid aberto em segundo plano: em muitos celulares ele só aceita cartões enquanto está em execução.</string>
     <string name="study_anki_deck_failed">Não foi possível criar o baralho TripleSub Replay no AnkiDroid.</string>
-    <string name="study_anki_note_type_failed">Não foi possível criar o tipo de nota TripleSub Replay v2 no AnkiDroid.</string>
-    <string name="study_anki_note_type_conflict">O AnkiDroid já tem um tipo de nota chamado TripleSub Replay v2 com outros campos, então nada foi enviado. Renomeie ou exclua esse tipo de nota no AnkiDroid e tente de novo.</string>
+    <string name="study_anki_note_type_failed">Não foi possível criar o tipo de nota TripleSub Replay v3 no AnkiDroid.</string>
+    <string name="study_anki_note_type_conflict">O AnkiDroid já tem um tipo de nota chamado TripleSub Replay v3 com outros campos, então nada foi enviado. Renomeie ou exclua esse tipo de nota no AnkiDroid e tente de novo.</string>
     <string name="study_anki_insert_failed">O AnkiDroid não confirmou o novo cartão, então ele não foi marcado como enviado. Tente de novo.</string>
     <string name="study_anki_wrong_deck">O cartão foi adicionado ao AnkiDroid, mas o AnkiDroid não o moveu para o baralho TripleSub Replay. Procure no baralho padrão do tipo de nota.</string>
     <string name="study_ankiconnect_description">Envia para o AnkiConnect neste celular (127.0.0.1:8765), usado pelo app AnkiConnect Android, pelo Yomitan e pelo asbplayer. Abra o AnkiConnect Android uma vez para que o servidor dele funcione. Se o AnkiConnect não puder criar um tipo de nota DualSub Replay, os cartões usam o tipo de nota Basic do Anki.</string>

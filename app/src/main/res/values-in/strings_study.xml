@@ -84,8 +84,8 @@
     <string name="study_send_to_app_title">Kirim kata ke</string>
     <string name="study_ankidroid_description">Kartu masuk ke dek TripleSub Replay. Biarkan AnkiDroid terbuka di latar belakang: di banyak ponsel, AnkiDroid hanya menerima kartu saat sedang berjalan.</string>
     <string name="study_anki_deck_failed">Tidak dapat membuat dek TripleSub Replay di AnkiDroid.</string>
-    <string name="study_anki_note_type_failed">Tidak dapat membuat tipe catatan TripleSub Replay v2 di AnkiDroid.</string>
-    <string name="study_anki_note_type_conflict">AnkiDroid sudah memiliki tipe catatan bernama TripleSub Replay v2 dengan kolom berbeda, jadi tidak ada yang dikirim. Ganti nama atau hapus tipe catatan itu di AnkiDroid, lalu coba lagi.</string>
+    <string name="study_anki_note_type_failed">Tidak dapat membuat tipe catatan TripleSub Replay v3 di AnkiDroid.</string>
+    <string name="study_anki_note_type_conflict">AnkiDroid sudah memiliki tipe catatan bernama TripleSub Replay v3 dengan kolom berbeda, jadi tidak ada yang dikirim. Ganti nama atau hapus tipe catatan itu di AnkiDroid, lalu coba lagi.</string>
     <string name="study_anki_insert_failed">AnkiDroid tidak mengonfirmasi kartu baru, jadi tidak ditandai terkirim. Coba lagi.</string>
     <string name="study_anki_wrong_deck">Kartu ditambahkan ke AnkiDroid, tetapi AnkiDroid tidak mau memindahkannya ke dek TripleSub Replay. Cari di dek bawaan tipe catatan.</string>
     <string name="study_ankiconnect_description">Mengirim ke AnkiConnect di ponsel ini (127.0.0.1:8765), yang dipakai aplikasi AnkiConnect Android, Yomitan, dan asbplayer. Buka AnkiConnect Android sekali agar servernya berjalan. Jika AnkiConnect tidak bisa membuat jenis catatan DualSub Replay, kartu memakai jenis catatan Basic dari Anki.</string>

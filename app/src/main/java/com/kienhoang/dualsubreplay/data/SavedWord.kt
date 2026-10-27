@@ -71,7 +71,7 @@ data class SavedWord(
     val sentenceTranslations: Map<String, String> = emptyMap(),
     /** The word's meaning in further languages by language code, beside [meaning] in [meaningLanguage]. Only real texts, never placeholders. */
     val meanings: Map<String, String> = emptyMap(),
-    /** The user's own multiline notes ("Desc" in Anki). Never filled in automatically; empty for older words. */
+    /** The user's own multiline notes ("Text" in Anki). Never filled in automatically; empty for older words. */
     val personalNotes: String = "",
 )
 

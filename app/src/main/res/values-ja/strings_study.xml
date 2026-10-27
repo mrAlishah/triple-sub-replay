@@ -84,8 +84,8 @@
     <string name="study_send_to_app_title">単語の送信先</string>
     <string name="study_ankidroid_description">カードは TripleSub Replay デッキに入ります。AnkiDroid をバックグラウンドで開いたままにしてください。多くのスマホでは、AnkiDroid は起動中しかカードを受け付けません。</string>
     <string name="study_anki_deck_failed">AnkiDroid に TripleSub Replay デッキを作成できませんでした。</string>
-    <string name="study_anki_note_type_failed">AnkiDroid に TripleSub Replay v2 ノートタイプを作成できませんでした。</string>
-    <string name="study_anki_note_type_conflict">AnkiDroid にはすでに同じ名前で別のフィールドを持つ TripleSub Replay v2 ノートタイプがあるため、何も送信されませんでした。AnkiDroid でそのノートタイプの名前を変更するか削除してから、もう一度お試しください。</string>
+    <string name="study_anki_note_type_failed">AnkiDroid に TripleSub Replay v3 ノートタイプを作成できませんでした。</string>
+    <string name="study_anki_note_type_conflict">AnkiDroid にはすでに同じ名前で別のフィールドを持つ TripleSub Replay v3 ノートタイプがあるため、何も送信されませんでした。AnkiDroid でそのノートタイプの名前を変更するか削除してから、もう一度お試しください。</string>
     <string name="study_anki_insert_failed">AnkiDroid が新しいカードを確認しなかったため、送信済みにはしていません。もう一度お試しください。</string>
     <string name="study_anki_wrong_deck">カードは AnkiDroid に追加されましたが、TripleSub Replay デッキへは移動できませんでした。ノートタイプ既定のデッキを確認してください。</string>
     <string name="study_ankiconnect_description">このスマホの AnkiConnect(127.0.0.1:8765)に送ります。AnkiConnect Android アプリ、Yomitan、asbplayer が使うアドレスです。サーバーが動くように AnkiConnect Android を一度開いてください。AnkiConnect が DualSub Replay ノートタイプを作れない場合、カードは Anki の Basic ノートタイプを使います。</string>

@@ -36,13 +36,25 @@ class PracticeTransferTest {
         val withFa = word.copy(sentenceTranslations = mapOf("fa" to "خانه\nبزرگ", "ar" to "بيت"))
         val text = exportAnkiTsv(listOf(withFa))
         val header = text.lines().first { it.startsWith("#columns:") }
-        assertTrue(header.endsWith("\tsentenceTranslations\tmeanings\tdesc"))
+        assertTrue(header.endsWith("\tsentenceTranslations\tsubtitle2\ttext"))
         val back = previewImport(parseTransfer(text), defaultTransferMapping(parseTransfer(text)), "en", "vi", emptyList()).words.single()
         assertEquals(mapOf("fa" to "خانه بزرگ", "ar" to "بيت"), back.sentenceTranslations)
         assertEquals(mapOf("fa" to "x"), decodeSentenceTranslationsText(encodeSentenceTranslations(mapOf("fa" to "x"))))
         val oldDoc = parseTransfer("#separator:Tab\n#html:false\n#columns:word\tmeaning\n\"Haus\"\t\"house\"")
         val oldWords = previewImport(oldDoc, defaultTransferMapping(oldDoc), "en", "vi", emptyList()).words
         assertEquals(emptyMap<String, String>(), oldWords.single().sentenceTranslations)
+    }
+
+    @Test fun oldMeaningMeaningsAndDescHeadersStillImportIntoTheRenamedColumns() {
+        val doc =
+            parseTransfer(
+                "#separator:Tab\n#html:false\n#columns:word\tmeaning\tmeanings\tdesc\n" +
+                    "\"Haus\"\t\"house\"\t\"fa: خانه\"\t\"note\"",
+            )
+        val saved = previewImport(doc, defaultTransferMapping(doc), "en", "vi", emptyList()).words.single()
+        assertEquals("house", saved.meaning)
+        assertEquals(mapOf("fa" to "خانه"), saved.meanings)
+        assertEquals("note", saved.personalNotes)
     }
 
     @Test fun readsRealAnki268Export() {
@@ -94,7 +106,7 @@ class PracticeTransferTest {
     @Test fun mappingAndDuplicateIdentityDoNotDependOnMeaning() {
         val document = parseTransfer("nghĩa\tword\nupdated\tword")
 
-        val preview = previewImport(document, mapOf("word" to 1, "meaning" to 0), "en", "vi", emptyList())
+        val preview = previewImport(document, mapOf("word" to 1, "subtitle1" to 0), "en", "vi", emptyList())
 
         assertEquals(2, preview.words.size)
 

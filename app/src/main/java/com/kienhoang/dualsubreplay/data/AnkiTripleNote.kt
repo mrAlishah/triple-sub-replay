@@ -3,20 +3,20 @@ package com.kienhoang.dualsubreplay.data
 import java.util.Locale
 
 /**
- * The "TripleSub Replay v2" note type. It is a new type beside "DualSub Replay", whose notes and cards are
+ * The "TripleSub Replay v3" note type. It is a new type beside "DualSub Replay", whose notes and cards are
  * never touched; the name carries the version so it can never clash with another type of the same name
  * that has other fields.
  */
-internal const val TRIPLE_NOTE_TYPE_NAME = "TripleSub Replay v2"
+internal const val TRIPLE_NOTE_TYPE_NAME = "TripleSub Replay v3"
 internal val TRIPLE_FIELDS =
-    listOf("Word", "Meaning 1", "Meaning 2", "Reading", "Sentence", "Translation", "Desc", "Source", "Online Example")
+    listOf("Word", "Subtitle 1", "Subtitle 2", "Reading", "Sentence", "Translation", "Text", "Source", "Online Example")
 
 internal const val TRIPLE_QUESTION_FORMAT = ANKI_QUESTION_FORMAT
 internal const val TRIPLE_ANSWER_FORMAT =
-    "{{FrontSide}}<hr id=answer><div class=reading>{{Reading}}</div><div class=meaning dir=auto>{{Meaning 1}}</div>" +
-        "{{#Meaning 2}}<div class=meaning2 dir=auto>{{Meaning 2}}</div>{{/Meaning 2}}" +
+    "{{FrontSide}}<hr id=answer><div class=reading>{{Reading}}</div><div class=meaning dir=auto>{{Subtitle 1}}</div>" +
+        "{{#Subtitle 2}}<div class=meaning2 dir=auto>{{Subtitle 2}}</div>{{/Subtitle 2}}" +
         "<div class=translation>{{Translation}}</div>" +
-        "{{#Desc}}<div class=desc dir=auto>{{Desc}}</div>{{/Desc}}" +
+        "{{#Text}}<div class=desc dir=auto>{{Text}}</div>{{/Text}}" +
         "{{#Online Example}}<div class=online>{{Online Example}}</div>{{/Online Example}}" +
         "<div class=source>{{Source}}</div>"
 internal const val TRIPLE_CSS =

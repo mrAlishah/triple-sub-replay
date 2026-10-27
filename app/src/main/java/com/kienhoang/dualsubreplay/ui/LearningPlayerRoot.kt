@@ -541,6 +541,9 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             state.tripleSubtitlesEnabled,
             state.thirdLanguage,
             state.slotRtl,
+            state.subtitleOrder,
+            state.slotFontScale,
+            state.slotAlignment,
         ) {
             TripleSubtitleControls(
                 originalEnabled = state.originalVisibility != CaptionVisibility.NEVER,
@@ -553,6 +556,12 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 onLanguageChange = viewModel::setThirdLanguage,
                 rtl = state.slotRtl,
                 onRtlChange = viewModel::setSlotRtl,
+                order = state.subtitleOrder,
+                onMove = viewModel::moveSubtitleSlot,
+                fontScales = state.slotFontScale,
+                onFontScaleChange = viewModel::setSlotFontScale,
+                alignment = state.slotAlignment,
+                onAlignmentChange = viewModel::setSlotAlignment,
             )
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
@@ -794,8 +803,10 @@ internal fun LearningSubtitleOverlay(
                 } else {
                     Modifier.weight(1f)
                 },
-                horizontalAlignment = if (isFullscreen) Alignment.CenterHorizontally else Alignment.Start,
+                horizontalAlignment = Alignment.Start,
             ) {
+                val slotControls = LocalTripleSubtitleControls.current
+                val slotScales = slotControls.fontScales
                 val originalLine: (@Composable () -> Unit)? =
                     content.originalText?.let { original ->
                         {
@@ -816,8 +827,9 @@ internal fun LearningSubtitleOverlay(
                                     text = original,
                                     annotated = annotated,
                                     style = TextStyle(
-                                        fontSize = (17f * fontScale).sp,
-                                        lineHeight = (21f * fontScale).sp,
+                                        textAlign = slotControls.alignment.original.textAlign(),
+                                        fontSize = (17f * fontScale * slotScales.original).sp,
+                                        lineHeight = (21f * fontScale * slotScales.original).sp,
                                         fontWeight = FontWeight.Medium,
                                         color = originalColor,
                                     ),
@@ -828,16 +840,15 @@ internal fun LearningSubtitleOverlay(
                                     onWordClick = onWordClick,
                                     onBlankTap = { overlayActionsVisible = !overlayActionsVisible },
                                     overflow = TextOverflow.Ellipsis,
-                                    centered = isFullscreen,
                                 )
                             } else {
                                 Text(
                                     text = annotated,
-                                    modifier = if (isFullscreen) Modifier else Modifier.lineSide(annotated, LocalLayoutDirection.current),
+                                    modifier = Modifier.lineSide(annotated, LocalLayoutDirection.current),
                                     style = LocalTextStyle.current.inLineDirection(),
-                                    textAlign = if (isFullscreen) TextAlign.Center else TextAlign.Unspecified,
-                                    fontSize = (17f * fontScale).sp,
-                                    lineHeight = (21f * fontScale).sp,
+                                    textAlign = slotControls.alignment.original.textAlign(),
+                                    fontSize = (17f * fontScale * slotScales.original).sp,
+                                    lineHeight = (21f * fontScale * slotScales.original).sp,
                                     fontWeight = FontWeight.Medium,
                                     color = originalColor,
                                     maxLines = Int.MAX_VALUE,
@@ -874,8 +885,9 @@ internal fun LearningSubtitleOverlay(
                                     text = translated,
                                     annotated = annotated,
                                     style = TextStyle(
-                                        fontSize = (14f * fontScale).sp,
-                                        lineHeight = (18f * fontScale).sp,
+                                        textAlign = slotControls.alignment.second.textAlign(),
+                                        fontSize = (14f * fontScale * slotScales.second).sp,
+                                        lineHeight = (18f * fontScale * slotScales.second).sp,
                                         color = translatedColor,
                                     ),
                                     languageCode = targetLanguageCode,
@@ -886,16 +898,15 @@ internal fun LearningSubtitleOverlay(
                                     onBlankTap = { overlayActionsVisible = !overlayActionsVisible },
                                     alignedOriginalTokens = origTokens,
                                     overflow = TextOverflow.Ellipsis,
-                                    centered = isFullscreen,
                                 )
                             } else {
                                 Text(
                                     text = annotated,
-                                    modifier = if (isFullscreen) Modifier else Modifier.lineSide(annotated, LocalLayoutDirection.current),
+                                    modifier = Modifier.lineSide(annotated, LocalLayoutDirection.current),
                                     style = LocalTextStyle.current.inLineDirection(),
-                                    textAlign = if (isFullscreen) TextAlign.Center else TextAlign.Unspecified,
-                                    fontSize = (14f * fontScale).sp,
-                                    lineHeight = (18f * fontScale).sp,
+                                    textAlign = slotControls.alignment.second.textAlign(),
+                                    fontSize = (14f * fontScale * slotScales.second).sp,
+                                    lineHeight = (18f * fontScale * slotScales.second).sp,
                                     color = translatedColor,
                                     maxLines = Int.MAX_VALUE,
                                     overflow = TextOverflow.Ellipsis,
@@ -903,22 +914,39 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
-                val slotRtl = LocalTripleSubtitleControls.current.rtl
-                val directed =
-                    subtitleLineOrder(
-                        withDirection(slotRtl.original, originalLine),
-                        withDirection(slotRtl.second, translationLine),
-                        translationPosition,
-                    )
-                directed.forEachIndexed { index, line ->
+                val orderedLines =
+                    slotControls.order.arranged<@Composable () -> Unit> { slot ->
+                        val line: (@Composable () -> Unit)? =
+                            when (slot) {
+                                SubtitleSlot.ORIGINAL -> withDirection(slotControls.rtl.original, originalLine)
+                                SubtitleSlot.SECOND -> withDirection(slotControls.rtl.second, translationLine)
+                                SubtitleSlot.THIRD ->
+                                    content.thirdText?.let { third ->
+                                        @Composable {
+                                            val learn = wordLearningEnabled && tapToLearnEnabled
+                                            ThirdLine(
+                                                third,
+                                                fontScale * slotScales.third,
+                                                translatedColor,
+                                                learn,
+                                                content.segment,
+                                                highlightColor,
+                                                onWordClick,
+                                            ) {
+                                                overlayActionsVisible = !overlayActionsVisible
+                                            }
+                                        }
+                                    }
+                            }
+                        line?.let { inner ->
+                            @Composable {
+                                Box(Modifier.align(slotControls.alignment[slot].horizontal())) { inner() }
+                            }
+                        }
+                    }
+                orderedLines.forEachIndexed { index, line ->
                     if (index > 0) Spacer(Modifier.size(2.dp))
                     line()
-                }
-                content.thirdText?.let {
-                    val learn = wordLearningEnabled && tapToLearnEnabled
-                    ThirdLine(it, fontScale, translatedColor, learn, content.segment, highlightColor, onWordClick) {
-                        overlayActionsVisible = !overlayActionsVisible
-                    }
                 }
                 onRetryTranscript?.let { retry ->
                     // The overlay stays dark on every app theme, so the button takes a light subtitle color.

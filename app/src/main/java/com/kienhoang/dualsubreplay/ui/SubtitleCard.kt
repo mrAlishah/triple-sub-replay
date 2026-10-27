@@ -74,7 +74,8 @@ internal fun CompactSubtitleCard(
     thirdText: String? = null,
 ) {
     if (!showOriginal && !showTranslation && thirdText == null) return
-    val slotRtl = LocalTripleSubtitleControls.current.rtl
+    val slotControls = LocalTripleSubtitleControls.current
+    val slotRtl = slotControls.rtl
     val rowState = stringResource(if (active) R.string.player_active_subtitle else R.string.player_subtitle)
     OutlinedCard(
         modifier =
@@ -82,93 +83,118 @@ internal fun CompactSubtitleCard(
                 .fillMaxWidth()
                 .semantics { stateDescription = rowState }
                 .clickable(enabled = replayEnabled, onClick = onReplay),
-        border =
-            BorderStroke(
-                width = if (active) 2.dp else 1.dp,
-                color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-            ),
-        colors =
-            CardDefaults.outlinedCardColors(
-                containerColor =
-                    if (active) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
+        border = activeCardBorder(active),
+        colors = activeCardColors(active),
         shape = RoundedCornerShape(10.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (replayEnabled) {
-                Card(
-                    modifier = Modifier.size(34.dp),
-                    shape = CircleShape,
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        ),
-                ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = stringResource(R.string.player_replay_paragraph),
-                            modifier = Modifier.size(22.dp),
-                            tint = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
+            if (replayEnabled) ReplayButton(active)
             if (replayEnabled) Spacer(Modifier.size(9.dp))
             Column(Modifier.weight(1f)) {
                 val isSentenceEligibleForPos = !wordLearningActiveOnly || active
-                // true marks the translation line.
-                val lines = subtitleLineOrder(false.takeIf { showOriginal }, true.takeIf { showTranslation }, translationPosition)
-                lines.forEachDirected(slotRtl) { translated ->
-                    if (translated) {
-                        TranslatedCardText(
-                            segment,
-                            active,
-                            activeWordIndex,
-                            fontScale,
-                            originalColor,
-                            translatedColor,
-                            highlightColor,
-                            wordLearningEnabled,
-                            wordLearningTarget,
-                            isSentenceEligibleForPos,
-                            tapToLearnEnabled,
-                            resolvedSourceLanguage,
-                            targetLanguage,
-                            stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
-                            onWordClick,
-                            onReplay,
-                        )
-                    } else {
-                        OriginalCardText(
-                            segment,
-                            active,
-                            activeWordIndex,
-                            fontScale,
-                            originalColor,
-                            translatedColor,
-                            highlightColor,
-                            wordLearningEnabled,
-                            wordLearningTarget,
-                            isSentenceEligibleForPos,
-                            tapToLearnEnabled,
-                            resolvedSourceLanguage,
-                            targetLanguage,
-                            isDownloadingTranslationModel,
-                            onWordClick,
-                            onReplay,
-                        )
+                slotControls.order.forEach { slot ->
+                    when (slot) {
+                        SubtitleSlot.ORIGINAL ->
+                            if (showOriginal) {
+                                LineDirection(slotRtl.original) {
+                                    OriginalCardText(
+                                        segment,
+                                        active,
+                                        activeWordIndex,
+                                        fontScale * slotControls.fontScales.original,
+                                        originalColor,
+                                        translatedColor,
+                                        highlightColor,
+                                        wordLearningEnabled,
+                                        wordLearningTarget,
+                                        isSentenceEligibleForPos,
+                                        tapToLearnEnabled,
+                                        resolvedSourceLanguage,
+                                        targetLanguage,
+                                        isDownloadingTranslationModel,
+                                        onWordClick,
+                                        onReplay,
+                                    )
+                                }
+                            }
+                        SubtitleSlot.SECOND ->
+                            if (showTranslation) {
+                                LineDirection(slotRtl.second) {
+                                    TranslatedCardText(
+                                        segment,
+                                        active,
+                                        activeWordIndex,
+                                        fontScale * slotControls.fontScales.second,
+                                        originalColor,
+                                        translatedColor,
+                                        highlightColor,
+                                        wordLearningEnabled,
+                                        wordLearningTarget,
+                                        isSentenceEligibleForPos,
+                                        tapToLearnEnabled,
+                                        resolvedSourceLanguage,
+                                        targetLanguage,
+                                        stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
+                                        onWordClick,
+                                        onReplay,
+                                    )
+                                }
+                            }
+                        SubtitleSlot.THIRD ->
+                            thirdText?.let {
+                                val learn = wordLearningEnabled && tapToLearnEnabled
+                                ThirdLine(
+                                    it,
+                                    fontScale * slotControls.fontScales.third,
+                                    translatedColor,
+                                    learn,
+                                    segment,
+                                    highlightColor,
+                                    onWordClick,
+                                    onReplay,
+                                )
+                            }
                     }
                 }
-                thirdText?.let {
-                    val learn = wordLearningEnabled && tapToLearnEnabled
-                    ThirdLine(it, fontScale, translatedColor, learn, segment, highlightColor, onWordClick, onReplay)
-                }
             }
+        }
+    }
+}
+
+@Composable
+private fun activeCardBorder(active: Boolean) =
+    BorderStroke(
+        width = if (active) 2.dp else 1.dp,
+        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+    )
+
+@Composable
+private fun activeCardColors(active: Boolean) =
+    CardDefaults.outlinedCardColors(
+        containerColor = if (active) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    )
+
+@Composable
+private fun ReplayButton(active: Boolean) {
+    Card(
+        modifier = Modifier.size(34.dp),
+        shape = CircleShape,
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            ),
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = stringResource(R.string.player_replay_paragraph),
+                modifier = Modifier.size(22.dp),
+                tint = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }

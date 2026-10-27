@@ -23,7 +23,7 @@
     <string name="practice_meaning_label">Arti (%1$s)</string>
     <string name="practice_meaning_retry">Coba lagi</string>
     <string name="practice_save_meaning">Simpan arti</string>
-    <string name="practice_notes_label">Desc</string>
+    <string name="practice_notes_label">Teks</string>
     <string name="practice_save_notes">Simpan catatan</string>
     <string name="practice_notes_unsaved">Perubahan belum disimpan</string>
     <string name="practice_video_uses_original_sentence">Video contoh menggunakan kalimat asli.</string>

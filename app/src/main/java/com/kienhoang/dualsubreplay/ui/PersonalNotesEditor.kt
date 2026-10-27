@@ -19,8 +19,12 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
 
+/** The field grows to this many lines, then scrolls inside itself, so it stays usable on a small screen. */
+internal const val NOTES_MAX_VISIBLE_LINES = 6
+
 /**
- * The user's own multiline notes for a saved word (the Anki "Desc" field). Enter adds a line, text lays
+ * The user's own multiline notes for a saved word, labelled "Text" in the app (the Anki "Desc" field keeps
+ * its name). Enter adds a line, text lays
  * out by its own direction so Persian reads right-to-left, and nothing is saved until Save (or Back, or a
  * review rating) is pressed; unsaved edits are flagged.
  */
@@ -38,7 +42,7 @@ internal fun PersonalNotesEditor(
         label = { Text(stringResource(R.string.practice_notes_label)) },
         textStyle = LocalTextStyle.current.copy(textDirection = TextDirection.Content),
         minLines = 3,
-        maxLines = 12,
+        maxLines = NOTES_MAX_VISIBLE_LINES,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         modifier = Modifier.fillMaxWidth().testTag("saved_notes"),
     )

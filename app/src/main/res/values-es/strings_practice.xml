@@ -23,7 +23,7 @@
     <string name="practice_meaning_label">Significado (%1$s)</string>
     <string name="practice_meaning_retry">Reintentar</string>
     <string name="practice_save_meaning">Guardar significado</string>
-    <string name="practice_notes_label">Desc</string>
+    <string name="practice_notes_label">Texto</string>
     <string name="practice_save_notes">Guardar notas</string>
     <string name="practice_notes_unsaved">Cambios sin guardar</string>
     <string name="practice_video_uses_original_sentence">El video de ejemplo usa la oración original.</string>

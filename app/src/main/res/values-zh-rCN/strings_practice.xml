@@ -23,7 +23,7 @@
     <string name="practice_meaning_label">释义(%1$s)</string>
     <string name="practice_meaning_retry">重试</string>
     <string name="practice_save_meaning">保存释义</string>
-    <string name="practice_notes_label">Desc</string>
+    <string name="practice_notes_label">文本</string>
     <string name="practice_save_notes">保存笔记</string>
     <string name="practice_notes_unsaved">有未保存的更改</string>
     <string name="practice_video_uses_original_sentence">示例视频使用的是原句。</string>

@@ -344,7 +344,10 @@ internal fun SelectableSubtitleText(
     alignedOriginalTokens: List<AnalyzedToken>? = null,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
-\1\2) {
+    /** Set for the third subtitle: its language replaces the original/translated choice in speech, translation and the tap. */
+    lineLanguage: String? = null,
+    centered: Boolean = false,
+) {
     val controller = rememberPhraseSelection()
     val owner = remember { Any() }
     val revision = tokenizerRevision()

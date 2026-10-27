@@ -1,5 +1,6 @@
 package com.kienhoang.dualsubreplay.ui
 
+import android.content.Context
 import android.text.format.Formatter
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.BuildConfig
@@ -98,14 +100,17 @@ internal fun CheckForUpdatesRow(onOpen: () -> Unit) {
 
 /** The update dialog, shown from the drawer or when an automatic update waits for a tap. */
 @Composable
-internal fun AppUpdateDialogHost(channel: UpdateChannel = AppUpdater.channel(LocalContext.current)) {
+internal fun AppUpdateDialogHost(
+    channel: UpdateChannel = AppUpdater.channel(LocalContext.current),
+    openPage: (Context, String) -> Boolean = ::openExternalPage,
+) {
     val visible by AppUpdater.dialogVisible.collectAsState()
     if (!visible) return
     val context = LocalContext.current
     val state by AppUpdater.state.collectAsState()
     var noBrowser by remember { mutableStateOf(false) }
     val close = { AppUpdater.hideDialog() }
-    val open = { url: String -> noBrowser = !openExternalPage(context, url) }
+    val open = { url: String -> noBrowser = !openPage(context, url) }
     if (channel == UpdateChannel.None) {
         AlertDialog(
             onDismissRequest = close,
@@ -194,7 +199,7 @@ private fun UpdateConfirmButton(
 }
 
 private fun sizeLine(
-    context: android.content.Context,
+    context: Context,
     bytes: Long,
 ): String = if (bytes > 0) " (" + Formatter.formatShortFileSize(context, bytes) + ")" else ""
 
@@ -229,6 +234,7 @@ private fun UpdateDialogBody(
             stringResource(R.string.updates_links_heading),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.semantics { heading() },
         )
         ReleaseLink(R.string.updates_link_fork, "update_link_fork", BuildConfig.FORK_RELEASES_URL, open)
         ReleaseLink(R.string.updates_link_upstream, "update_link_upstream", BuildConfig.UPSTREAM_RELEASES_URL, open)

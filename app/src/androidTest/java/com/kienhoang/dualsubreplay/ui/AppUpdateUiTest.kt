@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kienhoang.dualsubreplay.BuildConfig
 import com.kienhoang.dualsubreplay.data.AppUpdate
 import com.kienhoang.dualsubreplay.data.UpdateChannel
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
@@ -18,6 +19,7 @@ import com.kienhoang.dualsubreplay.update.AppUpdater
 import com.kienhoang.dualsubreplay.update.UpdateProblem
 import com.kienhoang.dualsubreplay.update.UpdateState
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -133,5 +135,44 @@ class AppUpdateUiTest {
     @Test
     fun bothLinksShowWhenTheBuildCannotUpdateItself() {
         assertBothLinks(UpdateState.Idle, UpdateChannel.None)
+    }
+
+    @Test
+    fun theLinksOpenTheForkPageFirstAndTheOriginalPageSecond() {
+        val opened = mutableListOf<String>()
+        AppUpdater.showForTest(UpdateState.UpToDate)
+        composeRule.setContent {
+            DualSubTheme {
+                AppUpdateDialogHost(
+                    channel = UpdateChannel.Official,
+                    openPage = { _, url ->
+                        opened += url
+                        true
+                    },
+                )
+            }
+        }
+        composeRule.onNodeWithTag("update_link_fork").performScrollTo().performClick()
+        composeRule.onNodeWithTag("update_link_upstream").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertEquals(listOf(BuildConfig.FORK_RELEASES_URL, BuildConfig.UPSTREAM_RELEASES_URL), opened)
+            assertEquals("https://github.com/mrAlishah/triple-sub-replay/releases", opened[0])
+            assertEquals("https://github.com/hoangkien1703/dual-sub-replay/releases", opened[1])
+        }
+    }
+
+    @Test
+    fun noBrowserShowsAMessageUnderTheLinks() {
+        AppUpdater.showForTest(UpdateState.Checking)
+        composeRule.setContent {
+            DualSubTheme {
+                AppUpdateDialogHost(
+                    channel = UpdateChannel.Official,
+                    openPage = { _, _ -> false },
+                )
+            }
+        }
+        composeRule.onNodeWithTag("update_link_fork").performScrollTo().performClick()
+        composeRule.onNodeWithText("browser", substring = true, ignoreCase = true).assertExists()
     }
 }

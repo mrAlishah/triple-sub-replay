@@ -239,6 +239,8 @@ class SubtitleWordHighlightTest {
                 SubtitleSlot.SECOND.scalePreference,
                 SubtitleSlot.THIRD.scalePreference,
                 RECENT_TARGET_LANGUAGES_PREFERENCE,
+                DIFFERENT_TAB_ACCOUNTS_PREFERENCE,
+                DRAWER_TABS_OPEN_PREFERENCE,
             )
         assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())
         assertEquals(RESETTABLE_SETTING_KEYS.size, RESETTABLE_SETTING_KEYS.distinct().size)

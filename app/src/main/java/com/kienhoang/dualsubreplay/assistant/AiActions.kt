@@ -131,6 +131,9 @@ internal enum class AiSetting(
     SKIP_SPONSORS("skip_sponsors"),
     ALWAYS_SKIP_SPONSORS("always_skip_sponsors"),
 
+    /** Settings → YouTube tabs (2026-10-27). */
+    DIFFERENT_TAB_ACCOUNTS("different_tab_accounts"),
+
     /** Settings → App updates: downloads and installs a new version, so it waits for a tap. */
     APP_AUTO_UPDATE("auto_update", asks = true),
 
@@ -724,7 +727,9 @@ internal fun aiSettingValues(setting: AiSetting): String =
         AiSetting.TEXT_SIZE -> "a percentage from 80 to 200"
         AiSetting.PLAYBACK_SPEED -> "a speed from 0.25 to 2 (1 is normal)"
         AiSetting.PRONUNCIATION_VOLUME -> "a percentage from 25 to 200 in steps of 25 (100 follows the phone's media volume)"
-        AiSetting.PORTRAIT_PANEL_POSITION -> "a percentage from -20 (higher) to 20 (lower), 0 is the middle"
+        AiSetting.PORTRAIT_PANEL_POSITION ->
+            "a percentage from -20 (higher: a taller panel over the bottom of the video) to 20 (lower: a shorter panel); " +
+                "0 fits the panel right under the video"
         AiSetting.ORIGINAL_CAPTION_LANGUAGE -> "auto, or the code of a language the open video has captions in"
         AiSetting.APP_LANGUAGE -> choiceList(setting.choices) + " (device follows the phone)"
         AiSetting.DAILY_GOAL -> choiceList(setting.choices) + " (minutes a day)"
@@ -760,6 +765,10 @@ internal fun aiSettingValues(setting: AiSetting): String =
             choiceList(setting.choices) +
                 " (with skip_sponsors on, a seek, a tapped line or a replay that lands in a sponsor part also jumps to its " +
                 "end, so sponsor parts never play; off by default)"
+        AiSetting.DIFFERENT_TAB_ACCOUNTS ->
+            choiceList(setting.choices) +
+                " (Use different Google accounts: adds New tab with another account under Tabs in the menu, where a tab " +
+                "can use Account 2 or 3 with its own Google sign-in; off by default, then every tab uses Account 1)"
         AiSetting.APP_AUTO_UPDATE ->
             choiceList(setting.choices) +
                 " (Update automatically: once a day when the app opens it checks GitHub for a new version, downloads it on " +

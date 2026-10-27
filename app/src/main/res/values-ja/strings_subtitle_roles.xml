@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">元の字幕</string>
+    <string name="subtitle_role_first">字幕 1</string>
+    <string name="subtitle_role_second">字幕 2</string>
+    <string name="settings_slot_size">サイズ</string>
+    <string name="settings_slot_position">位置 %1$d</string>
+    <string name="settings_slot_move_up">%1$sを上へ</string>
+    <string name="settings_slot_move_down">%1$sを下へ</string>
+    <string name="settings_subtitle_alignment_title">字幕の配置</string>
+    <string name="settings_subtitle_alignment_auto">自動</string>
+    <string name="settings_subtitle_alignment_left">左</string>
+    <string name="settings_subtitle_alignment_center">中央</string>
+    <string name="settings_subtitle_alignment_right">右</string>
+</resources>

@@ -303,7 +303,7 @@ private fun ReviewMeanings(
     val style = meaningTextStyle()
     Text(word.meaning, style = style, modifier = Modifier.testTag("review_meaning"))
     word.meanings.forEach { (language, text) ->
-        val label = stringResource(R.string.practice_meaning_label, languageDisplayName(language, locale))
+        val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
         Text(label, style = MaterialTheme.typography.labelLarge)
         Text(text, style = style, modifier = Modifier.testTag("review_meaning_$language"))
     }
@@ -321,11 +321,11 @@ private fun EditMeanings(
     onSave: () -> Unit,
 ) {
     val style = meaningTextStyle()
-    val primaryLabel = stringResource(R.string.practice_meaning_label, word.meaningLanguage)
+    val primaryLabel = slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(word.meaningLanguage, locale))
     OutlinedTextField(meaning, onMeaning, textStyle = style, label = { Text(primaryLabel) })
     val languages = edited.keys.toList()
     languages.forEach { language ->
-        val label = stringResource(R.string.practice_meaning_label, languageDisplayName(language, locale))
+        val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
         OutlinedTextField(
             value = edited[language].orEmpty(),
             onValueChange = { edited[language] = it },

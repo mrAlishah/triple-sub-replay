@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">Subjudul asli</string>
+    <string name="subtitle_role_first">Subjudul 1</string>
+    <string name="subtitle_role_second">Subjudul 2</string>
+    <string name="settings_slot_size">Ukuran</string>
+    <string name="settings_slot_position">Posisi %1$d</string>
+    <string name="settings_slot_move_up">Naikkan %1$s</string>
+    <string name="settings_slot_move_down">Turunkan %1$s</string>
+    <string name="settings_subtitle_alignment_title">Perataan subjudul</string>
+    <string name="settings_subtitle_alignment_auto">Otomatis</string>
+    <string name="settings_subtitle_alignment_left">Kiri</string>
+    <string name="settings_subtitle_alignment_center">Tengah</string>
+    <string name="settings_subtitle_alignment_right">Kanan</string>
+</resources>

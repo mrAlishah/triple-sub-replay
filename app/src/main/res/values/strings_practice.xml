@@ -20,7 +20,6 @@
     <string name="practice_pronounce_item">Pronounce %1$s</string>
     <string name="practice_speech_settings">Speech settings</string>
     <string name="practice_show_meaning">Show meaning</string>
-    <string name="practice_meaning_label">Meaning (%1$s)</string>
     <string name="practice_meaning_retry">Retry</string>
     <string name="practice_save_meaning">Save meaning</string>
     <string name="practice_notes_label">Text</string>

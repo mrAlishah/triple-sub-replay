@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">Subtítulo original</string>
+    <string name="subtitle_role_first">Subtítulo 1</string>
+    <string name="subtitle_role_second">Subtítulo 2</string>
+    <string name="settings_slot_size">Tamaño</string>
+    <string name="settings_slot_position">Posición %1$d</string>
+    <string name="settings_slot_move_up">Subir %1$s</string>
+    <string name="settings_slot_move_down">Bajar %1$s</string>
+    <string name="settings_subtitle_alignment_title">Alineación del subtítulo</string>
+    <string name="settings_subtitle_alignment_auto">Auto</string>
+    <string name="settings_subtitle_alignment_left">Izquierda</string>
+    <string name="settings_subtitle_alignment_center">Centro</string>
+    <string name="settings_subtitle_alignment_right">Derecha</string>
+</resources>

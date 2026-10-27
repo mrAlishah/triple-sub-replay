@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">원본 자막</string>
+    <string name="subtitle_role_first">자막 1</string>
+    <string name="subtitle_role_second">자막 2</string>
+    <string name="settings_slot_size">크기</string>
+    <string name="settings_slot_position">위치 %1$d</string>
+    <string name="settings_slot_move_up">%1$s 위로 이동</string>
+    <string name="settings_slot_move_down">%1$s 아래로 이동</string>
+    <string name="settings_subtitle_alignment_title">자막 정렬</string>
+    <string name="settings_subtitle_alignment_auto">자동</string>
+    <string name="settings_subtitle_alignment_left">왼쪽</string>
+    <string name="settings_subtitle_alignment_center">가운데</string>
+    <string name="settings_subtitle_alignment_right">오른쪽</string>
+</resources>

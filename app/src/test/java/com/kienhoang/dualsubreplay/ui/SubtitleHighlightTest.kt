@@ -230,6 +230,14 @@ class SubtitleWordHighlightTest {
                 SubtitleSlot.ORIGINAL.rtlPreference,
                 SubtitleSlot.SECOND.rtlPreference,
                 SubtitleSlot.THIRD.rtlPreference,
+                SUBTITLE_ORDER_PREFERENCE,
+                LEGACY_SUBTITLE_ALIGNMENT_PREFERENCE,
+                SubtitleSlot.ORIGINAL.alignmentPreference,
+                SubtitleSlot.SECOND.alignmentPreference,
+                SubtitleSlot.THIRD.alignmentPreference,
+                SubtitleSlot.ORIGINAL.scalePreference,
+                SubtitleSlot.SECOND.scalePreference,
+                SubtitleSlot.THIRD.scalePreference,
                 RECENT_TARGET_LANGUAGES_PREFERENCE,
             )
         assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())

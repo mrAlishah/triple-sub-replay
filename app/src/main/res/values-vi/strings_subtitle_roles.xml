@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">Phụ đề gốc</string>
+    <string name="subtitle_role_first">Phụ đề 1</string>
+    <string name="subtitle_role_second">Phụ đề 2</string>
+    <string name="settings_slot_size">Cỡ chữ</string>
+    <string name="settings_slot_position">Vị trí %1$d</string>
+    <string name="settings_slot_move_up">Chuyển %1$s lên</string>
+    <string name="settings_slot_move_down">Chuyển %1$s xuống</string>
+    <string name="settings_subtitle_alignment_title">Căn lề phụ đề</string>
+    <string name="settings_subtitle_alignment_auto">Tự động</string>
+    <string name="settings_subtitle_alignment_left">Trái</string>
+    <string name="settings_subtitle_alignment_center">Giữa</string>
+    <string name="settings_subtitle_alignment_right">Phải</string>
+</resources>

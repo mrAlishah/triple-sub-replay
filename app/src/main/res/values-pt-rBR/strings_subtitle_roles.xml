@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtitle_role_original">Legenda original</string>
+    <string name="subtitle_role_first">Legenda 1</string>
+    <string name="subtitle_role_second">Legenda 2</string>
+    <string name="settings_slot_size">Tamanho</string>
+    <string name="settings_slot_position">Posição %1$d</string>
+    <string name="settings_slot_move_up">Mover %1$s para cima</string>
+    <string name="settings_slot_move_down">Mover %1$s para baixo</string>
+    <string name="settings_subtitle_alignment_title">Alinhamento da legenda</string>
+    <string name="settings_subtitle_alignment_auto">Auto</string>
+    <string name="settings_subtitle_alignment_left">Esquerda</string>
+    <string name="settings_subtitle_alignment_center">Centro</string>
+    <string name="settings_subtitle_alignment_right">Direita</string>
+</resources>

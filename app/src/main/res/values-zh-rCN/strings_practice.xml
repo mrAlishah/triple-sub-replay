@@ -20,7 +20,6 @@
     <string name="practice_pronounce_item">朗读 %1$s</string>
     <string name="practice_speech_settings">语音设置</string>
     <string name="practice_show_meaning">显示释义</string>
-    <string name="practice_meaning_label">释义(%1$s)</string>
     <string name="practice_meaning_retry">重试</string>
     <string name="practice_save_meaning">保存释义</string>
     <string name="practice_notes_label">文本</string>

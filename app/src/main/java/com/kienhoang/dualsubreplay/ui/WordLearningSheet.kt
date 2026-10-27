@@ -263,7 +263,7 @@ private fun MeaningPanel(
             Box(Modifier.width(6.dp).fillMaxHeight().background(colors.primary))
             Column(Modifier.weight(1f).padding(start = 14.dp, top = 10.dp, bottom = 12.dp)) {
                 Text(
-                    stringResource(R.string.practice_meaning_label, language),
+                    slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(language, currentInterfaceLocale())),
                     style = MaterialTheme.typography.labelLarge,
                     color = colors.primary,
                 )

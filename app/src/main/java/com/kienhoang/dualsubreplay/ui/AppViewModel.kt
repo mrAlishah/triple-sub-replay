@@ -168,6 +168,9 @@ data class DualSubUiState(
     val thirdLanguage: String = DEFAULT_THIRD_LANGUAGE,
     val thirdLines: ThirdLines = ThirdLines(),
     val slotRtl: SlotRtl = SlotRtl(),
+    val subtitleOrder: List<SubtitleSlot> = DEFAULT_SUBTITLE_ORDER,
+    val slotFontScale: SlotFontScale = SlotFontScale(),
+    val slotAlignment: SlotAlignment = SlotAlignment(),
 )
 
 /** [state] translating with Google again, without the fallback and its reasons. */
@@ -577,6 +580,13 @@ class AppViewModel internal constructor(
                 tripleSubtitlesEnabled = preferences.getBoolean(TRIPLE_SUBTITLES_PREFERENCE, false),
                 thirdLanguage = storedThirdLanguage(preferences.getString(THIRD_LANGUAGE_PREFERENCE, null)),
                 slotRtl = storedSlotRtl(preferences),
+                subtitleOrder =
+                    storedSubtitleOrder(
+                        preferences.getString(SUBTITLE_ORDER_PREFERENCE, null),
+                        storedTranslationPosition(preferences.getString(TRANSLATION_POSITION_PREFERENCE, null)),
+                    ),
+                slotFontScale = storedSlotFontScale(preferences),
+                slotAlignment = storedSlotAlignment(preferences),
             ),
         )
     val state: StateFlow<DualSubUiState> = _state.asStateFlow()
@@ -1072,8 +1082,11 @@ class AppViewModel internal constructor(
     }
 
     fun setTranslationPosition(position: TranslationPosition) {
+        if (_state.value.subtitleOrder.translationPosition() == position) return
+        // The older Above/Below choice wins over a saved order, so the two settings never disagree.
         preferences.edit().putString(TRANSLATION_POSITION_PREFERENCE, position.storageValue).apply()
-        _state.update { it.copy(translationPosition = position) }
+        preferences.edit().remove(SUBTITLE_ORDER_PREFERENCE).apply()
+        _state.update { it.copy(translationPosition = position, subtitleOrder = storedSubtitleOrder(null, position)) }
     }
 
     fun setLockOverlayToVideo(locked: Boolean) {
@@ -1260,6 +1273,33 @@ class AppViewModel internal constructor(
         _state.update { it.copy(slotRtl = it.slotRtl.with(slot, rtl)) }
     }
 
+    /** Moves a subtitle slot one place up or down in the display order; its identity and settings stay put. */
+    fun moveSubtitleSlot(
+        slot: SubtitleSlot,
+        delta: Int,
+    ) {
+        val order = _state.value.subtitleOrder.moved(slot, delta)
+        preferences.edit().putString(SUBTITLE_ORDER_PREFERENCE, order.serializedOrder()).apply()
+        _state.update { it.copy(subtitleOrder = order) }
+    }
+
+    fun setSlotAlignment(
+        slot: SubtitleSlot,
+        alignment: SubtitleAlignment,
+    ) {
+        preferences.edit().putString(slot.alignmentPreference, alignment.storageValue).apply()
+        _state.update { it.copy(slotAlignment = it.slotAlignment.with(slot, alignment)) }
+    }
+
+    fun setSlotFontScale(
+        slot: SubtitleSlot,
+        scale: Float,
+    ) {
+        val safe = normalizeSlotScale(scale)
+        preferences.edit().putFloat(slot.scalePreference, safe).apply()
+        _state.update { it.copy(slotFontScale = it.slotFontScale.with(slot, safe)) }
+    }
+
     /** Settings → Translation → Wait for Google; the next row Google translates uses it. */
     fun setGoogleWait(wait: GoogleWait) {
         preferences.edit().putString(GOOGLE_WAIT_PREFERENCE, wait.storageValue).apply()
@@ -1384,6 +1424,9 @@ class AppViewModel internal constructor(
                 tripleSubtitlesEnabled = false,
                 thirdLanguage = DEFAULT_THIRD_LANGUAGE,
                 slotRtl = SlotRtl(),
+                subtitleOrder = DEFAULT_SUBTITLE_ORDER,
+                slotFontScale = SlotFontScale(),
+                slotAlignment = SlotAlignment(),
             )
         }
         _state.value.activeVideoId?.let { loadVideo(it, showPanel = _state.value.subtitlePanelVisible) }

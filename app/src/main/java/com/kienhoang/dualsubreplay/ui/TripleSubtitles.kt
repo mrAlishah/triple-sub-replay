@@ -90,7 +90,8 @@ internal fun storedSlotRtl(preferences: SharedPreferences): SlotRtl {
 }
 
 internal val TRIPLE_SETTING_KEYS =
-    listOf(TRIPLE_SUBTITLES_PREFERENCE, THIRD_LANGUAGE_PREFERENCE) + SubtitleSlot.entries.map { it.rtlPreference }
+    listOf(TRIPLE_SUBTITLES_PREFERENCE, THIRD_LANGUAGE_PREFERENCE) + SubtitleSlot.entries.map { it.rtlPreference } +
+        SLOT_LAYOUT_SETTING_KEYS
 
 /** The saved third language, or Persian when nothing valid is saved. */
 internal fun storedThirdLanguage(raw: String?): String =
@@ -264,11 +265,13 @@ internal fun ThirdLineText(
     modifier: Modifier = Modifier,
     tap: ThirdTap? = null,
 ) {
+    val thirdAlignment = LocalTripleSubtitleControls.current.alignment.third
     val style =
         TextStyle(
             fontSize = (14f * fontScale).sp,
             lineHeight = (18f * fontScale).sp,
             color = color,
+            textAlign = thirdAlignment.textAlign(),
         )
     LineDirection(LocalTripleSubtitleControls.current.rtl.third) {
         if (tap != null) {
@@ -348,6 +351,13 @@ internal class TripleSubtitleControls(
     val onLanguageChange: (String) -> Unit,
     val rtl: SlotRtl = SlotRtl(),
     val onRtlChange: (SubtitleSlot, Boolean) -> Unit = { _, _ -> },
+    /** Top to bottom; a permutation of all three slots. */
+    val order: List<SubtitleSlot> = DEFAULT_SUBTITLE_ORDER,
+    val onMove: (SubtitleSlot, Int) -> Unit = { _, _ -> },
+    val fontScales: SlotFontScale = SlotFontScale(),
+    val onFontScaleChange: (SubtitleSlot, Float) -> Unit = { _, _ -> },
+    val alignment: SlotAlignment = SlotAlignment(),
+    val onAlignmentChange: (SubtitleSlot, SubtitleAlignment) -> Unit = { _, _ -> },
 )
 
 internal val LocalTripleSubtitleControls =
@@ -365,6 +375,7 @@ internal fun SubtitleSlotRow(
     languageLabel: String,
     onPickLanguage: () -> Unit,
     tag: String,
+    languageHint: String? = null,
 ) {
     val controls = LocalTripleSubtitleControls.current
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -378,7 +389,7 @@ internal fun SubtitleSlotRow(
         ) {
             Checkbox(checked = checked, onCheckedChange = null)
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(label))
+            Text(slotRoleLabel(slot, languageHint))
         }
         Row(
             modifier =
@@ -400,6 +411,7 @@ internal fun SubtitleSlotRow(
     ) {
         Text(languageLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
+    SlotLayoutControls(slot, tag)
 }
 
 /** A slot checkbox as a caption-visibility setting; unchecking and checking again returns to "always". */

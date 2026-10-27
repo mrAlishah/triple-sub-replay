@@ -157,4 +157,7 @@
     <string name="settings_slot_second">Segunda legenda</string>
     <string name="settings_slot_third">Terceira legenda</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">Idiomas, ordem, tamanho e alinhamento das legendas</string>
+    <string name="settings_group_reading_summary">Tamanho do texto, visibilidade, posição e destaque</string>
+    <string name="settings_group_default_view_summary">Como o vídeo e as legendas aparecem por padrão</string>
 </resources>

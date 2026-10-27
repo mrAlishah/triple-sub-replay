@@ -102,6 +102,7 @@ class TranslationPositionAndThemeUiTest {
             }
         }
 
+        composeRule.onNodeWithTag("settings_group_reading").performScrollTo().performClick()
         composeRule.onNodeWithTag("translation_position_above").performScrollTo().performClick()
         composeRule.runOnIdle { assertEquals(TranslationPosition.ABOVE, position) }
         assertTrue(background < 0.1f)

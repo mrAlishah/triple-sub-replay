@@ -157,4 +157,7 @@
     <string name="settings_slot_second">두 번째 자막</string>
     <string name="settings_slot_third">세 번째 자막</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">자막 언어, 순서, 크기, 정렬</string>
+    <string name="settings_group_reading_summary">글자 크기, 표시, 위치, 강조</string>
+    <string name="settings_group_default_view_summary">영상과 자막의 기본 표시 방식</string>
 </resources>

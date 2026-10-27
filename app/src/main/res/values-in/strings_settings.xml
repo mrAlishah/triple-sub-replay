@@ -157,4 +157,7 @@
     <string name="settings_slot_second">Subtitel kedua</string>
     <string name="settings_slot_third">Subtitel ketiga</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">Bahasa, urutan, ukuran, dan perataan subjudul</string>
+    <string name="settings_group_reading_summary">Ukuran teks, visibilitas, posisi, dan penyorotan</string>
+    <string name="settings_group_default_view_summary">Cara video dan subjudul ditampilkan secara default</string>
 </resources>

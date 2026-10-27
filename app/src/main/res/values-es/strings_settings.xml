@@ -157,4 +157,7 @@
     <string name="settings_slot_second">Segundo subtítulo</string>
     <string name="settings_slot_third">Tercer subtítulo</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">Idiomas, orden, tamaño y alineación de los subtítulos</string>
+    <string name="settings_group_reading_summary">Tamaño del texto, visibilidad, posición y resaltado</string>
+    <string name="settings_group_default_view_summary">Cómo se muestran por defecto el vídeo y los subtítulos</string>
 </resources>

@@ -157,4 +157,7 @@
     <string name="settings_slot_second">2 つ目の字幕</string>
     <string name="settings_slot_third">3 つ目の字幕</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">字幕の言語・順序・サイズ・配置</string>
+    <string name="settings_group_reading_summary">文字サイズ、表示、位置、ハイライト</string>
+    <string name="settings_group_default_view_summary">動画と字幕の標準の表示方法</string>
 </resources>

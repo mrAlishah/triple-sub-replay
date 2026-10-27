@@ -59,6 +59,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -236,6 +237,7 @@ private fun LanguagePickerButtons(
 ) {
     val slots = LocalTripleSubtitleControls.current
     val locale = currentInterfaceLocale()
+    val autoLabel = stringResource(R.string.settings_source_language_auto)
     SubtitleSlotRow(
         slot = SubtitleSlot.ORIGINAL,
         label = R.string.settings_slot_original,
@@ -244,6 +246,7 @@ private fun LanguagePickerButtons(
         languageLabel = sourceLabel,
         onPickLanguage = { onPick(LanguagePickerMode.SOURCE) },
         tag = "source_language",
+        languageHint = sourceLabel.takeUnless { it == autoLabel },
     )
     Spacer(Modifier.height(12.dp))
     SubtitleSlotRow(
@@ -254,6 +257,7 @@ private fun LanguagePickerButtons(
         languageLabel = languageDisplayName(targetLanguage, locale),
         onPickLanguage = { onPick(LanguagePickerMode.TARGET) },
         tag = "target_language",
+        languageHint = languageDisplayName(targetLanguage, locale),
     )
     Spacer(Modifier.height(12.dp))
     SubtitleSlotRow(
@@ -264,6 +268,7 @@ private fun LanguagePickerButtons(
         languageLabel = languageDisplayName(slots.language, locale),
         onPickLanguage = { onPick(LanguagePickerMode.THIRD) },
         tag = "third_language",
+        languageHint = languageDisplayName(slots.language, locale),
     )
     SettingsHint(stringResource(R.string.settings_model_download_hint))
 }
@@ -303,7 +308,7 @@ internal fun QuickLanguageSettingsDialog(
         icon = { Icon(Icons.Default.Language, contentDescription = null) },
         title = { Text(stringResource(R.string.settings_subtitle_languages)) },
         text = {
-            Column(Modifier.testTag("quick_language_settings")) {
+            Column(Modifier.verticalScroll(rememberScrollState()).testTag("quick_language_settings")) {
                 LanguagePickerButtons(
                     sourceLabel = sourceLanguageLabel(sourcePreference, sourceChoices, autoLabel, interfaceLocale),
                     targetLanguage = targetLanguage,
@@ -402,6 +407,9 @@ internal fun SubtitleSettingsDialog(
     val languageDownloads = LocalLanguageDownloads.current
     val translationEngineActions = LocalTranslationEngineActions.current
     var showLanguageDownloads by remember { mutableStateOf(false) }
+    var languagesOpen by rememberSaveable { mutableStateOf(true) }
+    var readingOpen by rememberSaveable { mutableStateOf(false) }
+    var defaultViewOpen by rememberSaveable { mutableStateOf(false) }
     val autoLabel = stringResource(R.string.settings_source_language_auto)
     val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel)
     val pickerOpen =
@@ -452,15 +460,32 @@ internal fun SubtitleSettingsDialog(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    SettingsGroupCard(title = stringResource(R.string.settings_group_languages), icon = Icons.Default.Language) {
+                    SettingsExpandableCard(
+                        title = stringResource(R.string.settings_group_languages),
+                        summary = stringResource(R.string.settings_group_languages_summary),
+                        icon = Icons.Default.Language,
+                        expanded = languagesOpen,
+                        onToggle = { languagesOpen = !languagesOpen },
+                        testTag = "settings_group_languages",
+                    ) {
                         LanguagePickerButtons(sourceLabel, targetLanguage, languagePicker::open)
                     }
 
-                    SettingsGroupCard(title = stringResource(R.string.settings_group_reading), icon = Icons.Default.TextFields) {
+                    SettingsExpandableCard(
+                        title = stringResource(R.string.settings_group_reading),
+                        summary = stringResource(R.string.settings_group_reading_summary),
+                        icon = Icons.Default.TextFields,
+                        expanded = readingOpen,
+                        onToggle = { readingOpen = !readingOpen },
+                        testTag = "settings_group_reading",
+                    ) {
                         Text(stringResource(R.string.settings_text_size, (fontScale * 100).toInt()))
                         Slider(value = fontScale, onValueChange = onFontScaleChange, valueRange = MIN_FONT_SCALE..MAX_FONT_SCALE)
                         CaptionVisibilitySettings()
-                        TranslationPositionSettings(translationPosition, onTranslationPositionChange)
+                        TranslationPositionSettings(
+                            LocalTripleSubtitleControls.current.order.translationPosition(),
+                            onTranslationPositionChange,
+                        )
                         SettingsSwitchRow(
                             title = stringResource(R.string.settings_highlight_spoken_words_title),
                             description = stringResource(R.string.settings_highlight_spoken_words_description),
@@ -470,7 +495,14 @@ internal fun SubtitleSettingsDialog(
                         )
                     }
 
-                    SettingsGroupCard(title = stringResource(R.string.settings_group_default_view), icon = Icons.Default.Dashboard) {
+                    SettingsExpandableCard(
+                        title = stringResource(R.string.settings_group_default_view),
+                        summary = stringResource(R.string.settings_group_default_view_summary),
+                        icon = Icons.Default.Dashboard,
+                        expanded = defaultViewOpen,
+                        onToggle = { defaultViewOpen = !defaultViewOpen },
+                        testTag = "settings_group_default_view",
+                    ) {
                         PlayerModeSettingsOption(
                             mode = PlayerExperienceMode.TRANSCRIPT_PANEL,
                             selectedMode = playerMode,
@@ -675,29 +707,6 @@ private fun SettingsTopBar(onDismiss: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
         )
         TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_done)) }
-    }
-}
-
-@Composable
-private fun SettingsGroupCard(
-    title: String,
-    icon: ImageVector,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(10.dp))
-                Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-            }
-            Spacer(Modifier.height(10.dp))
-            content()
-        }
     }
 }
 

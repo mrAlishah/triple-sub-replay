@@ -157,4 +157,7 @@
     <string name="settings_slot_second">第二字幕</string>
     <string name="settings_slot_third">第三字幕</string>
     <string name="settings_slot_rtl">RTL</string>
+    <string name="settings_group_languages_summary">字幕语言、顺序、大小和对齐</string>
+    <string name="settings_group_reading_summary">文字大小、显示、位置和高亮</string>
+    <string name="settings_group_default_view_summary">视频和字幕的默认显示方式</string>
 </resources>

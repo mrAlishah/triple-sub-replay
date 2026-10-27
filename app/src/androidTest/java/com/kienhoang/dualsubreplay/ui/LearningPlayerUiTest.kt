@@ -62,11 +62,13 @@ class LearningPlayerUiTest {
         }
 
         composeRule.onNodeWithText("Dual-subtitle settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings_group_default_view").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_group_reading").performScrollTo().performClick()
         composeRule.onNodeWithText("Default view").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Transcript panel").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Scroll-friendly overlay").performScrollTo().assertIsDisplayed()
 
-        // Spoken-word highlighting stays in the always-visible Reading group.
+        // Spoken-word highlighting is in the Reading group, opened above.
         composeRule.onNodeWithTag("word_highlight_switch").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithTag("player_mode_scroll_friendly_overlay")

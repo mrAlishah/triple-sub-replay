@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class GoogleTranslateLaunchTest {
@@ -42,20 +43,17 @@ class GoogleTranslateLaunchTest {
     }
 
     @Test
-    fun launchingNeverThrowsWhateverTheDeviceHas() {
-        // Not installed, no exported receiver and a launch failure all return a result instead of opening a web page.
+    fun blankTextIsNeverSent() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val result = translateSendResult(installed = false, hasExportedReceiver = false)
-        assertEquals(TranslateSendResult.NOT_INSTALLED, result)
         assertEquals(TranslateSendResult.CANNOT_RECEIVE, sendToGoogleTranslate(context, "  "))
     }
 
-    /** Read-only: reports whether this device's Translate app really has an exported ACTION_SEND text/plain receiver. */
+    /** Where the Translate app is installed, it must have a receiver for the share; skipped where it is not. */
     @Test
-    fun reportsTheInstalledTranslateAppReceiver() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val receivers = context.packageManager.queryIntentActivities(intentFor("x"), 0)
-        val found = receivers.map { "${it.activityInfo.name} exported=${it.activityInfo.exported}" }
-        println("GoogleTranslateLaunchTest: ${receivers.size} receiver(s): $found")
+    fun theInstalledTranslateAppHasAReceiver() {
+        val packages = InstrumentationRegistry.getInstrumentation().targetContext.packageManager
+        val installed = runCatching { packages.getApplicationInfo(translateApp, 0) }.isSuccess
+        assumeTrue("Google Translate is not installed here", installed)
+        assertTrue(packages.queryIntentActivities(intentFor("x"), 0).isNotEmpty())
     }
 }

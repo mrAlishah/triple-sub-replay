@@ -22,6 +22,9 @@ class GoogleTranslateLaunchTest {
         assertEquals("Badeanzug", intent.getStringExtra(Intent.EXTRA_TEXT))
         assertEquals(translateApp, intent.`package`)
         // No web address and no browser: only the share contract.
+        // A fresh launch, so an already open Translate app reads the new text.
+        val fresh = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        assertEquals(fresh, intent.flags and fresh)
         assertNull(intent.data)
         assertFalse(intent.hasCategory(Intent.CATEGORY_BROWSABLE))
     }

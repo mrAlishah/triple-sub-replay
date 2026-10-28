@@ -13,7 +13,7 @@ Tapping the popup's "Open in Google Translate" button launches the installed Goo
 
 ## Behavior
 
-- Intent: `ACTION_SEND`, MIME `text/plain`, `EXTRA_TEXT` = the selected substring, `setPackage("com.google.android.apps.translate")`, `FLAG_ACTIVITY_NEW_TASK`. Blank text sends nothing.
+- Intent: `ACTION_SEND`, MIME `text/plain`, `EXTRA_TEXT` = the selected substring, `setPackage("com.google.android.apps.translate")`, `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK`. Blank text sends nothing.
 - Before launching, `PackageManager` must show the package installed and at least one **exported** activity matching that intent (manifest `<queries><package>` entry for package visibility). Results: `SENT`, `NOT_INSTALLED`, `CANNOT_RECEIVE` (no receiver, or `startActivity` threw). Each failure shows its own localized toast in all 8 languages; success shows nothing (a returned `startActivity` does not prove the input was filled).
 - Languages: the standard share contract carries only text. Google documents no public entry point for source/target, and private extras are not used. So the app picks its own languages and **language preselection is not supported**. `googleTranslatePair` (Original → Subtitle 1; Subtitle 1 and 2 → Original; `auto` when unknown) is kept, tested, and not wired, ready if a verified entry point appears.
 
@@ -50,3 +50,7 @@ Needs the Google Translate app installed.
 ## Implementation record
 
 Implemented as planned. Deviations: `googleTranslateUrl` and all browser code were deleted; `googleTranslatePair` stays unwired. The popup test and the Intent-contract instrumented tests compile but were **not run** (no device or emulator was used). 1064 unit tests, `formatCheck`, `lintDebug`, `assembleDebug` and `assembleDebugAndroidTest` pass; `complexityCheck` fails only on `DualSubExperience` in `DualSubApp.kt` (25/25), a file this feature does not touch. Whether the installed Translate app really exports a `text/plain` `ACTION_SEND` receiver, and fills its input, is unverified until the device checklist runs; `GoogleTranslateLaunchTest.reportsTheInstalledTranslateAppReceiver` prints what the device has.
+
+## Device finding after `9084f42`
+
+On the owner's phone the text arrived only sometimes: when the Translate app was already open, the selection was not added. Likely cause (not confirmed): with only `NEW_TASK` the running task is brought forward and the new intent is not read again. Fix: add `CLEAR_TASK` so the app starts fresh and reads the text on launch; its previous screen is lost. Re-test checklist item A–C with the Translate app already open, then closed.

@@ -49,7 +49,8 @@ internal fun googleTranslateSendIntent(text: String): Intent? =
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, it)
             .setPackage(TRANSLATE_APP_PACKAGE)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // CLEAR_TASK restarts an already open Translate app, which otherwise ignores the new text.
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
 internal fun translateSendResult(

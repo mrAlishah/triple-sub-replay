@@ -1,6 +1,7 @@
 package com.kienhoang.dualsubreplay.ui
 
 import android.content.ClipData
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -26,6 +27,7 @@ import androidx.compose.foundation.magnifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -68,6 +70,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -239,6 +242,8 @@ internal class PhraseActions(
     val pronounceIn: (text: String, language: String) -> Unit = { _, _ -> },
     val selectIn: (text: String, language: String, singleWord: Boolean) -> Unit = { _, _, _ -> },
     val translateFrom: (suspend (text: String, language: String) -> String)? = null,
+    /** Opens the selection in Google Translate; [language] is set for the third subtitle. */
+    val openGoogleTranslate: (text: String, translated: Boolean, language: String?) -> Unit = { _, _, _ -> },
 ) {
     fun selectLine(
         text: String,
@@ -356,6 +361,8 @@ internal fun BindPhraseActions(
         if (!state.playbackPaused) controller.clearAll()
     }
     val autoPronounce = state.autoPronounce
+    val context = LocalContext.current
+    val originalForGoogle = state.resolvedSourceLanguage ?: state.sourcePreference
     SideEffect {
         controller.actions =
             PhraseActions(
@@ -375,6 +382,12 @@ internal fun BindPhraseActions(
                     selectSpeech(webController, pronouncer, text, language, singleWord, autoPronounce)
                 },
                 translateFrom = translateFrom,
+                openGoogleTranslate = { text, translated, language ->
+                    val pair = googleTranslatePair(originalForGoogle, target, translated, language)
+                    if (!openGoogleTranslate(context, googleTranslateUrl(text, pair))) {
+                        Toast.makeText(context, R.string.practice_google_translate_unavailable, Toast.LENGTH_SHORT).show()
+                    }
+                },
                 stopSpeech = pronouncer::stop,
                 speechMessage = { pronouncer.message },
                 translate = translate,
@@ -500,6 +513,9 @@ internal fun SelectableSubtitleText(
                         onWordClick(tap)
                     },
                     onPronounce = { spoken?.let { controller.actions.pronounceLine(it, translated, lineLanguage) } },
+                    onOpenGoogleTranslate = {
+                        controller.actions.openGoogleTranslate(text.substring(start, end), translated, lineLanguage)
+                    },
                     onClose = { controller.clear(owner) },
                 )
             }
@@ -772,6 +788,7 @@ private fun PhraseActionBar(
     quickTranslate: (suspend () -> String)?,
     onTranslate: () -> Unit,
     onPronounce: () -> Unit,
+    onOpenGoogleTranslate: () -> Unit,
     onClose: () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -813,10 +830,20 @@ private fun PhraseActionBar(
                         },
                         PhraseAction(Icons.Default.Translate, R.string.practice_translate, "translate", onTranslate),
                         PhraseAction(Icons.AutoMirrored.Filled.VolumeUp, R.string.practice_pronounce, "pronounce", onPronounce),
+                        PhraseAction(
+                            Icons.AutoMirrored.Filled.OpenInNew,
+                            R.string.practice_open_google_translate,
+                            "google_translate",
+                            onOpenGoogleTranslate,
+                        ),
                     )
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     actions.forEach { action ->
-                        IconButton(onClick = action.onClick, modifier = Modifier.testTag("phrase_${action.tag}")) {
+                        // 40dp keeps five buttons plus close inside a 320dp screen.
+                        IconButton(
+                            onClick = action.onClick,
+                            modifier = Modifier.size(40.dp).testTag("phrase_${action.tag}"),
+                        ) {
                             Icon(action.icon, contentDescription = stringResource(action.label), tint = MaterialTheme.colorScheme.primary)
                         }
                     }

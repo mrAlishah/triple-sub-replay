@@ -24,7 +24,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -65,6 +64,7 @@ class SubtitleUiTest {
             }
         }
 
+        composeRule.onNodeWithTag("settings_group_languages").performClick()
         composeRule.onNodeWithText("Original language").assertIsDisplayed()
         composeRule.onNodeWithText("Translate to").assertIsDisplayed()
         composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
@@ -155,6 +155,7 @@ class SubtitleUiTest {
 
         composeRule.onNodeWithTag("slot_accordion_original").performClick()
         composeRule.onNodeWithTag("slot_accordion_second").performClick()
+        composeRule.onNodeWithTag("slot_accordion_third").performClick()
         composeRule.onNodeWithTag("source_language_checkbox").assertIsOn()
         composeRule.onNodeWithTag("target_language_checkbox").assertIsOn()
         composeRule.onNodeWithTag("third_language_checkbox").assertIsOff()
@@ -176,7 +177,7 @@ class SubtitleUiTest {
     }
 
     @Test
-    fun slotAccordionsStartWithOnlySubtitle2OpenAndToggleIndependently() {
+    fun slotAccordionsStartClosedAndToggleIndependently() {
         var second by mutableStateOf(true)
         composeRule.setContent {
             val controls =
@@ -207,17 +208,19 @@ class SubtitleUiTest {
 
         composeRule.onNodeWithText("Original Subtitle · Auto").assertIsDisplayed()
         composeRule.onNodeWithText("Subtitle 1 · English").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Subtitle 2 · Persian").onFirst().assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitle 2 · Persian").assertIsDisplayed()
         composeRule.onNodeWithTag("source_language_picker").assertDoesNotExist()
         composeRule.onNodeWithTag("target_language_picker").assertDoesNotExist()
-        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("third_language_picker").assertDoesNotExist()
 
         composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").assertIsDisplayed()
-        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
-        composeRule.onNodeWithTag("slot_accordion_third").performClick()
         composeRule.onNodeWithTag("third_language_picker").assertDoesNotExist()
-        composeRule.onNodeWithTag("target_language_picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("slot_accordion_third").performClick()
+        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
+        composeRule.onNodeWithTag("target_language_picker").assertDoesNotExist()
+        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(second) }
     }
 

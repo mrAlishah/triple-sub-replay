@@ -8,7 +8,7 @@ Approved by the fork owner (2026-10-28) for local implementation and local commi
 
 1. In both subtitle configuration interfaces, each slot's controls sit in their own collapsible panel: **Original Subtitle**, **Subtitle 1** (`SubtitleSlot.SECOND`), **Subtitle 2** (`SubtitleSlot.THIRD`). The two interfaces are the Subtitle languages popup (`QuickLanguageSettingsDialog`) and the Languages card of Settings (`SubtitleSettingsDialog`).
 2. Each header reads `Role · Language`, resolved from the current settings. An unresolved or Auto language shows `Auto`.
-3. Initial state: Original collapsed, Subtitle 1 collapsed, Subtitle 2 expanded.
+3. Initial state: every panel collapsed, and so is every card on the Settings page (the Languages card previously started open). The first request had Subtitle 2 open; the owner changed this the same day.
 4. With no saved Caption format, the app uses **Whole sentence**.
 
 ## Non-goals
@@ -27,7 +27,7 @@ No new settings screen. No change to slot state, persistence, translation, Pract
 ## Acceptance criteria
 
 1. Both interfaces show three panels, headed `Original Subtitle · <language>`, `Subtitle 1 · <language>`, `Subtitle 2 · <language>`.
-2. First open: only Subtitle 2 is expanded. Tapping a header toggles only that panel.
+2. First open: all three panels, and the Languages card on Settings, are collapsed. Tapping a header toggles only that panel.
 3. Toggling a panel changes no slot setting (visibility, language, RTL, size, order, alignment) and no translation.
 4. Picking a language and returning keeps the panels as they were.
 5. Fresh preferences, or a missing or unknown `caption_format`, give Whole sentence; a saved value is kept; a saved choice survives restart; reset restores Whole sentence.
@@ -35,7 +35,7 @@ No new settings screen. No change to slot state, persistence, translation, Pract
 ## Validation
 
 - Unit: `CaptionFormatTest.missingOrUnknownPreferenceIsWholeSentenceAndSavedChoicesSurvive` (default constant, `DualSubUiState` default, missing and unknown values, every saved value round-trips).
-- Instrumented (written and compiled, **not run**): `SubtitleUiTest.slotAccordionsStartWithOnlySubtitle2OpenAndToggleIndependently`, plus the existing popup and settings tests updated to expand the panels before clicking the pickers.
+- Instrumented (written and compiled, **not run**): `SubtitleUiTest.slotAccordionsStartClosedAndToggleIndependently`, plus the existing popup and settings tests updated to expand the panels before clicking the pickers.
 - Quality gate on 2026-10-28: `formatCheck`, `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` passed. `complexityCheck` failed on `DualSubExperience` in `DualSubApp.kt` (cyclomatic complexity 25, limit 25); that file is not part of this change and the failure was not checked against the previous commit.
 - Not verified: the UI on a device or emulator, the Light theme, small-screen scrolling, and the reset and restart behavior beyond the unit test.
 
@@ -46,4 +46,5 @@ Patch (default). The change touches app code, so `release:skip` does not apply.
 ## Implementation notes
 
 - Files: `ui/SubtitleSettingsDialog.kt`, `ui/CaptionFormat.kt`, `ui/AppViewModel.kt`, `CaptionFormatTest.kt`, `SubtitleUiTest.kt`, `myCHANGELOG.md`.
-- The row's own checkbox label still repeats `Role · Language` under the header, so text matches in tests must use `onAllNodesWithText(...).onFirst()` for an expanded panel.
+- The row's own checkbox label still repeats `Role · Language` under the header, so once a panel is open, text matches in tests must use `onAllNodesWithText(...).onFirst()`.
+- `SubtitleSettingsDialog` sets `languagesOpen` to false; tests that read the slot controls on the Settings page tap `settings_group_languages` first.

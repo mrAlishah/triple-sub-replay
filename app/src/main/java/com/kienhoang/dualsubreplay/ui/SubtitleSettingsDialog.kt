@@ -128,9 +128,8 @@ internal class LanguagePickerState {
         private set
     var query by mutableStateOf("")
 
-    /** Presentation only; the slots' settings are untouched. Subtitle 2 starts open. */
-    private val expandedSlots =
-        mutableStateMapOf(SubtitleSlot.ORIGINAL to false, SubtitleSlot.SECOND to false, SubtitleSlot.THIRD to true)
+    /** Presentation only; the slots' settings are untouched. Every panel starts closed. */
+    private val expandedSlots = mutableStateMapOf<SubtitleSlot, Boolean>()
 
     fun isExpanded(slot: SubtitleSlot): Boolean = expandedSlots[slot] == true
 
@@ -449,7 +448,7 @@ internal fun SubtitleSettingsDialog(
     val languageDownloads = LocalLanguageDownloads.current
     val translationEngineActions = LocalTranslationEngineActions.current
     var showLanguageDownloads by remember { mutableStateOf(false) }
-    var languagesOpen by rememberSaveable { mutableStateOf(true) }
+    var languagesOpen by rememberSaveable { mutableStateOf(false) }
     var readingOpen by rememberSaveable { mutableStateOf(false) }
     var defaultViewOpen by rememberSaveable { mutableStateOf(false) }
     val autoLabel = stringResource(R.string.settings_source_language_auto)

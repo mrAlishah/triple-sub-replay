@@ -18,7 +18,7 @@
     <string name="practice_next_review">Próximo repaso: %1$s</string>
     <string name="practice_pronounce">Pronunciar</string>
     <string name="practice_open_google_translate">Abrir en Google Translate</string>
-    <string name="practice_google_translate_unavailable">No se pudo abrir Google Translate</string>
+    <string name="practice_google_translate_unavailable">No se encontró ningún navegador para abrir Google Translate</string>
     <string name="practice_pronounce_item">Pronunciar %1$s</string>
     <string name="practice_speech_settings">Ajustes de voz</string>
     <string name="practice_show_meaning">Mostrar significado</string>

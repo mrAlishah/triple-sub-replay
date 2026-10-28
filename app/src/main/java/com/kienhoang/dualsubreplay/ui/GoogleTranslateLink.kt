@@ -3,6 +3,7 @@ package com.kienhoang.dualsubreplay.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import java.net.URLEncoder
 
@@ -45,16 +46,45 @@ internal fun googleTranslateUrl(
     return "https://translate.google.com/?sl=${enc(pair.source)}&tl=${enc(pair.target)}&text=${enc(text)}&op=translate"
 }
 
-/** Opens [url]; false when no app can show it, so the caller can tell the user. */
+/** The Google Translate app's package: it claims translate.google.com links but can drop their text and languages. */
+private const val TRANSLATE_APP_PACKAGE = "com.google.android.apps.translate"
+
+/** The user's default browser when it is one of [browsers], else the first browser; never the Translate app. */
+internal fun pickBrowserPackage(
+    defaultPackage: String?,
+    browsers: List<String>,
+): String? {
+    val usable = browsers.filter { it != TRANSLATE_APP_PACKAGE }
+    return defaultPackage?.takeIf { it in usable } ?: usable.firstOrNull()
+}
+
+/** Aimed at one browser package, so no other app (the Translate app) can intercept the link. */
+internal fun googleTranslateIntent(
+    url: String,
+    browserPackage: String,
+): Intent =
+    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        .addCategory(Intent.CATEGORY_BROWSABLE)
+        .setPackage(browserPackage)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+/** Opens [url] in a browser only; false when there is none (or it fails), so the caller can tell the user. */
 internal fun openGoogleTranslate(
     context: Context,
     url: String,
-): Boolean =
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+): Boolean {
+    val packages = context.packageManager
+    // Any host but translate.google.com, so only browsers match (needs the <queries> entry in the manifest).
+    val probe = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com")).addCategory(Intent.CATEGORY_BROWSABLE)
+    val default = packages.resolveActivity(probe, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+    val installed = packages.queryIntentActivities(probe, 0).map { it.activityInfo.packageName }
+    val browser = pickBrowserPackage(default, installed) ?: return false
+    return try {
+        context.startActivity(googleTranslateIntent(url, browser))
         true
     } catch (_: ActivityNotFoundException) {
         false
     } catch (_: SecurityException) {
         false
     }
+}

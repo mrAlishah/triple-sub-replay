@@ -18,7 +18,7 @@
     <string name="practice_next_review">次の復習: %1$s</string>
     <string name="practice_pronounce">発音</string>
     <string name="practice_open_google_translate">Google 翻訳で開く</string>
-    <string name="practice_google_translate_unavailable">Google 翻訳を開けませんでした</string>
+    <string name="practice_google_translate_unavailable">Google 翻訳を開くウェブブラウザーが見つかりません</string>
     <string name="practice_pronounce_item">%1$s を発音</string>
     <string name="practice_speech_settings">音声設定</string>
     <string name="practice_show_meaning">意味を表示</string>

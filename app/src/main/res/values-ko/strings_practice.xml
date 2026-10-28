@@ -18,7 +18,7 @@
     <string name="practice_next_review">다음 복습: %1$s</string>
     <string name="practice_pronounce">발음</string>
     <string name="practice_open_google_translate">Google 번역에서 열기</string>
-    <string name="practice_google_translate_unavailable">Google 번역을 열 수 없습니다</string>
+    <string name="practice_google_translate_unavailable">Google 번역을 열 웹 브라우저를 찾을 수 없습니다</string>
     <string name="practice_pronounce_item">%1$s 발음</string>
     <string name="practice_speech_settings">음성 설정</string>
     <string name="practice_show_meaning">뜻 보기</string>

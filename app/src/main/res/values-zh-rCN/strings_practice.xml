@@ -18,7 +18,7 @@
     <string name="practice_next_review">下次复习:%1$s</string>
     <string name="practice_pronounce">发音</string>
     <string name="practice_open_google_translate">在 Google 翻译中打开</string>
-    <string name="practice_google_translate_unavailable">无法打开 Google 翻译</string>
+    <string name="practice_google_translate_unavailable">未找到可打开 Google 翻译的网络浏览器</string>
     <string name="practice_pronounce_item">朗读 %1$s</string>
     <string name="practice_speech_settings">语音设置</string>
     <string name="practice_show_meaning">显示释义</string>

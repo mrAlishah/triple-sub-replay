@@ -4,12 +4,13 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import java.net.URLEncoder
 
 private const val GOOGLE_AUTO = "auto"
 
-/** A source and target language for Google Translate; [source] is "auto" when it is not known. */
+/**
+ * A source and target language for Google Translate; [source] is "auto" when it is not known.
+ * shortcut: not sent anywhere, because sharing text carries no languages; wire it if the app gains a verified entry point.
+ */
 internal data class GoogleTranslatePair(
     val source: String,
     val target: String,
@@ -37,54 +38,56 @@ internal fun googleTranslatePair(
     return if (pair.source == pair.target) pair.copy(source = GOOGLE_AUTO) else pair
 }
 
-/** The official web address; the Google Translate app opens it when installed, else a browser does. */
-internal fun googleTranslateUrl(
-    text: String,
-    pair: GoogleTranslatePair,
-): String {
-    fun enc(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
-    return "https://translate.google.com/?sl=${enc(pair.source)}&tl=${enc(pair.target)}&text=${enc(text)}&op=translate"
-}
-
-/** The Google Translate app's package: it claims translate.google.com links but can drop their text and languages. */
 private const val TRANSLATE_APP_PACKAGE = "com.google.android.apps.translate"
 
-/** The user's default browser when it is one of [browsers], else the first browser; never the Translate app. */
-internal fun pickBrowserPackage(
-    defaultPackage: String?,
-    browsers: List<String>,
-): String? {
-    val usable = browsers.filter { it != TRANSLATE_APP_PACKAGE }
-    return defaultPackage?.takeIf { it in usable } ?: usable.firstOrNull()
-}
+internal enum class TranslateSendResult { SENT, NOT_INSTALLED, CANNOT_RECEIVE }
 
-/** Aimed at one browser package, so no other app (the Translate app) can intercept the link. */
-internal fun googleTranslateIntent(
-    url: String,
-    browserPackage: String,
-): Intent =
-    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        .addCategory(Intent.CATEGORY_BROWSABLE)
-        .setPackage(browserPackage)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+/** Plain text shared straight to the Google Translate app only; null when there is nothing to send. */
+internal fun googleTranslateSendIntent(text: String): Intent? =
+    text.takeIf { it.isNotBlank() }?.let {
+        Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, it)
+            .setPackage(TRANSLATE_APP_PACKAGE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
 
-/** Opens [url] in a browser only; false when there is none (or it fails), so the caller can tell the user. */
-internal fun openGoogleTranslate(
+internal fun translateSendResult(
+    installed: Boolean,
+    hasExportedReceiver: Boolean,
+): TranslateSendResult =
+    when {
+        !installed -> TranslateSendResult.NOT_INSTALLED
+        !hasExportedReceiver -> TranslateSendResult.CANNOT_RECEIVE
+        else -> TranslateSendResult.SENT
+    }
+
+/**
+ * Hands [text] to the Google Translate app. It never opens a web page; the result says why not.
+ * SENT means the app was started, not that its input was filled: that needs a device check.
+ */
+internal fun sendToGoogleTranslate(
     context: Context,
-    url: String,
-): Boolean {
+    text: String,
+): TranslateSendResult {
+    val intent = googleTranslateSendIntent(text) ?: return TranslateSendResult.CANNOT_RECEIVE
     val packages = context.packageManager
-    // Any host but translate.google.com, so only browsers match (needs the <queries> entry in the manifest).
-    val probe = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com")).addCategory(Intent.CATEGORY_BROWSABLE)
-    val default = packages.resolveActivity(probe, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
-    val installed = packages.queryIntentActivities(probe, 0).map { it.activityInfo.packageName }
-    val browser = pickBrowserPackage(default, installed) ?: return false
+    val installed =
+        try {
+            packages.getApplicationInfo(TRANSLATE_APP_PACKAGE, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    val receiver = installed && packages.queryIntentActivities(intent, 0).any { it.activityInfo.exported }
+    val result = translateSendResult(installed, receiver)
+    if (result != TranslateSendResult.SENT) return result
     return try {
-        context.startActivity(googleTranslateIntent(url, browser))
-        true
+        context.startActivity(intent)
+        TranslateSendResult.SENT
     } catch (_: ActivityNotFoundException) {
-        false
+        TranslateSendResult.CANNOT_RECEIVE
     } catch (_: SecurityException) {
-        false
+        TranslateSendResult.CANNOT_RECEIVE
     }
 }

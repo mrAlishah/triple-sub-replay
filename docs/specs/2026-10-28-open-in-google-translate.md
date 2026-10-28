@@ -1,17 +1,52 @@
-# Open in Google Translate from the selection popup
+# Send the selected text to the Google Translate app
 
-Owner request 2026-10-28. Fork feature; no upstream files besides the popup are changed.
+Owner request 2026-10-28 (revised twice the same day). Fork feature; only the selection popup is touched.
+
+## History and root cause
+
+- `e4946c1`: `ACTION_VIEW` on `translate.google.com/?sl&tl&text`. On a physical device the Google Translate app claimed the link and opened with an empty input: it ignores those query parameters.
+- `a166b72`: the same URL aimed at a browser. Rejected by the owner: the requirement is the **native app**, never a web page.
+
+## Requirement
+
+Tapping the popup's "Open in Google Translate" button launches the installed Google Translate Android app with the exact selected text (word, phrase or line) in its input. No browser, Custom Tab, WebView, chooser, clipboard copy or private extras.
 
 ## Behavior
 
-- The popup for a selected word, phrase or subtitle line has an "Open in Google Translate" button (`phrase_google_translate`, also in the ▾ list) after Pronounce.
-- It opens `https://translate.google.com/?sl=<source>&tl=<target>&text=<text>&op=translate` in a browser only (device finding, commit e4946c1: a plain `ACTION_VIEW` let the Google Translate app claim the link and open without the text). The intent names one browser package: the default browser when it is one, else the first installed browser; the Translate app is never chosen. Browsers are found with a probe on `https://example.com` (needs the `https` `VIEW`/`BROWSABLE` `<queries>` entry). No browser means no launch and a clear toast. No private Activity names or extras.
-- Slot rule (`googleTranslatePair`): Original Subtitle goes to Subtitle 1's language; Subtitle 1 and Subtitle 2 go to the Original Subtitle's language. Languages come from the slots' settings, never from display order. An Auto or unresolved original language is sent as `auto`; the same language on both sides also sends `auto` as source.
-- Text is percent-encoded (UTF-8, `%20` for spaces). No clipboard use, no API, no background request.
-- With no browser, a toast says so; it never falls back to the plain `ACTION_VIEW`.
+- Intent: `ACTION_SEND`, MIME `text/plain`, `EXTRA_TEXT` = the selected substring, `setPackage("com.google.android.apps.translate")`, `FLAG_ACTIVITY_NEW_TASK`. Blank text sends nothing.
+- Before launching, `PackageManager` must show the package installed and at least one **exported** activity matching that intent (manifest `<queries><package>` entry for package visibility). Results: `SENT`, `NOT_INSTALLED`, `CANNOT_RECEIVE` (no receiver, or `startActivity` threw). Each failure shows its own localized toast in all 8 languages; success shows nothing (a returned `startActivity` does not prove the input was filled).
+- Languages: the standard share contract carries only text. Google documents no public entry point for source/target, and private extras are not used. So the app picks its own languages and **language preselection is not supported**. `googleTranslatePair` (Original → Subtitle 1; Subtitle 1 and 2 → Original; `auto` when unknown) is kept, tested, and not wired, ready if a verified entry point appears.
+
+## Acceptance criteria
+
+1. The intent is `ACTION_SEND` / `text/plain` / exact `EXTRA_TEXT` / package set to the Translate app.
+2. Words, phrases, sentences, umlauts, ß, Persian with ZWNJ, punctuation and inner whitespace arrive unchanged.
+3. Not installed, no exported receiver and launch failure each give a distinct message; the browser is never used.
+4. Copy, Pronounce and the other popup actions behave as before.
+
+## Plan
+
+1. Replace the browser launcher in `ui/GoogleTranslateLink.kt` with `googleTranslateSendIntent` and `sendToGoogleTranslate`.
+2. Change `PhraseActions.openGoogleTranslate` to `(text) -> Unit`; `BindPhraseActions` maps the result to a toast.
+3. Manifest: replace the `https` browser query with `<package>` for the Translate app.
+4. Strings: reword the existing "unavailable" string and add "cannot accept" in 8 languages.
 
 ## Validation
 
-- `GoogleTranslateLinkTest` (pair rules, `auto`, same language, encoding of spaces, punctuation, Unicode and Persian).
-- `pickBrowserPackage` unit tests; `GoogleTranslateLaunchTest` (intent is aimed at the browser package); `PhraseSelectionUiTest` (the button sends the selected word).
-- Device check still needed: the Google Translate page's input box holds the selected text and languages.
+- Unit: result classification, pair rules.
+- Instrumented: the real `Intent` contract (action, type, extra, package, no data URI, German and Persian/ZWNJ text); the popup button sends the selected word only.
+- Manual checklist on a physical device below.
+
+## Device checklist (not yet run; the phone has not been accessed)
+
+Needs the Google Translate app installed.
+
+- A. Select `Badeanzug`, tap the button: the app opens with `Badeanzug` in the input.
+- B. Select a whole German sentence: the whole sentence is in the input.
+- C. Select a Persian word containing a ZWNJ (e.g. `می‌خواهم`): the input holds it exactly.
+- D. Note which source and target languages the app picked (German → English, Persian → German). Record this separately: it is expected **not** to follow the subtitle languages.
+- E. Uninstall or disable the Translate app: the toast says it is not installed and no browser opens.
+
+## Implementation record
+
+Implemented as planned. Deviations: `googleTranslateUrl` and all browser code were deleted; `googleTranslatePair` stays unwired. The popup test and the Intent-contract instrumented tests compile but were **not run** (no device or emulator was used). 1064 unit tests, `formatCheck`, `lintDebug`, `assembleDebug` and `assembleDebugAndroidTest` pass; `complexityCheck` fails only on `DualSubExperience` in `DualSubApp.kt` (25/25), a file this feature does not touch. Whether the installed Translate app really exports a `text/plain` `ACTION_SEND` receiver, and fills its input, is unverified until the device checklist runs; `GoogleTranslateLaunchTest.reportsTheInstalledTranslateAppReceiver` prints what the device has.

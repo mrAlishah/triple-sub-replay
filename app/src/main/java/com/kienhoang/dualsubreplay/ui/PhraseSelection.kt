@@ -242,8 +242,8 @@ internal class PhraseActions(
     val pronounceIn: (text: String, language: String) -> Unit = { _, _ -> },
     val selectIn: (text: String, language: String, singleWord: Boolean) -> Unit = { _, _, _ -> },
     val translateFrom: (suspend (text: String, language: String) -> String)? = null,
-    /** Opens the selection in Google Translate; [language] is set for the third subtitle. */
-    val openGoogleTranslate: (text: String, translated: Boolean, language: String?) -> Unit = { _, _, _ -> },
+    /** Sends the selected text to the Google Translate app. */
+    val openGoogleTranslate: (text: String) -> Unit = {},
 ) {
     fun selectLine(
         text: String,
@@ -362,7 +362,6 @@ internal fun BindPhraseActions(
     }
     val autoPronounce = state.autoPronounce
     val context = LocalContext.current
-    val originalForGoogle = state.resolvedSourceLanguage ?: state.sourcePreference
     SideEffect {
         controller.actions =
             PhraseActions(
@@ -382,10 +381,13 @@ internal fun BindPhraseActions(
                     selectSpeech(webController, pronouncer, text, language, singleWord, autoPronounce)
                 },
                 translateFrom = translateFrom,
-                openGoogleTranslate = { text, translated, language ->
-                    val pair = googleTranslatePair(originalForGoogle, target, translated, language)
-                    if (!openGoogleTranslate(context, googleTranslateUrl(text, pair))) {
-                        Toast.makeText(context, R.string.practice_google_translate_unavailable, Toast.LENGTH_SHORT).show()
+                openGoogleTranslate = { text ->
+                    when (sendToGoogleTranslate(context, text)) {
+                        TranslateSendResult.SENT -> Unit
+                        TranslateSendResult.NOT_INSTALLED ->
+                            Toast.makeText(context, R.string.practice_google_translate_unavailable, Toast.LENGTH_LONG).show()
+                        TranslateSendResult.CANNOT_RECEIVE ->
+                            Toast.makeText(context, R.string.practice_google_translate_cannot_open, Toast.LENGTH_LONG).show()
                     }
                 },
                 stopSpeech = pronouncer::stop,
@@ -514,7 +516,7 @@ internal fun SelectableSubtitleText(
                     },
                     onPronounce = { spoken?.let { controller.actions.pronounceLine(it, translated, lineLanguage) } },
                     onOpenGoogleTranslate = {
-                        controller.actions.openGoogleTranslate(text.substring(start, end), translated, lineLanguage)
+                        controller.actions.openGoogleTranslate(text.substring(start, end))
                     },
                     onClose = { controller.clear(owner) },
                 )

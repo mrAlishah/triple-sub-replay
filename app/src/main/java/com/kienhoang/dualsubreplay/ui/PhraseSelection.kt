@@ -1,7 +1,6 @@
 package com.kienhoang.dualsubreplay.ui
 
 import android.content.ClipData
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -381,15 +380,7 @@ internal fun BindPhraseActions(
                     selectSpeech(webController, pronouncer, text, language, singleWord, autoPronounce)
                 },
                 translateFrom = translateFrom,
-                openGoogleTranslate = { text ->
-                    when (sendToGoogleTranslate(context, text)) {
-                        TranslateSendResult.SENT -> Unit
-                        TranslateSendResult.NOT_INSTALLED ->
-                            Toast.makeText(context, R.string.practice_google_translate_unavailable, Toast.LENGTH_LONG).show()
-                        TranslateSendResult.CANNOT_RECEIVE ->
-                            Toast.makeText(context, R.string.practice_google_translate_cannot_open, Toast.LENGTH_LONG).show()
-                    }
-                },
+                openGoogleTranslate = { text -> shareToGoogleTranslate(context, text) },
                 stopSpeech = pronouncer::stop,
                 speechMessage = { pronouncer.message },
                 translate = translate,
@@ -438,6 +429,8 @@ internal fun SelectableSubtitleText(
     /** Set for the third subtitle: its language replaces the original/translated choice in speech, translation and the tap. */
     lineLanguage: String? = null,
     centered: Boolean = false,
+    /** False where the word sheet cannot open (Practice): the bar then keeps Copy, Pronounce and Google Translate. */
+    showTranslate: Boolean = true,
 ) {
     val controller = rememberPhraseSelection()
     val owner = remember { Any() }
@@ -509,6 +502,7 @@ internal fun SelectableSubtitleText(
                         controller.actions
                             .translatorFor(translated, lineLanguage)
                             ?.let { translate -> { translate(text.substring(start, end)) } },
+                    showTranslate = showTranslate,
                     onTranslate = {
                         val tap = phraseTap(text, tokens, words, segment, translated, lineLanguage)
                         controller.clear(owner)
@@ -788,6 +782,7 @@ private fun PhraseActionBar(
     speechMessage: String?,
     @StringRes dictionaryNote: Int?,
     quickTranslate: (suspend () -> String)?,
+    showTranslate: Boolean,
     onTranslate: () -> Unit,
     onPronounce: () -> Unit,
     onOpenGoogleTranslate: () -> Unit,
@@ -821,7 +816,7 @@ private fun PhraseActionBar(
             // As wide as its widest line, so the close button sits at the bar's right edge.
             Column(Modifier.width(IntrinsicSize.Max).padding(horizontal = 6.dp, vertical = 2.dp)) {
                 val actions =
-                    listOf(
+                    listOfNotNull(
                         PhraseAction(
                             icon = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
                             label = if (copied) R.string.practice_copied else R.string.practice_copy,
@@ -830,7 +825,8 @@ private fun PhraseActionBar(
                             scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, phrase))) }
                             copied = true
                         },
-                        PhraseAction(Icons.Default.Translate, R.string.practice_translate, "translate", onTranslate),
+                        PhraseAction(Icons.Default.Translate, R.string.practice_translate, "translate", onTranslate)
+                            .takeIf { showTranslate },
                         PhraseAction(Icons.AutoMirrored.Filled.VolumeUp, R.string.practice_pronounce, "pronounce", onPronounce),
                         PhraseAction(
                             Icons.AutoMirrored.Filled.OpenInNew,

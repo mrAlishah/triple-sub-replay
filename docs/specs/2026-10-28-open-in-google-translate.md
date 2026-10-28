@@ -17,6 +17,12 @@ Tapping the popup's "Open in Google Translate" button launches the installed Goo
 - Before launching, `PackageManager` must show the package installed and at least one activity matching that intent (manifest `<queries><package>` entry for package visibility). Results: `SENT`, `NOT_INSTALLED`, `CANNOT_RECEIVE` (no receiver, or `startActivity` threw). Each failure shows its own localized toast in all 8 languages; success shows nothing (a returned `startActivity` does not prove the input was filled).
 - Languages: the standard share contract carries only text. Google documents no public entry point for source/target, and private extras are not used. So the app picks its own languages and **language preselection is not supported**. The earlier slot-to-language mapping (`googleTranslatePair`) was removed as unused; recover it from `a166b72` if a verified entry point appears.
 
+## Practice
+
+In the saved-word details (Vocabulary view and review), the saved word, the example sentence, the sentence translations and the review meanings are selectable with the player's own component (`PracticeSelectableText` over `SelectableSubtitleText`): tap a word or drag the handles, and the same popup bar shows Copy, Pronounce and Open in Google Translate, plus the inline translation. Each text uses its own language (`wordLanguage`, `meaningLanguage`, or the map key), so words split and speak correctly.
+
+Deviation from "same as the player": the in-app Translate action is hidden here (`showTranslate = false`), because the word sheet opens underneath Practice and `SavedWordsScreen` has no access to it. Editable fields (the meaning and notes boxes) keep Android's normal text selection with no Google Translate action, since Compose offers no clean way to add one. The earlier standalone button under the word was removed.
+
 ## Acceptance criteria
 
 1. The intent is `ACTION_SEND` / `text/plain` / exact `EXTRA_TEXT` / package set to the Translate app.

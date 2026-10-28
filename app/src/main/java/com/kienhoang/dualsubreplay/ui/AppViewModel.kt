@@ -136,7 +136,7 @@ data class DualSubUiState(
     val highlightColorKey: String = DEFAULT_HIGHLIGHT_COLOR_KEY,
     val wordHighlightEnabled: Boolean = true,
     val customColorsEnabled: Boolean = true,
-    val captionFormat: CaptionFormat = CaptionFormat.SHORT_PHRASES,
+    val captionFormat: CaptionFormat = DEFAULT_CAPTION_FORMAT,
     val translationPosition: TranslationPosition = TranslationPosition.BELOW,
     val isDownloadingTranslationModel: Boolean = false,
     val lockOverlayToVideo: Boolean = false,
@@ -543,11 +543,7 @@ class AppViewModel internal constructor(
                     storedFeatureEnabled(
                         preferences.getBoolean(CUSTOM_SUBTITLE_COLORS_ENABLED_PREFERENCE, true),
                     ),
-                captionFormat =
-                    storedCaptionFormat(
-                        preferences.getString(CAPTION_FORMAT_PREFERENCE, null),
-                        preferences.getBoolean(SPLIT_LONG_SENTENCES_PREFERENCE, true),
-                    ),
+                captionFormat = storedCaptionFormat(preferences.getString(CAPTION_FORMAT_PREFERENCE, null)),
                 translationPosition = storedTranslationPosition(preferences.getString(TRANSLATION_POSITION_PREFERENCE, null)),
                 lockOverlayToVideo =
                     storedFeatureEnabled(
@@ -1415,7 +1411,7 @@ class AppViewModel internal constructor(
                 originalVisibility = CaptionVisibility.ALWAYS,
                 translatedVisibility = CaptionVisibility.ALWAYS,
                 studyPlayMode = StudyPlayMode.NORMAL,
-                captionFormat = CaptionFormat.SHORT_PHRASES,
+                captionFormat = DEFAULT_CAPTION_FORMAT,
                 translationPosition = TranslationPosition.BELOW,
                 lockOverlayToVideo = false,
                 preloadModelsEnabled = true,

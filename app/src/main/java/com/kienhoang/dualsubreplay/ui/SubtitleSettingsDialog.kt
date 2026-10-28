@@ -58,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -126,6 +127,16 @@ internal class LanguagePickerState {
     var mode by mutableStateOf<LanguagePickerMode?>(null)
         private set
     var query by mutableStateOf("")
+
+    /** Presentation only; the slots' settings are untouched. Subtitle 2 starts open. */
+    private val expandedSlots =
+        mutableStateMapOf(SubtitleSlot.ORIGINAL to false, SubtitleSlot.SECOND to false, SubtitleSlot.THIRD to true)
+
+    fun isExpanded(slot: SubtitleSlot): Boolean = expandedSlots[slot] == true
+
+    fun toggle(slot: SubtitleSlot) {
+        expandedSlots[slot] = !isExpanded(slot)
+    }
 
     fun open(mode: LanguagePickerMode) {
         this.mode = mode
@@ -235,44 +246,73 @@ private fun showLanguagePickerIfOpen(
 private fun LanguagePickerButtons(
     sourceLabel: String,
     targetLanguage: String,
-    onPick: (LanguagePickerMode) -> Unit,
+    picker: LanguagePickerState,
 ) {
     val slots = LocalTripleSubtitleControls.current
     val locale = currentInterfaceLocale()
     val autoLabel = stringResource(R.string.settings_source_language_auto)
-    SubtitleSlotRow(
-        slot = SubtitleSlot.ORIGINAL,
-        label = R.string.settings_slot_original,
-        checked = slots.originalEnabled,
-        onCheckedChange = slots.onOriginalEnabledChange,
-        languageLabel = sourceLabel,
-        onPickLanguage = { onPick(LanguagePickerMode.SOURCE) },
-        tag = "source_language",
-        languageHint = sourceLabel.takeUnless { it == autoLabel },
-    )
-    Spacer(Modifier.height(12.dp))
-    SubtitleSlotRow(
-        slot = SubtitleSlot.SECOND,
-        label = R.string.settings_slot_second,
-        checked = slots.secondEnabled,
-        onCheckedChange = slots.onSecondEnabledChange,
-        languageLabel = languageDisplayName(targetLanguage, locale),
-        onPickLanguage = { onPick(LanguagePickerMode.TARGET) },
-        tag = "target_language",
-        languageHint = languageDisplayName(targetLanguage, locale),
-    )
-    Spacer(Modifier.height(12.dp))
-    SubtitleSlotRow(
-        slot = SubtitleSlot.THIRD,
-        label = R.string.settings_slot_third,
-        checked = slots.enabled,
-        onCheckedChange = slots.onEnabledChange,
-        languageLabel = languageDisplayName(slots.language, locale),
-        onPickLanguage = { onPick(LanguagePickerMode.THIRD) },
-        tag = "third_language",
-        languageHint = languageDisplayName(slots.language, locale),
-    )
+    val secondLabel = languageDisplayName(targetLanguage, locale)
+    val thirdLabel = languageDisplayName(slots.language, locale)
+    SlotAccordion(SubtitleSlot.ORIGINAL, sourceLabel, picker, "original") {
+        SubtitleSlotRow(
+            slot = SubtitleSlot.ORIGINAL,
+            label = R.string.settings_slot_original,
+            checked = slots.originalEnabled,
+            onCheckedChange = slots.onOriginalEnabledChange,
+            languageLabel = sourceLabel,
+            onPickLanguage = { picker.open(LanguagePickerMode.SOURCE) },
+            tag = "source_language",
+            languageHint = sourceLabel.takeUnless { it == autoLabel },
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    SlotAccordion(SubtitleSlot.SECOND, secondLabel, picker, "second") {
+        SubtitleSlotRow(
+            slot = SubtitleSlot.SECOND,
+            label = R.string.settings_slot_second,
+            checked = slots.secondEnabled,
+            onCheckedChange = slots.onSecondEnabledChange,
+            languageLabel = secondLabel,
+            onPickLanguage = { picker.open(LanguagePickerMode.TARGET) },
+            tag = "target_language",
+            languageHint = secondLabel,
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    SlotAccordion(SubtitleSlot.THIRD, thirdLabel, picker, "third") {
+        SubtitleSlotRow(
+            slot = SubtitleSlot.THIRD,
+            label = R.string.settings_slot_third,
+            checked = slots.enabled,
+            onCheckedChange = slots.onEnabledChange,
+            languageLabel = thirdLabel,
+            onPickLanguage = { picker.open(LanguagePickerMode.THIRD) },
+            tag = "third_language",
+            languageHint = thirdLabel,
+        )
+    }
     SettingsHint(stringResource(R.string.settings_model_download_hint))
+}
+
+/** One slot's controls in their own collapsible panel; the header names the slot's current language. */
+@Composable
+private fun SlotAccordion(
+    slot: SubtitleSlot,
+    language: String,
+    picker: LanguagePickerState,
+    tag: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    SettingsExpandableCard(
+        title = slotRoleLabel(slot, language.ifBlank { stringResource(R.string.settings_source_language_auto) }),
+        summary = "",
+        icon = Icons.Default.Language,
+        expanded = picker.isExpanded(slot),
+        onToggle = { picker.toggle(slot) },
+        testTag = "slot_accordion_$tag",
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        content = content,
+    )
 }
 
 /**
@@ -314,7 +354,7 @@ internal fun QuickLanguageSettingsDialog(
                 LanguagePickerButtons(
                     sourceLabel = sourceLanguageLabel(sourcePreference, sourceChoices, autoLabel, interfaceLocale),
                     targetLanguage = targetLanguage,
-                    onPick = languagePicker::open,
+                    picker = languagePicker,
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
@@ -366,7 +406,7 @@ internal fun SubtitleSettingsDialog(
     highlightColorKey: String = DEFAULT_HIGHLIGHT_COLOR_KEY,
     wordHighlightEnabled: Boolean = true,
     customColorsEnabled: Boolean = true,
-    captionFormat: CaptionFormat = CaptionFormat.SHORT_PHRASES,
+    captionFormat: CaptionFormat = DEFAULT_CAPTION_FORMAT,
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
     onTranslationPositionChange: (TranslationPosition) -> Unit = {},
     lockOverlayToVideo: Boolean = false,
@@ -470,7 +510,7 @@ internal fun SubtitleSettingsDialog(
                         onToggle = { languagesOpen = !languagesOpen },
                         testTag = "settings_group_languages",
                     ) {
-                        LanguagePickerButtons(sourceLabel, targetLanguage, languagePicker::open)
+                        LanguagePickerButtons(sourceLabel, targetLanguage, languagePicker)
                     }
 
                     SettingsExpandableCard(
@@ -782,11 +822,13 @@ internal fun SettingsExpandableCard(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(title, style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (summary.isNotEmpty()) {
+                        Text(
+                            summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,

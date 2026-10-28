@@ -9,11 +9,12 @@ import org.junit.Test
 import java.nio.file.Files
 
 class CaptionFormatTest {
-    @Test fun defaultAndLegacyPreferencesAreStable() {
-        assertEquals(CaptionFormat.SHORT_PHRASES, storedCaptionFormat(null))
-        assertEquals(CaptionFormat.WHOLE_SENTENCE, storedCaptionFormat(null, false))
+    @Test fun missingOrUnknownPreferenceIsWholeSentenceAndSavedChoicesSurvive() {
+        assertEquals(CaptionFormat.WHOLE_SENTENCE, DEFAULT_CAPTION_FORMAT)
+        assertEquals(CaptionFormat.WHOLE_SENTENCE, DualSubUiState().captionFormat)
+        assertEquals(CaptionFormat.WHOLE_SENTENCE, storedCaptionFormat(null))
+        assertEquals(CaptionFormat.WHOLE_SENTENCE, storedCaptionFormat("unknown"))
         CaptionFormat.entries.forEach { assertEquals(it, storedCaptionFormat(it.storageValue)) }
-        assertEquals(CaptionFormat.SHORT_PHRASES, storedCaptionFormat("unknown"))
     }
 
     @Test fun bothFormatsRetainExactUnevenWordTimesIncludingRepeatedWords() {

@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -66,12 +67,14 @@ class SubtitleUiTest {
 
         composeRule.onNodeWithText("Original language").assertIsDisplayed()
         composeRule.onNodeWithText("Translate to").assertIsDisplayed()
-        composeRule.onNodeWithText("Vietnamese").assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
         saveUiEvidence("settings")
         composeRule.onNodeWithText("Focus").assertDoesNotExist()
+        composeRule.onNodeWithTag("slot_accordion_original").performClick()
         composeRule.onNodeWithTag("source_language_picker").performClick()
         composeRule.onNodeWithTag("language_option_source_ja").performClick()
         composeRule.runOnIdle { assertEquals("ja", selectedLanguage) }
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").performClick()
         composeRule.onNodeWithTag("language_search").performTextInput("English")
         composeRule.onNodeWithTag("language_option_target_en").performClick()
@@ -100,8 +103,9 @@ class SubtitleUiTest {
         }
 
         composeRule.onNodeWithText("Subtitle languages").assertIsDisplayed()
-        composeRule.onNodeWithText("Vietnamese").assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
         composeRule.onNodeWithText("Text size: 100%").assertDoesNotExist()
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").performClick()
         composeRule.onNodeWithTag("language_search").performTextInput("English")
         composeRule.onNodeWithTag("language_option_target_en").performClick()
@@ -149,6 +153,8 @@ class SubtitleUiTest {
             }
         }
 
+        composeRule.onNodeWithTag("slot_accordion_original").performClick()
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("source_language_checkbox").assertIsOn()
         composeRule.onNodeWithTag("target_language_checkbox").assertIsOn()
         composeRule.onNodeWithTag("third_language_checkbox").assertIsOff()
@@ -170,6 +176,52 @@ class SubtitleUiTest {
     }
 
     @Test
+    fun slotAccordionsStartWithOnlySubtitle2OpenAndToggleIndependently() {
+        var second by mutableStateOf(true)
+        composeRule.setContent {
+            val controls =
+                TripleSubtitleControls(
+                    originalEnabled = true,
+                    secondEnabled = second,
+                    enabled = true,
+                    language = "fa",
+                    onOriginalEnabledChange = {},
+                    onSecondEnabledChange = { second = it },
+                    onEnabledChange = {},
+                    onLanguageChange = {},
+                )
+            DualSubTheme {
+                CompositionLocalProvider(LocalTripleSubtitleControls provides controls) {
+                    QuickLanguageSettingsDialog(
+                        sourcePreference = "auto",
+                        targetLanguage = "en",
+                        availableSourceLanguages = listOf(CaptionLanguage("de", "German")),
+                        onSourceChange = {},
+                        onTargetChange = {},
+                        onOpenAllSettings = {},
+                        onDismiss = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Original Subtitle · Auto").assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitle 1 · English").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Subtitle 2 · Persian").onFirst().assertIsDisplayed()
+        composeRule.onNodeWithTag("source_language_picker").assertDoesNotExist()
+        composeRule.onNodeWithTag("target_language_picker").assertDoesNotExist()
+        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
+        composeRule.onNodeWithTag("target_language_picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("slot_accordion_third").performClick()
+        composeRule.onNodeWithTag("third_language_picker").assertDoesNotExist()
+        composeRule.onNodeWithTag("target_language_picker").assertIsDisplayed()
+        composeRule.runOnIdle { assertTrue(second) }
+    }
+
+    @Test
     fun translateToListShowsRecentLanguagesFirst() {
         composeRule.setContent {
             DualSubTheme {
@@ -186,6 +238,7 @@ class SubtitleUiTest {
             }
         }
 
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").performClick()
         composeRule.onNodeWithText("Recent").assertIsDisplayed()
         composeRule.onNodeWithTag("language_recent_target_vi").assertIsDisplayed()
@@ -216,6 +269,7 @@ class SubtitleUiTest {
             }
         }
 
+        composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").performClick()
         composeRule.onNodeWithTag("language_recent_target_ja").performClick()
         composeRule.runOnIdle { assertEquals("ja", selectedTarget) }

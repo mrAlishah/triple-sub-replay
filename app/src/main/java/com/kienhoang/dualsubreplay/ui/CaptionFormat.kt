@@ -18,12 +18,10 @@ enum class CaptionFormat(
     WHOLE_SENTENCE("whole_sentence", R.string.settings_caption_format_whole_sentence),
 }
 
-internal fun storedCaptionFormat(
-    raw: String?,
-    legacySplit: Boolean = true,
-): CaptionFormat =
-    CaptionFormat.entries.firstOrNull { it.storageValue == raw }
-        ?: if (raw == null && !legacySplit) CaptionFormat.WHOLE_SENTENCE else CaptionFormat.SHORT_PHRASES
+internal val DEFAULT_CAPTION_FORMAT = CaptionFormat.WHOLE_SENTENCE
+
+internal fun storedCaptionFormat(raw: String?): CaptionFormat =
+    CaptionFormat.entries.firstOrNull { it.storageValue == raw } ?: DEFAULT_CAPTION_FORMAT
 
 /** Both presentations share source words; translation is applied only after grouping. */
 internal fun captionDisplaySegments(

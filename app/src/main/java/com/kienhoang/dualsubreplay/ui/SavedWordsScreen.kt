@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -194,7 +193,7 @@ internal fun SavedWordsScreen(
                     }
                 } else {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(selected.word, style = MaterialTheme.typography.headlineMedium)
+                        PracticeSelectableText(selected.word, selected.wordLanguage, MaterialTheme.typography.headlineMedium)
                         selected.reading?.let { Text(it) }
                         TextButton(onClick = {
                             onPause()
@@ -219,9 +218,9 @@ internal fun SavedWordsScreen(
                                     action { repository.update(selected.id) { it.withMeanings(editedMeaning, editedExtra) } }
                                 }
                             }
-                            Text(selected.sentence)
-                            selected.translatedSentence?.let { Text(it) }
-                            selected.sentenceTranslations.values.forEach { Text(it) }
+                            PracticeSelectableText(selected.sentence, selected.wordLanguage)
+                            selected.translatedSentence?.let { PracticeSelectableText(it, selected.meaningLanguage) }
+                            selected.sentenceTranslations.forEach { (language, text) -> PracticeSelectableText(text, language) }
                             PersonalNotesEditor(editedNotes, { editedNotes = it }, editedNotes != selected.personalNotes, !busy) {
                                 action { repository.update(selected.id) { it.copy(personalNotes = editedNotes) } }
                             }
@@ -301,11 +300,11 @@ private fun ReviewMeanings(
     locale: Locale,
 ) {
     val style = meaningTextStyle()
-    Text(word.meaning, style = style, modifier = Modifier.testTag("review_meaning"))
+    PracticeSelectableText(word.meaning, word.meaningLanguage, style, Modifier.testTag("review_meaning"))
     word.meanings.forEach { (language, text) ->
         val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
         Text(label, style = MaterialTheme.typography.labelLarge)
-        Text(text, style = style, modifier = Modifier.testTag("review_meaning_$language"))
+        PracticeSelectableText(text, language, style, Modifier.testTag("review_meaning_$language"))
     }
 }
 

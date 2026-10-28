@@ -4,6 +4,8 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.widget.Toast
+import com.kienhoang.dualsubreplay.R
 
 private const val TRANSLATE_APP_PACKAGE = "com.google.android.apps.translate"
 
@@ -58,4 +60,18 @@ internal fun sendToGoogleTranslate(
     } catch (_: SecurityException) {
         TranslateSendResult.CANNOT_RECEIVE
     }
+}
+
+/** Shares [text] to the Google Translate app, or tells the user why it could not. */
+internal fun shareToGoogleTranslate(
+    context: Context,
+    text: String,
+) {
+    val message =
+        when (sendToGoogleTranslate(context, text)) {
+            TranslateSendResult.SENT -> return
+            TranslateSendResult.NOT_INSTALLED -> R.string.practice_google_translate_unavailable
+            TranslateSendResult.CANNOT_RECEIVE -> R.string.practice_google_translate_cannot_open
+        }
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 }

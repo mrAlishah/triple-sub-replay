@@ -31,6 +31,7 @@ import com.kienhoang.dualsubreplay.BuildConfig
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiAssistantController
 import com.kienhoang.dualsubreplay.assistant.AiErrorKind
+import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.assistant.aiSubtitleLineContext
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
@@ -40,7 +41,21 @@ internal class AiAssistantHost(
     val controller: AiAssistantController,
     val player: AiPlayerControls = AiPlayerControls(),
     val screen: AiScreenCapture = AiScreenCapture(),
+    /** The ChatGPT Subscription sign-in the Connection section manages; null where there is none. */
+    val chatGpt: ChatGptActions? = null,
+    /** Subtitle translation's side of the shared settings; null where translation is not wired (tests, previews). */
+    val translation: AiTranslationLink? = null,
     val guide: () -> String,
+)
+
+/**
+ * What Model and Thinking needs to know about subtitle translation: which service it is assigned, a model saved for it before the
+ * Model box was shared, and a way to tell it that a model or thinking level it uses changed.
+ */
+internal class AiTranslationLink(
+    val accessId: () -> String,
+    val legacyModel: (AiProvider) -> String,
+    val changed: () -> Unit,
 )
 
 internal val LocalAiAssistant = staticCompositionLocalOf<AiAssistantHost?> { null }

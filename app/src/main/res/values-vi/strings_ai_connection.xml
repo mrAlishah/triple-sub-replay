@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_service_chatgpt">Gói đăng ký ChatGPT</string>
+    <string name="ai_service_chatgpt_note">Gói ChatGPT của bạn · đăng nhập, không cần khóa</string>
+    <string name="ai_connection_title">Kết nối</string>
+    <string name="ai_connection_chatgpt_connecting">Đang kết nối với ChatGPT…</string>
+    <string name="ai_connection_test_failed">Kiểm tra thất bại. Hãy kiểm tra kết nối rồi thử lại.</string>
+    <string name="ai_chat_chatgpt_unavailable">Trò chuyện chưa dùng được gói đăng ký ChatGPT; gói này dùng để dịch phụ đề. Hãy chọn dịch vụ AI khác để trò chuyện.</string>
+    <string name="ai_connection_summary">Kết nối AI: %1$s · %2$s</string>
+    <string name="ai_connection_manage">Quản lý kết nối AI</string>
+    <string name="ai_connection_back">Quay lại %1$s</string>
+    <string name="ai_models_available">Các mô hình khả dụng</string>
+    <string name="ai_models_custom">Mô hình tùy chỉnh</string>
+    <string name="ai_models_not_in_list">Không có trong danh sách. Mô hình bạn nhập bên dưới sẽ được dùng.</string>
+    <string name="ai_models_connect">Thêm khóa để liệt kê mô hình. Bạn vẫn có thể nhập mô hình bên dưới.</string>
+    <string name="ai_models_picker_failed">Không tải được danh sách. Bạn vẫn có thể nhập mô hình bên dưới.</string>
+    <string name="ai_models_picker_empty">Không có mô hình nào trong danh sách. Hãy nhập mô hình bên dưới.</string>
+    <string name="ai_models_refresh">Làm mới mô hình</string>
+    <string name="ai_translation_service">Dịch vụ AI để dịch</string>
+    <string name="ai_chat_service">Dịch vụ AI cho trò chuyện</string>
+    <string name="ai_service_state_connected">Đã kết nối</string>
+    <string name="ai_service_state_not_connected">Chưa kết nối</string>
+    <string name="ai_service_chat_unsupported">Dịch vụ này chưa dùng được cho trò chuyện</string>
+    <string name="ai_models_translation_conflict">Bản dịch phụ đề vẫn dùng %1$s, được lưu trước khi ô này được dùng chung. Sửa mô hình ở đây để cả hai dùng một mô hình.</string>
+    <string name="ai_service_viewing_hint">Đang hiển thị cài đặt của dịch vụ này. Chọn dịch vụ cho trò chuyện và dịch phụ đề ở hàng riêng của chúng.</string>
+    <string name="ai_chat_gear_hint">Khóa, đăng nhập, mô hình và mức suy luận được quản lý trong Cài đặt → Kết nối AI.</string>
+</resources>

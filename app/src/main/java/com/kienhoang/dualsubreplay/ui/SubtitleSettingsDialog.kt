@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
@@ -445,6 +446,7 @@ internal fun SubtitleSettingsDialog(
     var openSection by remember { mutableStateOf<MoreSettingsSection?>(null) }
     val aiAssistant = LocalAiAssistant.current
     var showResetConfirmation by remember { mutableStateOf(false) }
+    var aiConnectionTarget by remember { mutableStateOf<AiConnectionTarget?>(null) }
     val languageDownloads = LocalLanguageDownloads.current
     val translationEngineActions = LocalTranslationEngineActions.current
     var showLanguageDownloads by remember { mutableStateOf(false) }
@@ -652,7 +654,13 @@ internal fun SubtitleSettingsDialog(
                             OnlineTranslationSettingsRows(
                                 onlineTranslation,
                                 translationEngineActions,
-                                onOpenAiSettings = aiAssistant?.let { { openSection = MoreSettingsSection.AI_ASSISTANT } },
+                                onOpenAiConnection =
+                                    aiAssistant?.let {
+                                        { target ->
+                                            aiConnectionTarget = target
+                                            openSection = MoreSettingsSection.AI_ASSISTANT
+                                        }
+                                    },
                             )
                         }
                         SettingsSwitchRow(
@@ -696,7 +704,7 @@ internal fun SubtitleSettingsDialog(
 
                     if (aiAssistant != null) {
                         Section(MoreSettingsSection.AI_ASSISTANT, Icons.Default.AutoAwesome) {
-                            AiAssistantSettingsSection(aiAssistant, nested = true)
+                            AiAssistantSettingsSection(aiAssistant, nested = true, connectionTarget = aiConnectionTarget)
                         }
                     }
 
@@ -1146,7 +1154,7 @@ private fun SubtitleColorSwatchRow(
 private fun OnlineTranslationSettingsRows(
     settings: OnlineTranslationSettings,
     actions: TranslationEngineActions,
-    onOpenAiSettings: (() -> Unit)?,
+    onOpenAiConnection: ((AiConnectionTarget) -> Unit)?,
 ) {
     val translator = settings.translator
     Text(
@@ -1158,7 +1166,7 @@ private fun OnlineTranslationSettingsRows(
         TranslatorOptionRow(option, translator, actions.selectTranslator)
     }
     if (translator.usesAi) {
-        actions.aiConfig?.let { AiConfigurationSection(it, onOpenAiSettings) }
+        actions.aiConfig?.let { AiConfigurationSection(it, onOpenAiConnection) }
     }
     if (translator == SubtitleTranslator.GOOGLE || translator == SubtitleTranslator.AI_WITH_GOOGLE) {
         GoogleWaitSettings(settings.googleWait, actions.selectGoogleWait)

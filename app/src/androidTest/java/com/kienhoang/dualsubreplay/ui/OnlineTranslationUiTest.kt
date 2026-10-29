@@ -61,7 +61,7 @@ class OnlineTranslationUiTest {
     }
 
     @Test
-    fun aiChoiceShowsTheProviderModelAndEffortDropdowns() {
+    fun aiChoiceShowsOnlyTheTranslationServiceItsStatusAndTheTest() {
         val state =
             AiTranslationUiState(
                 accessId = "gemini",
@@ -75,8 +75,11 @@ class OnlineTranslationUiTest {
             TranslationEngineActions(select = {}, aiConfig = fakeAiActions(state)),
         )
         composeRule.onNodeWithTag("ai_provider_field").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag("ai_model_field").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag("ai_effort_field").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_connection_summary").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_test").performScrollTo().assertIsDisplayed()
+        // Model and effort are set in Settings → AI Connection, not here.
+        composeRule.onNodeWithTag("ai_model_field").assertDoesNotExist()
+        composeRule.onNodeWithTag("ai_effort_field").assertDoesNotExist()
         saveUiEvidence("settings-translate-subtitles-with-ai")
         composeRule.onNodeWithTag("google_wait_auto").performScrollTo().assertIsDisplayed()
     }

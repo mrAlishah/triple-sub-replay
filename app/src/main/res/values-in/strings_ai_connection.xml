@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_service_chatgpt">Langganan ChatGPT</string>
+    <string name="ai_service_chatgpt_note">Paket ChatGPT Anda · masuk, tanpa kunci</string>
+    <string name="ai_connection_title">Koneksi</string>
+    <string name="ai_connection_chatgpt_connecting">Menghubungkan ke ChatGPT…</string>
+    <string name="ai_connection_test_failed">Pengujian gagal. Periksa koneksi lalu coba lagi.</string>
+    <string name="ai_chat_chatgpt_unavailable">Obrolan belum bisa memakai Langganan ChatGPT; layanan ini dipakai untuk menerjemahkan subtitle. Pilih layanan AI lain untuk mengobrol.</string>
+    <string name="ai_connection_summary">Koneksi AI: %1$s · %2$s</string>
+    <string name="ai_connection_manage">Kelola koneksi AI</string>
+    <string name="ai_connection_back">Kembali ke %1$s</string>
+    <string name="ai_models_available">Model yang tersedia</string>
+    <string name="ai_models_custom">Model khusus</string>
+    <string name="ai_models_not_in_list">Tidak ada dalam daftar. Model yang diketik di bawah dipakai.</string>
+    <string name="ai_models_connect">Tambahkan kunci untuk menampilkan daftar model. Anda tetap bisa mengetik model di bawah.</string>
+    <string name="ai_models_picker_failed">Gagal memuat daftar. Anda tetap bisa mengetik model di bawah.</string>
+    <string name="ai_models_picker_empty">Tidak ada model dalam daftar. Ketik model di bawah.</string>
+    <string name="ai_models_refresh">Segarkan model</string>
+    <string name="ai_translation_service">Layanan AI untuk terjemahan</string>
+    <string name="ai_chat_service">Layanan AI untuk chat</string>
+    <string name="ai_service_state_connected">Terhubung</string>
+    <string name="ai_service_state_not_connected">Belum terhubung</string>
+    <string name="ai_service_chat_unsupported">Chat belum tersedia untuk layanan ini</string>
+    <string name="ai_models_translation_conflict">Terjemahan subtitle masih memakai %1$s, yang disimpan sebelum kolom ini dibagi. Ubah model di sini agar keduanya memakai satu model.</string>
+    <string name="ai_service_viewing_hint">Menampilkan pengaturan layanan ini. Pilih layanan untuk chat dan terjemahan subtitle di baris masing-masing.</string>
+    <string name="ai_chat_gear_hint">Kunci, login, model, dan penalaran dikelola di Pengaturan → Koneksi AI.</string>
+</resources>

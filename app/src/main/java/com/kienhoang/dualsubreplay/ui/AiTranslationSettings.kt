@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.assistant.AiEffort
 import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.assistant.aiAccessOption
@@ -46,8 +47,6 @@ import kotlinx.coroutines.flow.StateFlow
 internal class AiTranslationActions(
     val state: StateFlow<AiTranslationUiState>,
     val selectAccess: (String) -> Unit,
-    val selectModel: (String) -> Unit,
-    val selectEffort: (AiEffort) -> Unit,
     val ensureModels: () -> Unit,
     val refresh: () -> Unit,
     val test: () -> Unit,
@@ -56,17 +55,17 @@ internal class AiTranslationActions(
 )
 
 internal fun AiTranslationConfig.actions(chatGpt: ChatGptActions) =
-    AiTranslationActions(state, ::selectAccess, ::selectModel, ::selectEffort, { ensureModels() }, ::refresh, ::test, chatGpt)
+    AiTranslationActions(state, ::selectAccess, { ensureModels() }, ::refresh, ::test, chatGpt)
 
 /**
  * The AI configuration of the AI translation modes: one dropdown each for the provider, the model and the reasoning effort, the
- * provider's connection card and one Test translation action. [onOpenKeys] opens the AI assistant's key screen, or is null where
- * the dialog has none.
+ * provider's connection summary and one Test translation action. [onOpenConnection] opens Settings → AI Assistant → Connection
+ * for a provider, or is null where the dialog has none.
  */
 @Composable
 internal fun AiConfigurationSection(
     actions: AiTranslationActions,
-    onOpenKeys: (() -> Unit)?,
+    onOpenConnection: ((AiConnectionTarget) -> Unit)?,
 ) {
     val state by actions.state.collectAsState()
     val gpt by actions.chatGpt.state.collectAsState()
@@ -76,9 +75,7 @@ internal fun AiConfigurationSection(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ProviderDropdown(state, actions.selectAccess)
-        ModelDropdown(state, actions)
-        EffortDropdown(state, actions.selectEffort)
-        ConnectionCard(state, gpt, actions, onOpenKeys)
+        AiConnectionSummary(state, gpt, onOpenConnection)
         TestTranslation(state, gpt, actions)
     }
 }
@@ -86,7 +83,7 @@ internal fun AiConfigurationSection(
 /** A read-only field that opens a menu: the shared look of the three dropdowns. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DropdownField(
+internal fun DropdownField(
     label: String,
     value: String,
     enabled: Boolean,
@@ -125,15 +122,25 @@ private fun ProviderDropdown(
 ) {
     val current = aiAccessOption(state.accessId)
     DropdownField(
-        label = stringResource(R.string.ai_config_provider),
+        label = stringResource(R.string.ai_translation_service),
         value = current?.let { stringResource(it.labelRes) }.orEmpty(),
         enabled = true,
         tag = "ai_provider_field",
         supporting = null,
     ) { close ->
         aiAccessOptions().forEach { option ->
+            val connected = option.id in state.connected
             DropdownMenuItem(
-                text = { Text(stringResource(option.labelRes)) },
+                text = {
+                    Column {
+                        Text(stringResource(option.labelRes))
+                        Text(
+                            stringResource(if (connected) R.string.ai_service_state_connected else R.string.ai_service_state_not_connected),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (connected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 onClick = {
                     close()
                     onSelect(option.id)
@@ -144,183 +151,42 @@ private fun ProviderDropdown(
     }
 }
 
+/**
+ * The provider's status in one line and a link to manage it. Signing in, keys, refresh and disconnect live only in
+ * Settings → AI Assistant → Connection; [onManage] opens it on this provider.
+ */
 @Composable
-private fun ModelDropdown(
-    state: AiTranslationUiState,
-    actions: AiTranslationActions,
-) {
-    val name = state.models.firstOrNull { it.id == state.model }?.name ?: state.model
-    val canPick = state.models.isNotEmpty()
-    val supporting =
-        when {
-            state.replacedModel != null -> stringResource(R.string.ai_config_model_replaced, state.replacedModel, name)
-            state.modelsState == AiModelsState.LOADING -> stringResource(R.string.ai_config_models_loading)
-            state.modelsState == AiModelsState.FAILED -> stringResource(R.string.ai_config_models_failed)
-            state.modelsState == AiModelsState.EMPTY -> stringResource(R.string.ai_config_models_empty)
-            state.modelsState == AiModelsState.NEEDS_CONNECTION ->
-                stringResource(if (state.isChatGpt) R.string.ai_config_models_connect_chatgpt else R.string.ai_config_models_connect_key)
-            else -> null
-        }
-    DropdownField(
-        label = stringResource(R.string.ai_config_model),
-        value = name,
-        enabled = canPick,
-        tag = "ai_model_field",
-        supporting = supporting,
-    ) { close ->
-        state.models.forEach { choice ->
-            DropdownMenuItem(
-                text = { Text(choice.name) },
-                onClick = {
-                    close()
-                    actions.selectModel(choice.id)
-                },
-                leadingIcon = { SelectedMark(choice.id == state.model) },
-                modifier = Modifier.semantics { selected = choice.id == state.model }.testTag("ai_model_${choice.id}"),
-            )
-        }
-        HorizontalDivider()
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.ai_config_models_refresh)) },
-            onClick = {
-                close()
-                actions.refresh()
-            },
-            modifier = Modifier.testTag("ai_models_refresh"),
-        )
-    }
-}
-
-@Composable
-private fun EffortDropdown(
-    state: AiTranslationUiState,
-    onSelect: (AiEffort) -> Unit,
-) {
-    val adjustable = state.effortOptions.size > 1
-    val supporting =
-        when {
-            state.savedEffort != state.effort ->
-                stringResource(
-                    R.string.ai_config_effort_replaced,
-                    stringResource(state.savedEffort.labelRes),
-                )
-            state.isChatGpt -> stringResource(R.string.ai_config_effort_fixed_chatgpt)
-            !adjustable && state.accessId == AiProvider.CLAUDE.key -> stringResource(R.string.ai_config_effort_unknown_claude)
-            !adjustable -> stringResource(R.string.ai_config_effort_fixed)
-            state.effort == AiEffort.AUTO && state.automaticShortensThinking -> stringResource(R.string.ai_config_effort_auto_note)
-            else -> null
-        }
-    DropdownField(
-        label = stringResource(R.string.ai_config_effort),
-        value = stringResource(state.effort.labelRes),
-        enabled = adjustable,
-        tag = "ai_effort_field",
-        supporting = supporting,
-    ) { close ->
-        state.effortOptions.forEach { effort ->
-            DropdownMenuItem(
-                text = { Text(stringResource(effort.labelRes)) },
-                onClick = {
-                    close()
-                    onSelect(effort)
-                },
-                leadingIcon = { SelectedMark(effort == state.effort) },
-                modifier = Modifier.semantics { selected = effort == state.effort }.testTag("ai_effort_${effort.key}"),
-            )
-        }
-    }
-}
-
-/** The provider's account or key status, its billing line, and the actions that belong to it. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ConnectionCard(
+private fun AiConnectionSummary(
     state: AiTranslationUiState,
     gpt: ChatGptUiState,
-    actions: AiTranslationActions,
-    onOpenKeys: (() -> Unit)?,
+    onManage: ((AiConnectionTarget) -> Unit)?,
 ) {
     val option = aiAccessOption(state.accessId) ?: return
+    val target = option.provider?.let { AiConnectionTarget.Key(it) } ?: AiConnectionTarget.ChatGpt
+    val status =
+        when {
+            state.isChatGpt -> stringResource(gpt.status.labelRes)
+            state.keyPresent -> stringResource(R.string.ai_config_key_saved)
+            else -> stringResource(R.string.ai_config_key_missing)
+        }
+    val problem = if (state.isChatGpt) gpt.status.isProblem else !state.keyPresent
     OutlinedCard(Modifier.fillMaxWidth().testTag("ai_connection_card")) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (state.isChatGpt) {
-                ChatGptConnection(gpt, actions.chatGpt)
-            } else {
-                Text(
-                    stringResource(if (state.keyPresent) R.string.ai_config_key_saved else R.string.ai_config_key_missing),
-                    color = if (state.keyPresent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag("ai_key_status"),
-                )
-                Text(
-                    stringResource(option.noteRes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (onOpenKeys != null) {
-                    FlowRow {
-                        TextButton(onClick = onOpenKeys, modifier = Modifier.testTag("ai_manage_keys")) {
-                            Text(stringResource(R.string.ai_config_manage_keys))
-                        }
-                    }
+            Text(
+                stringResource(R.string.ai_connection_summary, stringResource(option.labelRes), status),
+                color = if (problem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.testTag("ai_connection_summary"),
+            )
+            Text(
+                stringResource(option.noteRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (onManage != null) {
+                TextButton(onClick = { onManage(target) }, modifier = Modifier.testTag("ai_manage_connection")) {
+                    Text(stringResource(R.string.ai_connection_manage))
                 }
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ChatGptConnection(
-    state: ChatGptUiState,
-    actions: ChatGptActions,
-) {
-    val status = state.status
-    Text(
-        stringResource(status.labelRes),
-        color = if (status.isProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.testTag("chatgpt_status"),
-    )
-    if (state.signInFailed) {
-        Text(
-            stringResource(R.string.chatgpt_sign_in_failed),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-    if (status != ChatGptStatus.NOT_CONNECTED && status != ChatGptStatus.CONNECTING) {
-        Text(
-            state.account?.let { stringResource(R.string.chatgpt_account, it) } ?: stringResource(R.string.chatgpt_account_unknown),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.testTag("chatgpt_account"),
-        )
-    }
-    Text(
-        stringResource(R.string.chatgpt_note),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (status == ChatGptStatus.NOT_CONNECTED || status == ChatGptStatus.SIGN_IN_REQUIRED || status == ChatGptStatus.NO_PLAN_USAGE) {
-            Button(
-                onClick = actions.signIn,
-                modifier = Modifier.testTag("chatgpt_continue"),
-            ) { Text(stringResource(R.string.chatgpt_continue)) }
-        }
-        if (status != ChatGptStatus.NOT_CONNECTED && status != ChatGptStatus.CONNECTING) {
-            TextButton(
-                onClick = actions.refresh,
-                modifier = Modifier.testTag("chatgpt_refresh"),
-            ) { Text(stringResource(R.string.chatgpt_refresh)) }
-            TextButton(onClick = actions.disconnect, modifier = Modifier.testTag("chatgpt_disconnect")) {
-                Text(stringResource(R.string.chatgpt_disconnect))
-            }
-        }
-        if (status == ChatGptStatus.CONNECTING) {
-            TextButton(
-                onClick = actions.cancel,
-                modifier = Modifier.testTag("chatgpt_cancel"),
-            ) { Text(stringResource(R.string.chatgpt_cancel)) }
         }
     }
 }

@@ -138,7 +138,7 @@ internal fun AiAssistantPanel(
                                     .verticalScroll(rememberScrollState())
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .testTag("ai_settings_page"),
-                            ) { AiAssistantSettingsSection(host) }
+                            ) { AiAssistantSettingsSection(host, chatOnly = true) }
                         AiPanelPage.MODELS -> AiModelsPage(aiState, controller, Modifier.weight(1f))
                         AiPanelPage.MEMORY -> AiMemoryPage(aiState, controller, Modifier.weight(1f))
                         AiPanelPage.CHAT ->
@@ -148,6 +148,10 @@ internal fun AiAssistantPanel(
                                     onDecline = controller::declineIntro,
                                     modifier = Modifier.weight(1f),
                                 )
+                            } else if (aiState.settings.chatGptService) {
+                                Column(Modifier.weight(1f).padding(16.dp)) {
+                                    AiChatUnavailableCard(onOpenSettings = { controller.showPage(AiPanelPage.SETTINGS) })
+                                }
                             } else {
                                 AiChatContent(
                                     aiState = aiState,

@@ -155,7 +155,11 @@ internal class AiTranslationChoices(
     fun accessId(assistant: AiProvider): String {
         if (chatGptSelected()) return CHATGPT_ACCESS_ID
         val saved = prefs.get(AI_TRANSLATION_PROVIDER_PREFERENCE)
-        return AiProvider.entries.firstOrNull { it.key == saved }?.key ?: assistant.key
+        AiProvider.entries.firstOrNull { it.key == saved }?.let { return it.key }
+        // The old default followed the assistant's service. It is frozen here once, so chat and translation stay independent
+        // from now on and what translated before still translates.
+        prefs.put(AI_TRANSLATION_PROVIDER_PREFERENCE, assistant.key)
+        return assistant.key
     }
 
     fun saveProvider(id: String) = prefs.put(AI_TRANSLATION_PROVIDER_PREFERENCE, id)
@@ -191,3 +195,43 @@ internal class AiTranslationChoices(
         const val LEGACY_MODEL_PREFERENCE = AI_TRANSLATION_MODEL_PREFERENCE
     }
 }
+
+/**
+ * The model subtitles are translated with for one keyed service. The Model box in AI Assistant is the one place to set it; a model
+ * saved for translation before that is kept and used until the box of that service is edited ([unified]), so an upgrade never
+ * changes what translates.
+ */
+internal fun aiTranslationModelChoice(
+    central: String?,
+    legacy: String,
+    unified: Boolean,
+    default: String,
+): String {
+    val box = central?.trim().orEmpty()
+    return if (unified || legacy.isEmpty()) box.ifEmpty { default } else legacy
+}
+
+/** The older translation model that still wins over a different Model box, or null when nothing differs. */
+internal fun aiTranslationModelConflict(
+    central: String?,
+    legacy: String,
+    unified: Boolean,
+): String? {
+    val box = central?.trim().orEmpty()
+    return legacy.takeIf { !unified && it.isNotEmpty() && box.isNotEmpty() && box != it }
+}
+
+/** A thinking level set in Model and Thinking, as the translation effort; Automatic stays Automatic. */
+internal fun AiThinking.asTranslationEffort(): AiEffort =
+    when (this) {
+        AiThinking.AUTO -> AiEffort.AUTO
+        AiThinking.LOW -> AiEffort.LOW
+        AiThinking.MEDIUM -> AiEffort.MEDIUM
+        AiThinking.HIGH -> AiEffort.HIGH
+    }
+
+/** The level the user set for the service in Model and Thinking, else the one saved for translation before that. */
+internal fun aiTranslationSavedEffort(
+    set: AiThinking?,
+    legacy: AiEffort,
+): AiEffort = set?.asTranslationEffort() ?: legacy

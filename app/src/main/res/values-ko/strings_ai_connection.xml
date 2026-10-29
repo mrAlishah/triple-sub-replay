@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_service_chatgpt">ChatGPT 구독</string>
+    <string name="ai_service_chatgpt_note">내 ChatGPT 요금제 · 로그인만 하면 됩니다, 키 불필요</string>
+    <string name="ai_connection_title">연결</string>
+    <string name="ai_connection_chatgpt_connecting">ChatGPT에 연결하는 중…</string>
+    <string name="ai_connection_test_failed">테스트에 실패했습니다. 연결을 확인하고 다시 시도하세요.</string>
+    <string name="ai_chat_chatgpt_unavailable">채팅에서는 아직 ChatGPT 구독을 사용할 수 없으며, 자막 번역에 사용됩니다. 채팅에는 다른 AI 서비스를 선택하세요.</string>
+    <string name="ai_connection_summary">AI 연결: %1$s · %2$s</string>
+    <string name="ai_connection_manage">AI 연결 관리</string>
+    <string name="ai_connection_back">%1$s(으)로 돌아가기</string>
+    <string name="ai_models_available">사용 가능한 모델</string>
+    <string name="ai_models_custom">사용자 지정 모델</string>
+    <string name="ai_models_not_in_list">목록에 없습니다. 아래에 입력한 모델이 사용됩니다.</string>
+    <string name="ai_models_connect">모델 목록을 보려면 키를 추가하세요. 아래에 모델을 직접 입력할 수도 있습니다.</string>
+    <string name="ai_models_picker_failed">목록을 불러오지 못했습니다. 아래에 모델을 직접 입력할 수 있습니다.</string>
+    <string name="ai_models_picker_empty">표시할 모델이 없습니다. 아래에 모델을 입력하세요.</string>
+    <string name="ai_models_refresh">모델 새로고침</string>
+    <string name="ai_translation_service">번역용 AI 서비스</string>
+    <string name="ai_chat_service">채팅용 AI 서비스</string>
+    <string name="ai_service_state_connected">연결됨</string>
+    <string name="ai_service_state_not_connected">연결 안 됨</string>
+    <string name="ai_service_chat_unsupported">이 서비스는 아직 채팅에 사용할 수 없습니다</string>
+    <string name="ai_models_translation_conflict">자막 번역은 이 칸을 공유하기 전에 저장된 %1$s을(를) 계속 사용합니다. 여기서 모델을 수정하면 둘 다 같은 모델을 사용합니다.</string>
+    <string name="ai_service_viewing_hint">이 서비스의 설정을 표시 중입니다. 채팅과 자막 번역이 사용할 서비스는 각각의 행에서 선택하세요.</string>
+    <string name="ai_chat_gear_hint">키, 로그인, 모델, 추론 설정은 설정 → AI 연결에서 관리합니다.</string>
+</resources>

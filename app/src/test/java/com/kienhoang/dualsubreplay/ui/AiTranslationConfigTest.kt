@@ -15,6 +15,7 @@ import com.kienhoang.dualsubreplay.assistant.AiKeyStore
 import com.kienhoang.dualsubreplay.assistant.AiModelInfo
 import com.kienhoang.dualsubreplay.assistant.AiModelLister
 import com.kienhoang.dualsubreplay.assistant.AiProvider
+import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.assistant.AiReply
 import com.kienhoang.dualsubreplay.assistant.AiTranslationChoices
 import com.kienhoang.dualsubreplay.assistant.FakeCipher
@@ -260,7 +261,8 @@ class AiTranslationConfigTest {
     fun existingUsersStartOnTheAssistantsServiceWithNothingSaved() {
         assertEquals("gemini", config.state.value.accessId)
         assertFalse(chatGpt.useSubscription)
-        assertTrue(prefs.map.isEmpty())
+        // The old "follow the assistant" default is frozen on first read; nothing else is saved.
+        assertEquals(mapOf(AI_TRANSLATION_PROVIDER_PREFERENCE to "gemini"), prefs.map)
         assertEquals(0, reloads)
     }
 
@@ -273,7 +275,7 @@ class AiTranslationConfigTest {
         assertEquals(0, reloads)
         assertEquals(0, requests.size)
         assertEquals(0, gptApi.streams)
-        assertNull(prefs.map[AI_TRANSLATION_PROVIDER_PREFERENCE])
+        assertEquals("gemini", prefs.map[AI_TRANSLATION_PROVIDER_PREFERENCE])
     }
 
     @Test
@@ -412,15 +414,52 @@ class AiTranslationConfigTest {
         }
 
     @Test
-    fun aSavedModelTheServiceNoLongerOffersIsReplacedWithANoticeAndStaysSaved() =
+    fun aModelTheUserSetIsSentAsItIsEvenWhenTheListNoLongerHasIt() =
         runBlocking {
             addKeys()
             prefs.map["ai_translation_model_gemini"] = "gemini-retired"
             config.ensureModels()
             val state = loaded()
-            assertEquals("gemini-retired", state.replacedModel)
-            assertTrue(state.model in geminiModels.map { it.id })
+            assertEquals("gemini-retired", state.model)
             assertEquals("gemini-retired", prefs.map["ai_translation_model_gemini"])
+        }
+
+    @Test
+    fun theModelBoxInAiAssistantIsTheTranslationModelWhenNothingOlderIsSaved() {
+        assistant = AiAssistantSettings(models = mapOf(AiProvider.GEMINI to "gemini-3-flash-preview"))
+        assertEquals("gemini-3-flash-preview", config.current().model)
+    }
+
+    @Test
+    fun aModelSavedForTranslationBeforeKeepsWinningUntilTheBoxIsEdited() {
+        prefs.map["ai_translation_model_gemini"] = "gemini-flash-latest"
+        assistant = AiAssistantSettings(models = mapOf(AiProvider.GEMINI to "gemini-3-flash-preview"))
+        assertEquals("gemini-flash-latest", config.current().model)
+        assertEquals("gemini-flash-latest", prefs.map["ai_translation_model_gemini"])
+        assistant = assistant.copy(unifiedModels = setOf(AiProvider.GEMINI))
+        assertEquals("gemini-3-flash-preview", config.current().model)
+        // The older value is not deleted either way.
+        assertEquals("gemini-flash-latest", prefs.map["ai_translation_model_gemini"])
+    }
+
+    @Test
+    fun theThinkingLevelSetInAiAssistantDrivesTheTranslationEffort() {
+        prefs.map["ai_translation_effort_gemini"] = "minimal"
+        assertEquals(AiEffort.MINIMAL, config.current().savedEffort)
+        assistant = AiAssistantSettings(thinkings = mapOf(AiProvider.GEMINI to AiThinking.HIGH))
+        assertEquals(AiEffort.HIGH, config.current().savedEffort)
+        assertEquals("minimal", prefs.map["ai_translation_effort_gemini"])
+    }
+
+    @Test
+    fun everyServiceIsListedWithWhetherItCanAnswer() =
+        runBlocking {
+            addKeys()
+            assertEquals(setOf("gemini", "claude"), config.current().connected)
+            signInChatGpt()
+            config.selectAccess("chatgpt")
+            val state = withTimeout(5000) { config.state.first { it.isChatGpt && it.modelsState == AiModelsState.LOADED } }
+            assertEquals(setOf("gemini", "claude", "chatgpt"), state.connected)
         }
 
     @Test
@@ -499,17 +538,27 @@ class AiTranslationConfigTest {
     }
 
     @Test
-    fun anUnchosenProviderFollowsTheAssistantsServiceUntilTheUserPinsOne() {
+    fun theTranslationServiceIsFrozenFromTheAssistantOnFirstReadAndNeverFollowsItAgain() {
         addKeys()
-        assistant = AiAssistantSettings(provider = AiProvider.CLAUDE)
-        assertEquals("claude", config.accessId)
-        assertTrue(config.translationModel()!!.scope.startsWith("claude/"))
-        assistant = AiAssistantSettings(provider = AiProvider.GEMINI)
-        config.selectAccess("gemini")
-        assertEquals("choosing the provider already in force pins it", "gemini", prefs.map[AI_TRANSLATION_PROVIDER_PREFERENCE])
+        // First read, with the assistant on Gemini: that is what translation used, so that is what it keeps.
+        assertEquals("gemini", config.accessId)
         assistant = AiAssistantSettings(provider = AiProvider.CLAUDE)
         assertEquals("gemini", config.accessId)
+        assertEquals("gemini", prefs.map[AI_TRANSLATION_PROVIDER_PREFERENCE])
+        assertTrue(config.translationModel()!!.scope.startsWith("gemini/"))
         assertEquals(0, reloads)
+    }
+
+    @Test
+    fun aChatGptTranslationServiceNeverTurnsIntoAKeyedOneWhenTheAssistantChanges() {
+        addKeys()
+        signInChatGpt()
+        config.selectAccess("chatgpt")
+        assistant = AiAssistantSettings(provider = AiProvider.CLAUDE)
+        assertEquals("chatgpt", config.accessId)
+        assistant = AiAssistantSettings(provider = AiProvider.GEMINI, chatGptService = false)
+        assertEquals("chatgpt", config.accessId)
+        assertEquals(0, requests.size)
     }
 
     @Test

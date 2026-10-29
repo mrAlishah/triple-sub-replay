@@ -606,7 +606,11 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             )
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
-    val aiAssistant = remember(aiViewModel) { AiAssistantHost(aiViewModel.controller) { aiViewModel.guide } }
+    val aiAssistant = remember(aiViewModel) { AiAssistantHost(
+            aiViewModel.controller,
+            chatGpt = viewModel.chatGpt.actions(),
+            translation = AiTranslationLink(viewModel.aiConfig::accessIdNow, viewModel.aiConfig::legacyModel, viewModel.aiConfig::settingsChanged),
+        ) { aiViewModel.guide } }
     val studySavedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
     val studyTools = rememberStudyTools(state, studySavedWords)
     CompositionLocalProvider(

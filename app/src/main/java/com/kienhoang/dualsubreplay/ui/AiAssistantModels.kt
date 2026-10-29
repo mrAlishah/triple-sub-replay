@@ -74,7 +74,7 @@ internal fun AiChatOptionsBar(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             leading()
             AiModelMenu(aiState, controller, Modifier.weight(1f, fill = false))
-            AiThinkingMenu(aiState.settings.thinking, controller)
+            AiThinkingMenu(aiState.settings.thinkingFor(aiState.settings.provider), controller)
         }
     }
 }

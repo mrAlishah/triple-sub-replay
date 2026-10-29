@@ -18,6 +18,8 @@ import com.kienhoang.dualsubreplay.assistant.aiAccessOption
 import com.kienhoang.dualsubreplay.assistant.aiEffortOptions
 import com.kienhoang.dualsubreplay.assistant.aiEffortWire
 import com.kienhoang.dualsubreplay.assistant.aiModelCanChat
+import com.kienhoang.dualsubreplay.assistant.aiTranslationModelChoice
+import com.kienhoang.dualsubreplay.assistant.aiTranslationSavedEffort
 import com.kienhoang.dualsubreplay.assistant.effectiveAiEffort
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptSubscription
@@ -78,8 +80,6 @@ internal data class AiTranslationUiState(
     val model: String,
     val models: List<AiModelChoice>,
     val modelsState: AiModelsState,
-    /** The saved model the service no longer offers, when [model] had to be replaced. */
-    val replacedModel: String? = null,
     /** The level the user picked, and the one in force (Automatic when the model does not take the picked one). */
     val savedEffort: AiEffort = AiEffort.AUTO,
     val effort: AiEffort = AiEffort.AUTO,
@@ -90,6 +90,8 @@ internal data class AiTranslationUiState(
     val automaticShortensThinking: Boolean = false,
     val testing: Boolean = false,
     val test: AiTestOutcome? = null,
+    /** The services that can answer right now: an API service with a saved key, ChatGPT Subscription with plan usage allowed. */
+    val connected: Set<String> = emptySet(),
 ) {
     val isChatGpt: Boolean get() = accessId == CHATGPT_ACCESS_ID
 }
@@ -135,10 +137,16 @@ internal class AiTranslationConfig(
             .stateIn(scope, SharingStarted.Eagerly, compose(own.value, chatGpt.state.value))
 
     /** The state as it is right now (the flow above can lag one emission): what translates and what Test sends is read from this. */
-    private fun current(): AiTranslationUiState = compose(own.value, chatGpt.state.value)
+    internal fun current(): AiTranslationUiState = compose(own.value, chatGpt.state.value)
 
     /** The provider id now in force: the saved choice, else the AI assistant's service, which it follows until the user chooses. */
     val accessId: String get() = current().accessId
+
+    /** [accessId] for callers that need a function reference. */
+    fun accessIdNow(): String = accessId
+
+    /** The model saved for translation before the Model box was shared, or empty. */
+    fun legacyModel(provider: AiProvider): String = choices.model(provider.key, assistant().provider)
 
     /** Picks a provider; an id this build does not know changes nothing. */
     fun selectAccess(id: String) {
@@ -215,6 +223,16 @@ internal class AiTranslationConfig(
                 val after = current()
                 if (after.accessId == before.accessId && (after.model != before.model || after.effort != before.effort)) onChanged()
             }
+    }
+
+    /**
+     * The model or thinking level of the translation service was changed in Settings → AI Assistant: read the state again and
+     * translate the playing video with what is in force now.
+     */
+    fun settingsChanged() {
+        testJob?.cancel()
+        own.update { it.copy(revision = it.revision + 1, test = null, testing = false) }
+        onChanged()
     }
 
     /** Sign in with ChatGPT or read the model list again, whichever the provider has. */
@@ -308,25 +326,25 @@ internal class AiTranslationConfig(
         if (id == CHATGPT_ACCESS_ID) return composeChatGpt(gpt)
         val provider = aiAccessOption(id)?.provider ?: AiProvider.GEMINI
         val entry = mine.models[provider.key]
-        val saved = choices.model(provider.key, settings.provider)
+        val legacy = choices.model(provider.key, settings.provider)
         val default = settings.modelFor(provider)
-        val wanted = saved.ifEmpty { default }
+        val wanted = aiTranslationModelChoice(settings.models[provider], legacy, provider in settings.unifiedModels, provider.defaultModel)
+        val explicit = legacy.isNotEmpty() || !settings.models[provider].isNullOrBlank()
         val listed = entry?.takeIf { it.state == AiModelsState.LOADED }?.infos.orEmpty()
         val listedIds = listed.map { it.id }
-        // A model the service stopped offering is replaced, not sent: the saved choice stays until the user picks again.
-        val model = if (listedIds.isEmpty() || wanted in listedIds) wanted else default.takeIf { it in listedIds } ?: listedIds.first()
-        val replaced = saved.takeIf { it.isNotEmpty() && model != wanted }
+        // The model the user set is sent as it is, never swapped; only a default the service no longer offers gives way to a listed one.
+        val model = if (explicit || listedIds.isEmpty() || wanted in listedIds) wanted else default.takeIf { it in listedIds } ?: listedIds.first()
         val choicesList =
             if (listed.isNotEmpty()) {
                 listed.map { AiModelChoice(it.id, it.name ?: it.id) }
             } else {
                 (listOf(model) + provider.suggestedModels).filter(String::isNotBlank).distinct().map { AiModelChoice(it, it) }
             }
-        val savedEffort = choices.effort(id)
+        val savedEffort = aiTranslationSavedEffort(settings.thinkings[provider], choices.effort(id))
         // Until the model list is read, a saved Claude level is trusted, so after a restart the video keeps translating with the
         // level the user chose; the list corrects it once it is known.
         val levels =
-            listed.firstOrNull { it.id == model }?.efforts ?: savedEffort.wire?.takeIf { id == AiProvider.CLAUDE.key }?.let(::setOf)
+            listed.firstOrNull { it.id == model }?.efforts ?: savedEffort.wire?.takeIf { id == AiProvider.CLAUDE.key }?.let { setOf(it) }
         val options = aiEffortOptions(id, model, levels)
         val keyPresent = keyStore.keys(provider).isNotEmpty()
         val modelsState =
@@ -341,7 +359,6 @@ internal class AiTranslationConfig(
             model = model,
             models = choicesList,
             modelsState = modelsState,
-            replacedModel = replaced,
             savedEffort = savedEffort,
             effort = effectiveAiEffort(savedEffort, options),
             effortOptions = options,
@@ -349,8 +366,15 @@ internal class AiTranslationConfig(
             automaticShortensThinking = aiEffortWire(provider, model, AiEffort.AUTO) != null,
             testing = mine.testing,
             test = mine.test,
+            connected = connectedServices(gpt),
         )
     }
+
+    private fun connectedServices(gpt: ChatGptUiState): Set<String> =
+        buildSet {
+            AiProvider.entries.filter { keyStore.keys(it).isNotEmpty() }.forEach { add(it.key) }
+            if (gpt.status == ChatGptStatus.READY) add(CHATGPT_ACCESS_ID)
+        }
 
     private fun composeChatGpt(gpt: ChatGptUiState): AiTranslationUiState {
         val modelsState =
@@ -381,6 +405,7 @@ internal class AiTranslationConfig(
             keyPresent = false,
             testing = gpt.testing,
             test = outcome,
+            connected = connectedServices(gpt),
         )
     }
 }

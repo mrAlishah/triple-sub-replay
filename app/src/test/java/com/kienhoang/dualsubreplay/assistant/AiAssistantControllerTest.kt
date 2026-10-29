@@ -249,6 +249,73 @@ class AiAssistantControllerTest {
     }
 
     @Test
+    fun aKeySavedWhileManagingAnotherServiceLeavesTheAssistantsServiceAlone() {
+        settings.value = AiAssistantSettings(provider = AiProvider.OPENAI)
+        val controller = controller()
+        assertEquals(AiProvider.GEMINI, controller.saveKey(geminiKey, managing = AiProvider.OPENAI))
+        val state = controller.state.value
+        assertEquals(AiProvider.OPENAI, state.settings.provider)
+        assertEquals(AiProvider.OPENAI, settings.value.provider)
+        assertEquals(listOf("rstu"), state.keys[AiProvider.GEMINI].orEmpty().map { it.hint })
+        assertEquals(AiProvider.GEMINI.baseUrl, transport.requests.single().baseUrl)
+    }
+
+    @Test
+    fun testingAnotherServicesKeysUsesThatServiceNotTheAssistants() {
+        keyStore.save(AiProvider.GEMINI, geminiKey)
+        settings.value = AiAssistantSettings(provider = AiProvider.OPENAI)
+        val controller = controller()
+        controller.testConnection(AiProvider.GEMINI)
+        assertEquals(geminiKey, transport.requests.single().apiKey)
+        assertEquals(AiProvider.OPENAI, controller.state.value.settings.provider)
+    }
+
+    @Test
+    fun choosingChatGptSendsNothingAndKeepsEveryKey() {
+        checkedGeminiKey()
+        val controller = controller()
+        assertTrue(controller.state.value.ready)
+        controller.selectChatGptService()
+        val chosen = controller.state.value
+        assertTrue(chosen.settings.chatGptService)
+        assertTrue(settings.value.chatGptService)
+        assertFalse(chosen.ready)
+        controller.send("What does に mean?", "guide")
+        assertTrue(controller.state.value.messages.isEmpty())
+        assertTrue(transport.requests.isEmpty())
+        // Nothing was deleted or activated: the keyed service and its checked key are as they were.
+        assertEquals(AiProvider.GEMINI, chosen.settings.provider)
+        assertEquals(1, chosen.keys[AiProvider.GEMINI].orEmpty().size)
+        controller.selectProvider(AiProvider.GEMINI)
+        assertFalse(controller.state.value.settings.chatGptService)
+        assertTrue(controller.state.value.ready)
+    }
+
+    @Test
+    fun editingAServicesModelAndThinkingTouchesOnlyThatServiceAndNeverTheChatService() {
+        settings.value = AiAssistantSettings(provider = AiProvider.GEMINI)
+        val controller = controller()
+        controller.setModel(AiProvider.OPENAI, "gpt-custom")
+        controller.setThinking(AiProvider.OPENAI, AiThinking.HIGH)
+        val saved = settings.value
+        assertEquals("gpt-custom", saved.modelFor(AiProvider.OPENAI))
+        assertEquals(AiThinking.HIGH, saved.thinkingFor(AiProvider.OPENAI))
+        assertEquals(setOf(AiProvider.OPENAI), saved.unifiedModels)
+        // The chat service keeps its own model and level.
+        assertEquals(AiProvider.GEMINI, saved.provider)
+        assertEquals(AiProvider.GEMINI.defaultModel, saved.modelFor(AiProvider.GEMINI))
+        assertEquals(AiThinking.AUTO, saved.thinkingFor(AiProvider.GEMINI))
+    }
+
+    @Test
+    fun theChatsOwnThinkingBarStillSetsTheLevelOfTheChatService() {
+        val controller = controller()
+        controller.setThinking(AiThinking.LOW)
+        assertEquals(AiThinking.LOW, settings.value.thinking)
+        assertEquals(AiThinking.LOW, settings.value.thinkingFor(AiProvider.GEMINI))
+    }
+
+    @Test
     fun aClaudeKeyIsCheckedThroughAnthropicsOwnFormat() {
         val claudeKey = "sk-ant-api03-FAKE-test-key-for-unit-tests"
         val controller = controller()

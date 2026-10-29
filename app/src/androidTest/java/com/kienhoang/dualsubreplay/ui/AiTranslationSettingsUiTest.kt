@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -25,7 +27,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.assistant.AiEffort
+import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptModel
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
@@ -53,8 +57,6 @@ internal fun fakeAiActions(
     AiTranslationActions(
         state = state,
         selectAccess = { calls += "access:$it" },
-        selectModel = { calls += "model:$it" },
-        selectEffort = { calls += "effort:${it.key}" },
         ensureModels = { calls += "ensure" },
         refresh = { calls += "refresh" },
         test = { calls += "test" },
@@ -76,7 +78,7 @@ class AiTranslationSettingsUiTest {
     val composeRule = createComposeRule()
 
     private val calls = mutableListOf<String>()
-    private var keysOpened = 0
+    private val opened = mutableListOf<AiConnectionTarget>()
     private lateinit var stateFlow: MutableStateFlow<AiTranslationUiState>
     private lateinit var gptFlow: MutableStateFlow<ChatGptUiState>
 
@@ -93,7 +95,7 @@ class AiTranslationSettingsUiTest {
                 Surface {
                     Box(if (widthDp != null) Modifier.width(widthDp.dp) else Modifier.fillMaxWidth()) {
                         androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState())) {
-                            AiConfigurationSection(actions) { keysOpened++ }
+                            AiConfigurationSection(actions) { opened += it }
                         }
                     }
                 }
@@ -140,104 +142,62 @@ class AiTranslationSettingsUiTest {
     }
 
     @Test
-    fun theDropdownsAreExposedToScreenReadersAsDropdownLists() {
+    fun captionsAndTranslationHoldsOnlyTheServiceChoiceItsStatusAndTheTest() {
         show(claude)
-        listOf("ai_provider_field", "ai_model_field", "ai_effort_field").forEach { tag ->
-            composeRule
-                .onNodeWithTag(tag)
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.DropdownList))
-                .assertHasClickAction()
+        composeRule.onNodeWithTag("ai_provider_field").assertIsDisplayed()
+        composeRule.onNodeWithText("Translation AI Service").assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_connection_summary").assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_test").assertIsDisplayed()
+        // Model, effort and every credential control live in Settings → AI Assistant.
+        listOf("ai_model_field", "ai_effort_field", "ai_models_refresh", "ai_key_field", "chatgpt_continue").forEach {
+            composeRule.onNodeWithTag(it).assertDoesNotExist()
         }
     }
 
     @Test
-    fun theModelDropdownShowsDisplayNamesPicksAnIdAndRefreshes() {
-        show(claude)
-        composeRule.onNodeWithTag("ai_model_field").performClick()
-        composeRule.onNodeWithTag("ai_model_claude-haiku-5-5").performClick()
-        composeRule.onNodeWithTag("ai_model_field").performClick()
-        composeRule.onNodeWithTag("ai_models_refresh").performClick()
-        assertEquals(listOf("ensure", "model:claude-haiku-5-5", "refresh"), calls)
+    fun theServiceListSaysWhichServicesAreConnected() {
+        show(claude.copy(connected = setOf("claude")))
+        composeRule.onNodeWithTag("ai_provider_field").performClick()
+        composeRule.onNodeWithTag("ai_provider_claude").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Connected").assertCountEquals(1)
+        composeRule.onAllNodesWithText("Not connected").assertCountEquals(7)
     }
 
     @Test
-    fun theModelDropdownExplainsLoadingFailedEmptyAndReplacedStates() {
-        val states =
-            listOf(
-                claude.copy(modelsState = AiModelsState.LOADING) to "Loading models…",
-                claude.copy(modelsState = AiModelsState.FAILED) to "Couldn't load the model list",
-                claude.copy(modelsState = AiModelsState.EMPTY, models = emptyList()) to "No usable models were returned.",
-                claude.copy(modelsState = AiModelsState.NEEDS_CONNECTION, keyPresent = false) to "Add a key to load the full model list.",
-                claude.copy(replacedModel = "claude-retired") to "“claude-retired” is no longer offered",
-            )
-        show(states.first().first)
-        states.forEach { (state, text) ->
-            stateFlow.value = state
-            composeRule.waitForIdle()
-            composeRule.onNodeWithText(text, substring = true).assertIsDisplayed()
-        }
-    }
-
-    @Test
-    fun theEffortDropdownOffersOnlyTheLevelsOfTheModel() {
-        show(claude)
-        composeRule.onNodeWithTag("ai_effort_field").assertIsEnabled().performClick()
-        listOf("auto", "low", "medium", "high", "xhigh", "max").forEach { composeRule.onNodeWithTag("ai_effort_$it").assertIsDisplayed() }
-        composeRule.onNodeWithTag("ai_effort_minimal").assertDoesNotExist()
-        composeRule.onNodeWithTag("ai_effort_max").performClick()
-        assertEquals(listOf("ensure", "effort:max"), calls)
-    }
-
-    @Test
-    fun theEffortDropdownIsDisabledAndExplainedWhereNothingCanBeChosen() {
-        show(chatGpt, ChatGptUiState(useSubscription = true, status = ChatGptStatus.READY))
-        composeRule.onNodeWithTag("ai_effort_field").assertIsNotEnabled()
-        composeRule.onNodeWithText("ChatGPT Subscription has no adjustable reasoning effort.").assertIsDisplayed()
-    }
-
-    @Test
-    fun chatGptShowsItsConnectionCardWithTheRightWayOutOfEveryState() {
+    fun chatGptShowsOnlyItsStatusAndAManageLinkWithNoCredentialControls() {
+        show(chatGpt, ChatGptUiState(useSubscription = true))
         listOf(
-            ChatGptStatus.NOT_CONNECTED to true,
-            ChatGptStatus.NO_PLAN_USAGE to true,
-            ChatGptStatus.SIGN_IN_REQUIRED to true,
-            ChatGptStatus.READY to false,
-            ChatGptStatus.NOT_ELIGIBLE to false,
-            ChatGptStatus.USAGE_LIMIT to false,
-        ).also { show(chatGpt, ChatGptUiState(useSubscription = true)) }.forEach { (status, offersSignIn) ->
+            ChatGptStatus.NOT_CONNECTED,
+            ChatGptStatus.NO_PLAN_USAGE,
+            ChatGptStatus.SIGN_IN_REQUIRED,
+            ChatGptStatus.READY,
+            ChatGptStatus.NOT_ELIGIBLE,
+            ChatGptStatus.USAGE_LIMIT,
+        ).forEach { status ->
             gptFlow.value = ChatGptUiState(useSubscription = true, status = status, account = "me@example.com")
             composeRule.waitForIdle()
-            composeRule.onNodeWithTag("chatgpt_status").assertIsDisplayed()
-            if (offersSignIn) {
-                composeRule
-                    .onNodeWithTag(
-                        "chatgpt_continue",
-                    ).assertIsDisplayed()
-            } else {
-                composeRule.onNodeWithTag("chatgpt_continue").assertDoesNotExist()
-            }
+            composeRule.onNodeWithTag("ai_connection_summary").assertIsDisplayed()
+            listOf("chatgpt_continue", "chatgpt_refresh", "chatgpt_disconnect", "chatgpt_cancel", "chatgpt_account", "ai_key_field", "ai_save_key")
+                .forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
         }
-        gptFlow.value =
-            ChatGptUiState(
-                useSubscription = true,
-                status = ChatGptStatus.READY,
-                account = "me@example.com",
-                models = listOf(ChatGptModel("m1", "Model One")),
-            )
+        gptFlow.value = ChatGptUiState(useSubscription = true, status = ChatGptStatus.READY, account = "me@example.com")
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Account: me@example.com").assertIsDisplayed()
-        composeRule.onNodeWithTag("chatgpt_disconnect").performClick()
-        assertEquals(true, "disconnect" in calls)
+        composeRule.onNodeWithText("AI connection: ChatGPT Subscription · Connected · plan usage allowed").assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_manage_connection").performClick()
+        assertEquals(listOf<AiConnectionTarget>(AiConnectionTarget.ChatGpt), opened)
     }
 
     @Test
-    fun anApiProviderShowsItsKeyStatusBillingNoteAndTheKeyScreenButton() {
+    fun anApiProviderShowsItsKeyStatusBillingNoteAndManageOpensThatProvider() {
         show(claude.copy(keyPresent = false))
-        composeRule.onNodeWithTag("ai_key_status").assertIsDisplayed()
-        composeRule.onNodeWithText("No API key for this provider. Google translates until you add one.").assertIsDisplayed()
-        composeRule.onNodeWithText("Claude Pro and Max subscriptions can't be used here.", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithTag("ai_manage_keys").performClick()
-        assertEquals(1, keysOpened)
+        composeRule.onNodeWithTag("ai_connection_summary").assertIsDisplayed()
+        composeRule.onNodeWithText("AI connection: Claude API · No API key for this provider.", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Claude Pro and Max subscriptions can't be used here.", substring = true).assertExists()
+        listOf("ai_key_field", "ai_save_key", "ai_remove_key", "ai_test_connection").forEach {
+            composeRule.onNodeWithTag(it).assertDoesNotExist()
+        }
+        composeRule.onNodeWithTag("ai_manage_connection").performClick()
+        assertEquals(listOf<AiConnectionTarget>(AiConnectionTarget.Key(AiProvider.CLAUDE)), opened)
     }
 
     @Test
@@ -277,7 +237,7 @@ class AiTranslationSettingsUiTest {
     @Test
     fun everythingFitsAPhoneAtThreeHundredTwentyDp() {
         show(claude, widthDp = 320)
-        listOf("ai_provider_field", "ai_model_field", "ai_effort_field", "ai_connection_card", "ai_test").forEach {
+        listOf("ai_provider_field", "ai_connection_card", "ai_test").forEach {
             composeRule.onNodeWithTag(it).assertIsDisplayed()
             assertTrue(it, composeRule.onNodeWithTag(it).getUnclippedBoundsInRoot().width <= 320.dp)
         }
@@ -287,7 +247,7 @@ class AiTranslationSettingsUiTest {
     @Test
     fun evidenceForTheMainStates() {
         show(chatGpt, ChatGptUiState(useSubscription = true, status = ChatGptStatus.READY, account = "me@example.com"))
-        composeRule.onNodeWithTag("chatgpt_status").assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_connection_summary").assertIsDisplayed()
         saveUiEvidence("ai-translation-settings-chatgpt", composeRule.onRoot().captureToImage())
     }
 }

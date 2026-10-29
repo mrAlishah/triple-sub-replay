@@ -208,17 +208,21 @@ internal fun DualSubUiState.thirdLineFor(segmentId: Long): String? =
 
 /**
  * Translates the rows near playback into the third language with the same window loop as the second
- * line, and hands the finished lines to [publish]. A translator error only stops this line: the loop
- * reports it to nobody, so the original and the second line never learn of it. Cancellation propagates.
+ * line, and hands the finished lines to [publish]. [prefetch] and [upgrades] are the second line's AI hooks.
+ * A translator error only stops this line: the loop reports it to nobody, so the original and the second
+ * line never learn of it. Cancellation propagates.
  */
+
 internal suspend fun runThirdLanguage(
     store: SubtitleStore,
     requests: StateFlow<CaptionPlaybackRequest>,
     translate: suspend (String) -> String,
+    prefetch: (suspend (List<String>) -> Unit)? = null,
+    upgrades: TranslationUpgrades? = null,
     publish: (Map<Long, String>) -> Unit,
 ) {
     try {
-        translatePlaybackWindow(store, requests, translate) { rows, _ ->
+        translatePlaybackWindow(store, requests, translate, prefetch = prefetch, upgrades = upgrades) { rows, _ ->
             publish(rows.mapNotNull { row -> row.translatedText?.takeIf(String::isNotBlank)?.let { row.id to it } }.toMap())
         }
     } catch (error: CancellationException) {

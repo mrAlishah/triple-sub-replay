@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_ai_access_title">AI access</string>
+    <string name="settings_ai_access_keys">AI assistant\'s service and keys</string>
+    <string name="settings_ai_access_chatgpt">ChatGPT Subscription</string>
+    <string name="chatgpt_note">Uses your own ChatGPT plan through OpenAI\'s sign-in, with no API key. Subtitle text is sent to OpenAI to be translated; your ChatGPT conversations are not read. Your plan\'s allowance and limits apply, and availability differs by plan.</string>
+    <string name="chatgpt_continue">Continue with ChatGPT</string>
+    <string name="chatgpt_status_not_connected">Not connected</string>
+    <string name="chatgpt_status_connecting">Connecting… finish signing in in your browser</string>
+    <string name="chatgpt_status_checking">Checking your account…</string>
+    <string name="chatgpt_status_ready">Connected · plan usage allowed</string>
+    <string name="chatgpt_status_no_plan">Connected, but plan usage was not allowed. Continue again and allow it.</string>
+    <string name="chatgpt_status_not_eligible">ChatGPT plan usage isn\'t available for this account.</string>
+    <string name="chatgpt_status_sign_in">Sign in again to keep using your ChatGPT plan.</string>
+    <string name="chatgpt_status_limit">Your ChatGPT plan\'s usage limit was reached. See ChatGPT settings → Usage.</string>
+    <string name="chatgpt_status_temporary">ChatGPT is temporarily unavailable. Try again later.</string>
+    <string name="chatgpt_sign_in_failed">The sign-in didn\'t finish. Try again.</string>
+    <string name="chatgpt_account">Account: %1$s</string>
+    <string name="chatgpt_account_unknown">Connected ChatGPT account</string>
+    <string name="chatgpt_model_title">ChatGPT model</string>
+    <string name="chatgpt_model_none">No model is available for this account yet.</string>
+    <string name="chatgpt_refresh">Refresh status</string>
+    <string name="chatgpt_disconnect">Disconnect</string>
+    <string name="chatgpt_test">Test translation</string>
+    <string name="chatgpt_testing">Translating…</string>
+    <string name="chatgpt_test_result">“Ich lerne jeden Tag Deutsch.” → %1$s</string>
+    <string name="chatgpt_test_failed">The test translation failed.</string>
+    <string name="chatgpt_cancel">Cancel</string>
+</resources>

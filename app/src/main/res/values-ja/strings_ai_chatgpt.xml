@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_ai_access_title">AIの利用方法</string>
+    <string name="settings_ai_access_keys">AIアシスタントのサービスとキー</string>
+    <string name="settings_ai_access_chatgpt">ChatGPTサブスクリプション</string>
+    <string name="chatgpt_note">APIキーなしで、OpenAIのサインインを通じてご自身のChatGPTプランを使います。字幕のテキストは翻訳のためにOpenAIへ送られ、ChatGPTの会話は読み取られません。プランの利用枠と上限が適用され、利用可否はプランによって異なります。</string>
+    <string name="chatgpt_continue">ChatGPTで続ける</string>
+    <string name="chatgpt_status_not_connected">未接続</string>
+    <string name="chatgpt_status_connecting">接続中… ブラウザでサインインを完了してください</string>
+    <string name="chatgpt_status_checking">アカウントを確認中…</string>
+    <string name="chatgpt_status_ready">接続済み・プランの利用を許可</string>
+    <string name="chatgpt_status_no_plan">接続済みですが、プランの利用が許可されていません。もう一度続けて許可してください。</string>
+    <string name="chatgpt_status_not_eligible">このアカウントではChatGPTプランを利用できません。</string>
+    <string name="chatgpt_status_sign_in">ChatGPTプランを使い続けるには、もう一度サインインしてください。</string>
+    <string name="chatgpt_status_limit">ChatGPTプランの利用上限に達しました。ChatGPTの設定 → 使用状況を確認してください。</string>
+    <string name="chatgpt_status_temporary">ChatGPTは一時的に利用できません。後でもう一度お試しください。</string>
+    <string name="chatgpt_sign_in_failed">サインインが完了しませんでした。もう一度お試しください。</string>
+    <string name="chatgpt_account">アカウント: %1$s</string>
+    <string name="chatgpt_account_unknown">接続済みのChatGPTアカウント</string>
+    <string name="chatgpt_model_title">ChatGPTのモデル</string>
+    <string name="chatgpt_model_none">このアカウントで使えるモデルはまだありません。</string>
+    <string name="chatgpt_refresh">状態を更新</string>
+    <string name="chatgpt_disconnect">接続を解除</string>
+    <string name="chatgpt_test">翻訳をテスト</string>
+    <string name="chatgpt_testing">翻訳中…</string>
+    <string name="chatgpt_test_result">「Ich lerne jeden Tag Deutsch.」→ %1$s</string>
+    <string name="chatgpt_test_failed">テスト翻訳に失敗しました。</string>
+    <string name="chatgpt_cancel">キャンセル</string>
+</resources>

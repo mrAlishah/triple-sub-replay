@@ -39,6 +39,7 @@ internal class TranslationEngineActions(
     val selectGoogleWait: (GoogleWait) -> Unit = {},
     val selectTranslator: (SubtitleTranslator) -> Unit = {},
     val selectAiTranslationModel: (String) -> Unit = {},
+    val chatGpt: ChatGptActions? = null,
 )
 
 /** What Settings → Translation shows about the online engine. */

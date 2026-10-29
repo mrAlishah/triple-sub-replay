@@ -10,6 +10,7 @@ import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AI_TRANSLATION_MODEL_PREFERENCE
 import com.kienhoang.dualsubreplay.assistant.AiHttpTransport
 import com.kienhoang.dualsubreplay.assistant.aiTranslationModel
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptSubscription
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.CaptionProvider
@@ -421,6 +422,15 @@ class AppViewModel internal constructor(
             addressMemory = application.googleAddressMemory(GOOGLE_TRANSLATE_ADDRESS_KEY),
         )
     private val aiTranslator = AiSubtitleTranslator(File(application.cacheDir, "ai-translations"))
+
+    /** Settings → Translation → AI access → ChatGPT Subscription (off unless chosen). */
+    internal val chatGpt =
+        ChatGptSubscription.create(
+            application,
+            preferences,
+            viewModelScope,
+            application.getString(R.string.app_name),
+        ) { reloadAfterAiAccessChange() }
     private val aiTransport by lazy { AiHttpTransport() }
 
     /** Google failed or was too slow on mobile data and has not answered since. */
@@ -1452,6 +1462,7 @@ class AppViewModel internal constructor(
         val editor = preferences.edit()
         RESETTABLE_SETTING_KEYS.forEach(editor::remove)
         editor.apply()
+        chatGpt.resetChoice()
         _state.update { it.copy(autoPronounce = true) }
         latestPlaybackSecondMs = 0L
         liveCaptionTracker.reset()
@@ -1850,7 +1861,11 @@ class AppViewModel internal constructor(
                     )
             }
             val store = checkNotNull(displayStore)
-            thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests)
+            // One model for both lines, so Subtitle 1 and Subtitle 2 share its pacing and its stop on a limit.
+            val ai = if (_state.value.translatesWithGoogle()) selectedAiModel() else null
+            // Subtitle 2 uses the AI only with ChatGPT Subscription: keyed users keep Google there, as before.
+            val thirdAi = ai.takeIf { chatGpt.useSubscription }
+            thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests, thirdAi)
             try {
                 if (_state.value.translatesWithGoogle()) {
                     followGoogleTranslation(
@@ -1859,6 +1874,7 @@ class AppViewModel internal constructor(
                         generation,
                         sourceLanguage to targetLanguage,
                         googleRequests,
+                        ai,
                     ) { prefetch, upgrades, translate ->
                         follow(prefetch, upgrades, translate)
                     }
@@ -1891,23 +1907,74 @@ class AppViewModel internal constructor(
         }
     }
 
-    /**
+/**
      * The fork's third line (see [runThirdLanguage]): one more window loop on the same display [store], so
      * its row ids match [DualSubUiState.segments]. Null when the mode is off or would repeat another line.
-     * It runs in [scope] (the load's Google scope) and is cancelled when this translation run ends.
+     * It runs in [scope] (the load's Google scope) and is cancelled when this translation run ends. With an [ai]
+     * model (ChatGPT Subscription) the line is also asked from the AI, straight from the Original.
      */
+
     private fun startThirdLine(
         store: SubtitleStore,
         videoId: String,
         generation: Long,
         source: String,
         scope: CoroutineScope,
+        ai: AiTranslationModel?,
     ): Job? {
         publishThirdLines(videoId, generation, emptyMap(), null)
         val third = _state.value.thirdLanguageFor(source) ?: return null
-        val translate: suspend (String) -> String = { text -> translateThird(videoId, generation, source, third, text, scope) }
+        // The AI translates this line straight from the Original, never from Subtitle 1; Google and the device keep what it leaves out.
+        val window =
+            ai?.let { model ->
+                AiWindowTranslation(scope, aiTranslator, model, source to third) { aiFillTexts(store) }
+            }
+        val aiOnly = window != null && _state.value.aiTranslationOnly
+
+        suspend fun translate(text: String): String =
+            window?.cached(text)
+                ?: (if (aiOnly) window?.await(text) else null)
+                ?: translateThird(videoId, generation, source, third, text, scope)
+
+        suspend fun prefetch(texts: List<String>) {
+            if (aiOnly) window?.first(texts) else window?.ask(texts)
+        }
+        val upgrades =
+            ai?.let { model ->
+                TranslationUpgrades(aiTranslator.updates) { text -> aiTranslator.shownTranslation(model, source, third, text) }
+            }
         return scope.launch {
-            runThirdLanguage(store, playbackRequests, translate) { lines -> publishThirdLines(videoId, generation, lines, third) }
+            runThirdLanguage(
+                store,
+                playbackRequests,
+                ::translate,
+                if (window != null) ::prefetch else null,
+                upgrades,
+            ) { lines -> publishThirdLines(videoId, generation, lines, third) }
+        }
+    }
+
+    /**
+     * The AI that translates subtitles, or null so Google or the device does: ChatGPT Subscription when the user chose it
+     * (a missing session never turns into a keyed service), otherwise the AI assistant's service and keys.
+     */
+    private suspend fun selectedAiModel(): AiTranslationModel? {
+        if (!_state.value.aiTranslation) return null
+        return withContext(Dispatchers.IO) {
+            if (chatGpt.useSubscription) {
+                chatGpt.translationModel()
+            } else {
+                getApplication<Application>().aiTranslationModel(_state.value.aiTranslationModel, aiTransport)
+            }
+        }
+    }
+
+    /** A new ChatGPT account, model or access choice: the playing video translates again with it. */
+    private fun reloadAfterAiAccessChange() {
+        val videoId = _state.value.activeVideoId ?: return
+        val current = _state.value
+        if (current.aiTranslation && current.translatesWithGoogle()) {
+            loadVideo(videoId = videoId, showPanel = current.subtitlePanelVisible)
         }
     }
 
@@ -1979,6 +2046,7 @@ class AppViewModel internal constructor(
         generation: Long,
         languages: Pair<String, String>,
         googleRequests: CoroutineScope,
+        ai: AiTranslationModel?,
         follow: suspend (
             prefetch: suspend (List<String>) -> Unit,
             upgrades: TranslationUpgrades?,
@@ -1986,14 +2054,6 @@ class AppViewModel internal constructor(
         ) -> Unit,
     ) = coroutineScope {
         val (source, target) = languages
-        val ai =
-            if (_state.value.aiTranslation) {
-                withContext(
-                    Dispatchers.IO,
-                ) { getApplication<Application>().aiTranslationModel(_state.value.aiTranslationModel, aiTransport) }
-            } else {
-                null
-            }
         launch {
             prefetchInBackground(store, playbackRequests) { texts ->
                 ai?.let { model -> aiNextBatch(model, languages, texts) } ?: googleTranslator.translateNextBatch(source, target, texts)

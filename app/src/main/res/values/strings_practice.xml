@@ -146,4 +146,14 @@
         <item quantity="one">Full backup: %1$d readable word. Review history is included.</item>
         <item quantity="other">Full backup: %1$d readable words. Review history is included.</item>
     </plurals>
+    <string name="practice_source_label">Source / Video</string>
+    <string name="practice_source_all">All Sources</string>
+    <string name="practice_source_unknown">Unknown Source</string>
+    <string name="practice_source_search">Search sources</string>
+    <string name="practice_source_none_found">No matching sources</string>
+    <string name="practice_source_title_label">Source title</string>
+    <string name="practice_source_title_save">Save title</string>
+    <string name="practice_source_in_session">Source: %1$s</string>
+    <string name="practice_source_option">%1$s (%2$d)</string>
+    <string name="practice_source_same_title">%1$s · %2$s</string>
 </resources>

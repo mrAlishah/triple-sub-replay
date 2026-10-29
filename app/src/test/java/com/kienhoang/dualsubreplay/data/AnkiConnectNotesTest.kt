@@ -121,6 +121,51 @@ class AnkiConnectNotesTest {
     }
 
     @Test
+    fun desktopAnkiConnectFillsTheSourceTitleFieldAndTagsTheVideo() =
+        runBlocking {
+            val anki = FakeAnkiConnect(listOf("Default"), mapOf("Basic" to listOf("Front", "Back")), canMake = true)
+            AnkiConnectNotes(
+                MemorySentWords(),
+                { anki.answer(it) },
+            ).send(listOf(word("1").copy(sourceTitle = "猫の動画 & more")), chosenDeck = null)
+            val note = anki.notes.single()
+            assertEquals("猫の動画 &amp; more", note.getJSONObject("fields").getString("Source Title"))
+            assertEquals(
+                listOf(ANKI_TAG, "yt_abcdefghijk"),
+                (0 until note.getJSONArray("tags").length()).map {
+                    note.getJSONArray("tags").getString(it)
+                },
+            )
+        }
+
+    @Test
+    fun anExistingV3TypeStaysV3WithTheTitleInsideSourceAndIsNeverRenamed() =
+        runBlocking {
+            val anki = FakeAnkiConnect(listOf("Default"), mapOf(TRIPLE_V3_NOTE_TYPE_NAME to TRIPLE_V3_FIELDS), canMake = false)
+            AnkiConnectNotes(MemorySentWords(), { anki.answer(it) }).send(listOf(word("1").copy(sourceTitle = "Titel")), chosenDeck = null)
+            val note = anki.notes.single()
+            assertEquals(TRIPLE_V3_NOTE_TYPE_NAME, note.getString("modelName"))
+            assertEquals(
+                TRIPLE_V3_FIELDS.toSet(),
+                note
+                    .getJSONObject("fields")
+                    .keys()
+                    .asSequence()
+                    .toSet(),
+            )
+            assertTrue(note.getJSONObject("fields").getString("Source").startsWith("Titel<br><a href="))
+            assertEquals(TRIPLE_V3_FIELDS, anki.models.getValue(TRIPLE_V3_NOTE_TYPE_NAME))
+        }
+
+    @Test
+    fun theOlderSixFieldAndBasicTypesKeepTheTitleSoItIsNotLost() {
+        val titled = word("1").copy(sourceTitle = "Titel")
+        assertTrue(ankiConnectFields(ANKI_FIELDS, titled).getValue("Source").startsWith("Titel<br><a href="))
+        assertTrue(ankiConnectFields(listOf("Front", "Back"), titled).getValue("Back").contains("Titel"))
+        assertFalse(ankiConnectFields(ANKI_FIELDS, word("1")).getValue("Source").startsWith("<br>"))
+    }
+
+    @Test
     fun desktopAnkiConnectGetsTheDualSubReplayDeckAndNoteType() =
         runBlocking {
             val anki = FakeAnkiConnect(listOf("Default"), mapOf("Basic" to listOf("Front", "Back")), canMake = true)

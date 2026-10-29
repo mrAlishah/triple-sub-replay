@@ -44,4 +44,55 @@ class SavedWordsScreenTest {
             repository.close(); context.deleteDatabase(name)
         }
     }
+
+    private fun saved(id: String, text: String, videoId: String?, title: String?) =
+        SavedWord(id, text, null, "de", "en", "meaning $text", "sentence", null, videoId, 1000, 3000, false, false, sourceTitle = title)
+
+    @Test fun sourceFilterNarrowsTheListAndTheDueQueueAndTitlesCanBeCorrected() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val name = "vocabulary-ui-${UUID.randomUUID()}.db"
+        val repository = VocabularyRepository(context, name)
+        val visible = androidx.compose.runtime.mutableStateOf(true)
+        runBlocking {
+            repository.save(saved("a1", "Eins", "aaaaaaaaaaa", "Lesson"))
+            repository.save(saved("a2", "Zwei", "aaaaaaaaaaa", "Lesson"))
+            repository.save(saved("b1", "Drei", "bbbbbbbbbbb", "Lesson"))
+            repository.save(saved("u1", "Vier", null, null))
+        }
+        try {
+            compose.setContent { DualSubTheme { if (visible.value) SavedWordsScreen(repository, {}, {}, {}) } }
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("saved_word_u1").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("source_filter").performClick()
+            compose.onNodeWithTag("source_search").performTextInput("lesson")
+            compose.onNodeWithTag("source_v:aaaaaaaaaaa").assertExists()
+            compose.onNodeWithTag("source_v:bbbbbbbbbbb").assertExists()
+            compose.onNodeWithTag("source_unknown").assertDoesNotExist()
+            compose.onNodeWithTag("source_v:aaaaaaaaaaa").performClick()
+            compose.onNodeWithTag("saved_word_a1").assertExists()
+            compose.onNodeWithTag("saved_word_a2").assertExists()
+            compose.onNodeWithTag("saved_word_b1").assertDoesNotExist()
+            compose.onNodeWithTag("saved_word_u1").assertDoesNotExist()
+            saveUiEvidence("saved-words-source-filter")
+            compose.onNodeWithTag("practice_words").performClick()
+            repeat(2) {
+                compose.onNodeWithTag("practice_source").assertExists()
+                compose.onNodeWithTag("reveal_meaning").performClick()
+                compose.onNodeWithTag("review_good").performScrollTo().performClick()
+                compose.waitForIdle()
+            }
+            compose.waitUntil(5000) { repository.words.value.filter { it.videoId == "aaaaaaaaaaa" }.all { it.intervalMs == 3 * DAY_MS } }
+            compose.onNodeWithTag("practice_complete").assertIsDisplayed()
+            assertTrue(repository.words.value.filter { it.id in setOf("b1", "u1") }.all { it.intervalMs == 0L && it.dueAt == 0L })
+            compose.onNodeWithText("Back to saved words").performClick()
+            compose.onNodeWithTag("saved_word_a1").performClick()
+            compose.onNodeWithTag("source_title_field").performTextReplacement("Renamed lesson")
+            compose.onNodeWithTag("save_source_title").performScrollTo().performClick()
+            compose.waitUntil(5000) { repository.words.value.filter { it.videoId == "aaaaaaaaaaa" }.all { it.sourceTitle == "Renamed lesson" } }
+            assertEquals("Lesson", repository.words.value.first { it.id == "b1" }.sourceTitle)
+        } finally {
+            compose.runOnIdle { visible.value = false }
+            compose.waitForIdle()
+            repository.close(); context.deleteDatabase(name)
+        }
+    }
 }

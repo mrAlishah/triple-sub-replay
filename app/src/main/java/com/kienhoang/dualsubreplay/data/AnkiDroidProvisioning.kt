@@ -37,6 +37,7 @@ internal interface AnkiDroidProvider {
     fun insertNote(
         noteType: Long,
         fields: List<String>,
+        tags: List<String>,
     ): Long?
 
     fun moveToDeck(
@@ -123,7 +124,7 @@ internal class AnkiDroidSender(
         deck: Long,
         word: SavedWord,
     ): Boolean {
-        val noteId = step(AnkiProblem.INSERT_FAILED) { provider.insertNote(noteType, tripleNoteFields(word)) }
+        val noteId = step(AnkiProblem.INSERT_FAILED) { provider.insertNote(noteType, tripleNoteFields(word), ankiTags(word)) }
         return runCatching { provider.moveToDeck(noteId, deck) }.isSuccess
     }
 }
@@ -197,12 +198,13 @@ internal class ContentProviderAnkiDroid(
     override fun insertNote(
         noteType: Long,
         fields: List<String>,
+        tags: List<String>,
     ): Long? {
         val values =
             ContentValues().apply {
                 put("mid", noteType)
                 put("flds", fields.joinToString(ANKI_FIELD_SEPARATOR))
-                put("tags", ANKI_TAG)
+                put("tags", tags.joinToString(" "))
             }
         return resolver.insert(notesUri, values)?.lastPathSegment?.toLongOrNull()
     }

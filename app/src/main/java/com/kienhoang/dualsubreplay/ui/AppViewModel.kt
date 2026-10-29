@@ -110,6 +110,8 @@ data class DualSubUiState(
     /** The menu's YouTube tabs; the open one is shown in the one YouTube page, none shows an empty page. */
     val browserTabs: BrowserTabs = BrowserTabs(),
     val activeVideoId: String? = null,
+    /** The title the YouTube page reported, with the video of the address it came from; never trusted for another video. */
+    val videoTitle: VideoTitle? = null,
     val subtitlePanelVisible: Boolean = true,
     val sourcePreference: String = "auto",
     val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
@@ -1198,7 +1200,11 @@ class AppViewModel internal constructor(
                     current.activeVideoId.takeUnless { current.liveFallback },
                 )
             }
-        val withMeanings = selection?.copy(extraMeaningLanguages = current.extraMeaningLanguagesFor(selection))
+        val withMeanings =
+            selection?.copy(
+                extraMeaningLanguages = current.extraMeaningLanguagesFor(selection),
+                sourceTitle = current.titleOf(selection.videoId),
+            )
         _state.update { it.copy(selectedLearningWord = withMeanings) }
     }
 
@@ -1243,7 +1249,12 @@ class AppViewModel internal constructor(
         meaning: String,
         online: Boolean,
         meanings: Map<String, String> = emptyMap(),
-    ): SavedWord = vocabulary.save(savedWordFrom(selection, meaning, online, _state.value.thirdSentenceFor(selection), meanings))
+    ): SavedWord {
+        val current = _state.value
+        // The title may arrive after the word was tapped, so it is read again now, still only for the word's own video.
+        val titled = selection.copy(sourceTitle = current.titleOf(selection.videoId) ?: selection.sourceTitle)
+        return vocabulary.save(savedWordFrom(titled, meaning, online, current.thirdSentenceFor(selection), meanings))
+    }
 
     suspend fun translateWord(word: String): String {
         val current = _state.value
@@ -1527,6 +1538,8 @@ class AppViewModel internal constructor(
     ) {
         if (isLeftTabReport(url)) return
         val name = browserTabTitle(title)
+        val videoId = YouTubeUrlParser.extractVideoId(url)
+        if (videoId != null && name.isNotBlank()) _state.update { it.copy(videoTitle = VideoTitle(videoId, name)) }
         changeTabs { it.withActiveTitle(name) }
     }
 

@@ -108,12 +108,40 @@ internal fun ankiConnectFields(
 ): Map<String, String> {
     val values = tripleNoteFields(word)
     if (fieldNames == TRIPLE_FIELDS) return TRIPLE_FIELDS.zip(values).toMap()
+    // The older types have no Source Title field, so the title goes above the link in Source there.
+    if (fieldNames == TRIPLE_V3_FIELDS) {
+        return TRIPLE_V3_FIELDS
+            .zip(
+                values.take(TRIPLE_V3_FIELDS.size).mapIndexed { i, v ->
+                    if (i ==
+                        7
+                    ) {
+                        ankiSourceWithTitle(word, v)
+                    } else {
+                        v
+                    }
+                },
+            ).toMap()
+    }
     // The older six-field type has no field for the third meaning, so it stays inside Meaning there.
-    if (fieldNames == ANKI_FIELDS) return ANKI_FIELDS.zip(ankiNoteFields(word)).toMap()
+    if (fieldNames == ANKI_FIELDS) {
+        return ANKI_FIELDS
+            .zip(
+                ankiNoteFields(word).mapIndexed { i, v ->
+                    if (i ==
+                        ANKI_FIELDS.lastIndex
+                    ) {
+                        ankiSourceWithTitle(word, v)
+                    } else {
+                        v
+                    }
+                },
+            ).toMap()
+    }
     if (fieldNames.isEmpty()) return emptyMap()
     val front = listOf(values[0], values[4]).filter { it.isNotBlank() }.joinToString("<br><br>")
     val back =
-        listOf(values[3], values[1], values[2], values[5], values[6], values[8], values[7])
+        listOf(values[3], values[1], values[2], values[5], values[6], values[8], values[9], values[7])
             .filter {
                 it.isNotBlank()
             }.joinToString("<br>")
@@ -191,7 +219,7 @@ internal class AnkiConnectNotes(
             val (noteType, fields) = noteType() ?: return AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
             for (word in unsent) {
                 try {
-                    call("addNote", JSONObject().put("note", note(deck, noteType, ankiConnectFields(fields, word))))
+                    call("addNote", JSONObject().put("note", note(deck, noteType, ankiConnectFields(fields, word), ankiTags(word))))
                     sent++
                 } catch (error: AnkiConnectError) {
                     // Anki already has this note (sent from another phone, or before a reinstall).
@@ -227,9 +255,9 @@ internal class AnkiConnectNotes(
             tryCall("createModel", ankiConnectNoteTypeParams())
             names = ankiConnectNames(call("modelNames"))
         }
-        // AnkiConnect Android cannot make a note type: the older six-field one, then Basic, take the card.
+        // AnkiConnect Android cannot make a note type: v3, the older six-field one, then Basic, take the card.
         val name =
-            listOf(TRIPLE_NOTE_TYPE_NAME, ANKI_NOTE_TYPE_NAME).firstOrNull { it in names }
+            listOf(TRIPLE_NOTE_TYPE_NAME, TRIPLE_V3_NOTE_TYPE_NAME, ANKI_NOTE_TYPE_NAME).firstOrNull { it in names }
                 ?: ankiConnectFallbackNoteType(names) ?: return null
         return name to ankiConnectNames(call("modelFieldNames", JSONObject().put("modelName", name)))
     }
@@ -238,12 +266,13 @@ internal class AnkiConnectNotes(
         deck: String,
         noteType: String,
         fields: Map<String, String>,
+        tags: List<String>,
     ): JSONObject =
         JSONObject()
             .put("deckName", deck)
             .put("modelName", noteType)
             .put("fields", JSONObject(fields))
-            .put("tags", JSONArray(listOf(ANKI_TAG)))
+            .put("tags", JSONArray(tags))
             .put("options", JSONObject().put("allowDuplicate", false).put("duplicateScope", "deck"))
 
     private suspend fun call(

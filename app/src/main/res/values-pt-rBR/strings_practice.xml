@@ -156,4 +156,14 @@
         <item quantity="many">Backup completo: %1$d palavras legíveis. Inclui o histórico de revisões.</item>
         <item quantity="other">Backup completo: %1$d palavras legíveis. Inclui o histórico de revisões.</item>
     </plurals>
+    <string name="practice_source_label">Fonte / vídeo</string>
+    <string name="practice_source_all">Todas as fontes</string>
+    <string name="practice_source_unknown">Fonte desconhecida</string>
+    <string name="practice_source_search">Pesquisar fontes</string>
+    <string name="practice_source_none_found">Nenhuma fonte encontrada</string>
+    <string name="practice_source_title_label">Título da fonte</string>
+    <string name="practice_source_title_save">Salvar título</string>
+    <string name="practice_source_in_session">Fonte: %1$s</string>
+    <string name="practice_source_option">%1$s (%2$d)</string>
+    <string name="practice_source_same_title">%1$s · %2$s</string>
 </resources>

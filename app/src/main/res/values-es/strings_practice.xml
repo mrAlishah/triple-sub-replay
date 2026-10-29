@@ -156,4 +156,14 @@
         <item quantity="many">Copia de seguridad completa: %1$d palabras legibles. Incluye el historial de repasos.</item>
         <item quantity="other">Copia de seguridad completa: %1$d palabras legibles. Incluye el historial de repasos.</item>
     </plurals>
+    <string name="practice_source_label">Fuente / vídeo</string>
+    <string name="practice_source_all">Todas las fuentes</string>
+    <string name="practice_source_unknown">Fuente desconocida</string>
+    <string name="practice_source_search">Buscar fuentes</string>
+    <string name="practice_source_none_found">Ninguna fuente coincide</string>
+    <string name="practice_source_title_label">Título de la fuente</string>
+    <string name="practice_source_title_save">Guardar título</string>
+    <string name="practice_source_in_session">Fuente: %1$s</string>
+    <string name="practice_source_option">%1$s (%2$d)</string>
+    <string name="practice_source_same_title">%1$s · %2$s</string>
 </resources>

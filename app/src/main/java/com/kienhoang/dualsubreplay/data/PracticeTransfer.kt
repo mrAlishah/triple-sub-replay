@@ -20,6 +20,7 @@ internal val transferColumns =
         "source",
         "startMs",
         "endMs",
+        "sourceTitle",
     )
 
 /** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
@@ -230,6 +231,7 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
                 word.videoId?.let { "https://www.youtube.com/watch?v=$it" }.orEmpty(),
                 word.startMs.toString(),
                 word.endMs.toString(),
+                word.sourceTitle.orEmpty(),
                 encodeSentenceTranslations(word.sentenceTranslations),
                 encodeSentenceTranslations(word.meanings),
                 word.personalNotes,
@@ -294,6 +296,7 @@ internal fun previewImport(
                         sentenceTranslations = decodeSentenceTranslationsText(translationsCell(document, row)),
                         meanings = decodeSentenceTranslationsText(translationsCell(document, row, MEANINGS_COLUMN)),
                         personalNotes = translationsCell(document, row, NOTES_COLUMN),
+                        sourceTitle = normalizeSourceTitle(field("sourceTitle")),
                     )
                 validateTransferWord(word)
                 val id =

@@ -34,9 +34,9 @@ class PracticeSendTest {
         )
 
     @Test
-    fun theSavedWordFillsAllNineFieldsIncludingSavedMeaningsOfLanguagesNoLongerOn() {
+    fun theSavedWordFillsAllTenFieldsIncludingSavedMeaningsOfLanguagesNoLongerOn() {
         val byName = TRIPLE_FIELDS.zip(tripleNoteFields(saved)).toMap()
-        assertEquals(9, byName.size)
+        assertEquals(10, byName.size)
         assertEquals("Verletzten", byName["Word"])
         assertEquals("injured", byName["Subtitle 1"])
         assertEquals("مجروح شد<br>جريح", byName["Subtitle 2"])

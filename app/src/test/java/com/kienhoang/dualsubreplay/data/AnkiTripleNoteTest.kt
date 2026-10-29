@@ -28,12 +28,34 @@ class AnkiTripleNoteTest {
     private fun fields(word: SavedWord) = TRIPLE_FIELDS.zip(tripleNoteFields(word)).toMap()
 
     @Test
-    fun theTypeIsVersionedAndHasTheNineFieldsInOrder() {
-        assertEquals("TripleSub Replay v3", TRIPLE_NOTE_TYPE_NAME)
+    fun theSourceTitleIsEscapedAndKeepsUnicodeAndRightToLeftText() {
+        val fields = tripleNoteFields(german.copy(sourceTitle = "A <b>&\"x\" عربي"))
+        assertEquals("A &lt;b&gt;&amp;&quot;x&quot; عربي", fields[TRIPLE_FIELDS.indexOf("Source Title")])
+        assertEquals("", tripleNoteFields(german.copy(sourceTitle = null))[TRIPLE_FIELDS.indexOf("Source Title")])
+    }
+
+    @Test
+    fun theAnswerShowsTheSourceTitleOnlyWhenThereIsOneAndTheLinkStays() {
+        assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{#Source Title}}"))
+        assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{Source}}"))
+    }
+
+    @Test
+    fun theVideoBecomesAStableTagOnlyForAValidId() {
+        assertEquals(listOf(ANKI_TAG, "yt_abcdefghijk"), ankiTags(german.copy(videoId = "abcdefghijk")))
+        assertEquals(listOf(ANKI_TAG), ankiTags(german.copy(videoId = null)))
+        assertEquals(listOf(ANKI_TAG), ankiTags(german.copy(videoId = "bad id!")))
+    }
+
+    @Test
+    fun theTypeIsVersionedAndHasTheV3FieldsInOrderThenTheSourceTitle() {
+        assertEquals("TripleSub Replay v4", TRIPLE_NOTE_TYPE_NAME)
+        assertEquals("TripleSub Replay v3", TRIPLE_V3_NOTE_TYPE_NAME)
+        assertEquals(TRIPLE_V3_FIELDS + "Source Title", TRIPLE_FIELDS)
         assertTrue(TRIPLE_NOTE_TYPE_NAME != ANKI_NOTE_TYPE_NAME)
         assertEquals(
             listOf("Word", "Subtitle 1", "Subtitle 2", "Reading", "Sentence", "Translation", "Text", "Source", "Online Example"),
-            TRIPLE_FIELDS,
+            TRIPLE_V3_FIELDS,
         )
         assertEquals(TRIPLE_FIELDS.size, tripleNoteFields(german).size)
     }

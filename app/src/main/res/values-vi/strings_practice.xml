@@ -136,4 +136,14 @@
     <plurals name="practice_import_backup_summary">
         <item quantity="other">Bản sao lưu đầy đủ: %1$d từ đọc được. Có kèm lịch sử ôn tập.</item>
     </plurals>
+    <string name="practice_source_label">Nguồn / video</string>
+    <string name="practice_source_all">Tất cả nguồn</string>
+    <string name="practice_source_unknown">Nguồn không rõ</string>
+    <string name="practice_source_search">Tìm nguồn</string>
+    <string name="practice_source_none_found">Không có nguồn phù hợp</string>
+    <string name="practice_source_title_label">Tiêu đề nguồn</string>
+    <string name="practice_source_title_save">Lưu tiêu đề</string>
+    <string name="practice_source_in_session">Nguồn: %1$s</string>
+    <string name="practice_source_option">%1$s (%2$d)</string>
+    <string name="practice_source_same_title">%1$s · %2$s</string>
 </resources>

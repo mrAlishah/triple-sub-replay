@@ -13,6 +13,7 @@ class AnkiDroidSenderTest {
         val typeList = mutableListOf<AnkiNoteType>()
         val notes = mutableListOf<Pair<Long, List<String>>>()
         val moves = mutableListOf<Pair<Long, Long>>()
+        val noteTags = mutableListOf<List<String>>()
         var deckCreates = 0
         var typeCreates = 0
         var refuseDecks: Exception? = null
@@ -47,9 +48,11 @@ class AnkiDroidSenderTest {
         override fun insertNote(
             noteType: Long,
             fields: List<String>,
+            tags: List<String>,
         ): Long? {
             if (failInsert) return null
             val id = next++
+            noteTags += tags
             notes += id to fields
             return id
         }
@@ -109,6 +112,34 @@ class AnkiDroidSenderTest {
         assertEquals(listOf(TRIPLE_NOTE_TYPE_NAME to TRIPLE_FIELDS), anki.typeList.map { it.name to it.fields })
         assertEquals(anki.deckList.single().first, anki.moves.single().second)
         assertEquals(1, marks)
+    }
+
+    @Test
+    fun theSourceTitleGoesIntoItsOwnFieldAndTheVideoBecomesATag() {
+        val anki = FakeAnki().also(::ready)
+        sender(anki).send(listOf(word().copy(sourceTitle = "Learn <German> & more")))
+        val fields = anki.notes.single().second
+        assertEquals(TRIPLE_FIELDS.size, fields.size)
+        assertEquals("Learn &lt;German&gt; &amp; more", fields[TRIPLE_FIELDS.indexOf("Source Title")])
+        assertEquals(listOf(ANKI_TAG, "yt_abcdefghijk"), anki.noteTags.single())
+    }
+
+    @Test
+    fun aWordWithoutATitleLeavesTheFieldEmpty() {
+        val anki = FakeAnki().also(::ready)
+        sender(anki).send(listOf(word()))
+        assertEquals("", anki.notes.single().second[TRIPLE_FIELDS.indexOf("Source Title")])
+    }
+
+    @Test
+    fun anExistingV3TypeIsLeftAloneWhenV4IsCreated() {
+        val anki = FakeAnki()
+        anki.deckList += 5L to TRIPLE_DECK_NAME
+        anki.typeList += AnkiNoteType(7, TRIPLE_V3_NOTE_TYPE_NAME, TRIPLE_V3_FIELDS)
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        assertEquals(1, anki.typeCreates)
+        assertEquals(AnkiNoteType(7, TRIPLE_V3_NOTE_TYPE_NAME, TRIPLE_V3_FIELDS), anki.typeList.first())
+        assertEquals(TRIPLE_NOTE_TYPE_NAME, anki.typeList.last().name)
     }
 
     @Test

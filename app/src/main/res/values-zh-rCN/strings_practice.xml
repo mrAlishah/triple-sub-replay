@@ -136,4 +136,14 @@
     <plurals name="practice_import_backup_summary">
         <item quantity="other">完整备份:%1$d 个可读取的单词。包含复习记录。</item>
     </plurals>
+    <string name="practice_source_label">来源 / 视频</string>
+    <string name="practice_source_all">所有来源</string>
+    <string name="practice_source_unknown">未知来源</string>
+    <string name="practice_source_search">搜索来源</string>
+    <string name="practice_source_none_found">没有匹配的来源</string>
+    <string name="practice_source_title_label">来源标题</string>
+    <string name="practice_source_title_save">保存标题</string>
+    <string name="practice_source_in_session">来源：%1$s</string>
+    <string name="practice_source_option">%1$s（%2$d）</string>
+    <string name="practice_source_same_title">%1$s · %2$s</string>
 </resources>

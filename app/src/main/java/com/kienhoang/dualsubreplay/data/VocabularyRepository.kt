@@ -263,6 +263,7 @@ internal fun encodeWord(w: SavedWord): JSONObject =
         if (w.sentenceTranslations.isNotEmpty()) put("sentenceTranslations", JSONObject(w.sentenceTranslations))
         if (w.meanings.isNotEmpty()) put("meanings", JSONObject(w.meanings))
         if (w.personalNotes.isNotEmpty()) put("personalNotes", w.personalNotes)
+        w.sourceTitle?.let { put("sourceTitle", it) }
     }
 
 internal fun decodeWord(j: JSONObject): SavedWord =
@@ -285,6 +286,7 @@ internal fun decodeWord(j: JSONObject): SavedWord =
         sentenceTranslations = decodeSentenceTranslations(j.optJSONObject("sentenceTranslations")),
         meanings = decodeSentenceTranslations(j.optJSONObject("meanings")),
         personalNotes = j.optString("personalNotes"),
+        sourceTitle = normalizeSourceTitle(j.optString("sourceTitle")),
     )
 
 private fun decodeSentenceTranslations(json: JSONObject?): Map<String, String> {

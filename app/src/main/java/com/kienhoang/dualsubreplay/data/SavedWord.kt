@@ -23,6 +23,8 @@ data class LearningWordSelection(
     val parts: List<AnalyzedToken> = listOf(token),
     /** Further subtitle languages to give a meaning in, beside [meaningLanguage], in subtitle-slot order. */
     val extraMeaningLanguages: List<String> = emptyList(),
+    /** The video's title when it was verified to belong to [videoId]; null when not known yet. */
+    val sourceTitle: String? = null,
 ) {
     val isPhrase: Boolean get() = parts.size > 1
 }
@@ -73,6 +75,8 @@ data class SavedWord(
     val meanings: Map<String, String> = emptyMap(),
     /** The user's own multiline notes ("Text" in Anki). Never filled in automatically; empty for older words. */
     val personalNotes: String = "",
+    /** The human-readable title of the video the word was saved from. Display and filtering only: never part of the id. */
+    val sourceTitle: String? = null,
 )
 
 enum class ReviewRating { AGAIN, HARD, GOOD, EASY }
@@ -113,7 +117,11 @@ internal fun savedWordId(
 internal fun keepSavedNotes(
     imported: SavedWord,
     existing: SavedWord,
-): SavedWord = imported.copy(personalNotes = imported.personalNotes.ifBlank { existing.personalNotes })
+): SavedWord =
+    imported.copy(
+        personalNotes = imported.personalNotes.ifBlank { existing.personalNotes },
+        sourceTitle = imported.sourceTitle ?: existing.sourceTitle,
+    )
 
 /** Saving a word again keeps its review schedule and every translation already stored (new languages are added). */
 internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
@@ -123,6 +131,7 @@ internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
         sentenceTranslations = new.sentenceTranslations + old.sentenceTranslations,
         meanings = (old.meanings + new.meanings).filterValues { it.isNotBlank() },
         personalNotes = new.personalNotes.ifBlank { old.personalNotes },
+        sourceTitle = new.sourceTitle ?: old.sourceTitle,
     )
 
 internal fun savedWordFrom(
@@ -141,7 +150,8 @@ internal fun savedWordFrom(
         segment?.startMs ?: 0, segment?.endMs ?: 0, selection.translated,
         online = online && hasClip,
         sentenceTranslations = sentenceTranslations.filterValues { it.isNotBlank() },
-        meanings = cleanMeanings(meanings, selection.meaningLanguage))
+        meanings = cleanMeanings(meanings, selection.meaningLanguage),
+        sourceTitle = normalizeSourceTitle(selection.sourceTitle))
 }
 
 /**

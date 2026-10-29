@@ -69,6 +69,7 @@ internal fun SavedWordsScreen(
     val scope = rememberCoroutineScope()
     val pronouncer = rememberWordPronouncer()
     var search by remember { mutableStateOf("") }
+    var sourceFilter by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var practice by remember { mutableStateOf(false) }
     var queue by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -82,7 +83,12 @@ internal fun SavedWordsScreen(
     var editedMeaning by remember(selected?.id, selected?.meaning) { mutableStateOf(selected?.meaning.orEmpty()) }
     val editedExtra = remember(selected?.id, selected?.meanings) { editableMeanings(selected) }
     var editedNotes by remember(selected?.id, selected?.personalNotes) { mutableStateOf(selected?.personalNotes.orEmpty()) }
-    val due = words.filter { it.dueAt <= now }.sortedBy { it.dueAt }
+    var editedSourceTitle by remember(selected?.id, selected?.sourceTitle) { mutableStateOf(selected?.sourceTitle.orEmpty()) }
+    val sources = remember(words) { sourceOptions(words) }
+    // A source whose last word was deleted or retitled away falls back to All Sources.
+    val activeSource = sourceFilter?.takeIf { key -> sources.any { it.key == key } }
+    val sourceWords = words.filter { matchesSource(it, activeSource) }
+    val due = dueWordsForSource(words, activeSource, now).sortedBy { it.dueAt }
     val locale = currentInterfaceLocale()
     val searchLabel = stringResource(R.string.practice_search_label)
     val pronounceLabel = stringResource(R.string.practice_pronounce)
@@ -170,22 +176,23 @@ internal fun SavedWordsScreen(
                         Text(
                             stringResource(
                                 R.string.practice_word_summary,
-                                pluralStringResource(R.plurals.practice_word_count, words.size, words.size),
+                                pluralStringResource(R.plurals.practice_word_count, sourceWords.size, sourceWords.size),
                                 pluralStringResource(R.plurals.practice_due_count, due.size, due.size),
                             ),
                         )
                         Button(enabled = due.isNotEmpty(), modifier = Modifier.testTag("practice_words"), onClick = {
                             queue = due.map { it.id }; practice = true
                         }) { Text(stringResource(R.string.practice_due_words_button)) }
+                        if (sources.isNotEmpty()) SourceFilterPicker(sources, activeSource) { sourceFilter = it }
                         OutlinedTextField(search, { search = it }, label = { Text(searchLabel) }, modifier = Modifier.fillMaxWidth())
                         if (words.isEmpty()) Text(stringResource(R.string.practice_empty_hint))
-                        else if (due.isEmpty()) words.minOfOrNull { it.dueAt }?.let {
+                        else if (due.isEmpty()) sourceWords.minOfOrNull { it.dueAt }?.let {
                             val next = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, locale).format(Date(it))
                             Text(stringResource(R.string.practice_next_review, next), style = MaterialTheme.typography.bodySmall)
                         }
                         LazyColumn(Modifier.weight(1f)) {
-                            items(words.filter { it.matchesSearch(search) }, key = { it.id }) { word ->
-                                ListItem(headlineContent = { Text(word.word) }, supportingContent = { Text(word.meaning) },
+                            items(filterSavedWords(words, activeSource) { it.matchesSearch(search) }, key = { it.id }) { word ->
+                                ListItem(headlineContent = { Text(word.word) }, supportingContent = { MeaningWithSource(word) },
                                     modifier = Modifier.clickable { selectedId = word.id }.testTag("saved_word_${word.id}"))
                                 HorizontalDivider()
                             }
@@ -195,6 +202,7 @@ internal fun SavedWordsScreen(
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         PracticeSelectableText(selected.word, selected.wordLanguage, MaterialTheme.typography.headlineMedium)
                         selected.reading?.let { Text(it) }
+                        if (practice) selected.sourceTitle?.let { PracticeSourceLine(it) }
                         TextButton(onClick = {
                             onPause()
                             pronouncer.speak(spokenWord(selected.word, selected.reading), selected.wordLanguage)
@@ -221,6 +229,12 @@ internal fun SavedWordsScreen(
                             PracticeSelectableText(selected.sentence, selected.wordLanguage)
                             selected.translatedSentence?.let { PracticeSelectableText(it, selected.meaningLanguage) }
                             selected.sentenceTranslations.forEach { (language, text) -> PracticeSelectableText(text, language) }
+                            if (!practice) {
+                                val title = normalizeSourceTitle(editedSourceTitle)
+                                SourceTitleEditor(editedSourceTitle, { editedSourceTitle = it }, title != selected.sourceTitle, !busy) {
+                                    action { repository.retitleSource(words, selected, title) }
+                                }
+                            }
                             PersonalNotesEditor(editedNotes, { editedNotes = it }, editedNotes != selected.personalNotes, !busy) {
                                 action { repository.update(selected.id) { it.copy(personalNotes = editedNotes) } }
                             }

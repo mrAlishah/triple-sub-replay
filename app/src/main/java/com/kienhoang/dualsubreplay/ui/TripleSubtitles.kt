@@ -197,6 +197,15 @@ internal fun thirdSentenceTranslations(
     return if (language == source || language == target) emptyMap() else mapOf(language to text)
 }
 
+/** A page title together with the video of the address it was reported for. */
+data class VideoTitle(
+    val videoId: String,
+    val title: String,
+)
+
+/** The title of [videoId] when the page reported it for that same video; null for any other video (never a stale one). */
+internal fun DualSubUiState.titleOf(videoId: String?): String? = videoTitle?.takeIf { videoId != null && it.videoId == videoId }?.title
+
 internal fun DualSubUiState.thirdSentenceFor(selection: LearningWordSelection): Map<String, String> {
     val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)
     return thirdSentenceTranslations(thirdLines, activeVideoId, selection.segment, source, targetLanguage)

@@ -1258,7 +1258,7 @@ internal fun captionTrackLabel(
     markGenerated: (String) -> String,
 ): String = if (generated && !name.contains("auto-generated", ignoreCase = true)) markGenerated(name) else name
 
-/** The panel header's actions in order: the subtitle settings, Re-translate with AI (always shown), and hide. [compact] uses 36 dp buttons. */
+/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 36 dp buttons. */
 @Composable
 private fun PanelHeaderActions(
     onSettings: () -> Unit,
@@ -1267,6 +1267,7 @@ private fun PanelHeaderActions(
 ) {
     val button = if (compact) Modifier.size(36.dp) else Modifier
     val icon = if (compact) Modifier.size(20.dp) else Modifier
+    RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
     IconButton(onClick = onSettings, modifier = button) {
         Icon(
             Icons.Default.Settings,
@@ -1275,7 +1276,6 @@ private fun PanelHeaderActions(
             modifier = icon,
         )
     }
-    RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
     IconButton(onClick = onHide, modifier = button) {
         Icon(
             Icons.Default.Close,

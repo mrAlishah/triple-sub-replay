@@ -1057,10 +1057,10 @@ internal fun LearningSubtitleOverlay(
                 }
             }
             if (overlayActionsVisible) {
+                RetranslateButton(LocalTranslationSourceInfo.current.refresh)
                 IconButton(onClick = onSettings) {
                     Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.player_dual_subtitle_settings))
                 }
-                RetranslateButton(LocalTranslationSourceInfo.current.refresh)
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.player_hide_dual_subtitles))
                 }

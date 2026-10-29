@@ -13,7 +13,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -82,7 +82,7 @@ internal fun RetranslateButton(
     val name = stringResource(R.string.retranslate_title)
     IconButton(onClick = { open = true }, modifier = modifier.testTag("retranslate_button").semantics { contentDescription = name }) {
         if (state.running.isEmpty()) {
-            Icon(Icons.Default.Refresh, contentDescription = null)
+            Icon(Icons.Default.AutoFixHigh, contentDescription = null)
         } else {
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
         }

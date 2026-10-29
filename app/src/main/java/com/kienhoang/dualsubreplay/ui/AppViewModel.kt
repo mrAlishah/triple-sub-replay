@@ -2062,12 +2062,12 @@ class AppViewModel internal constructor(
 
         suspend fun translate(text: String): Translated {
             window?.cached(text)?.let { return Translated(it, window.originOf(text)) }
-            if (aiOnly) window?.await(text)?.let { return Translated(it, window.originOf(text)) }
+            if (aiOnly) window.await(text)?.let { return Translated(it, window.originOf(text)) }
             return translateThird(videoId, generation, source, third, text, scope).also { noteFallback(third, aiOnly, it) }
         }
 
         suspend fun prefetch(texts: List<String>) {
-            if (aiOnly) window?.first(texts) else window?.ask(texts)
+            if (aiOnly) window.first(texts) else window?.ask(texts)
         }
         val upgrades =
             (ai ?: manualAi)?.let { model ->

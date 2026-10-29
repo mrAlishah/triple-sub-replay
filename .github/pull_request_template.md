@@ -30,8 +30,8 @@ For docs-only work, check links/consistency/template behavior; existing PR CI st
 - Expected version: <!-- Estimate until reserved, or explain skipped/unavailable. -->
 - Actual applied GitHub label or exact-version directive: <!-- Default: no override. -->
 
-<!-- Follow explicit owner intent; otherwise default patch, including workflow PRs.
-Docs/promo-media-only PRs get release:skip automatically (see AGENTS.md).
+<!-- Follow explicit owner intent; otherwise default patch when the APK can change.
+PRs that cannot change the APK get release:skip automatically (see AGENTS.md).
 Use at most one actual GitHub label: release:patch / release:minor / release:major /
 release:skip, OR one standalone Release-Version: X.Y.Z line outside comments/code fences.
 Writing a label here or checking a box does NOT activate it. Verify saved metadata;
@@ -39,6 +39,19 @@ report any required label that could not be applied before handoff. Never leave 
 active example exact-version directive. Do not manually bump Gradle version constants.
 See AGENTS.md for handoff and docs/releasing.md for release recovery.
 -->
+
+## Checklist
+
+<!-- Tick what is true; leave the rest unticked and explain in Notes. See CONTRIBUTING.md "How review works". -->
+
+- [ ] One focused change; unrelated fixes are in their own PR.
+- [ ] Screenshots or a recording above for visible changes (or "No UI change").
+- [ ] Tried on a real phone (name it in Verification), or said why not.
+- [ ] Android CI is green on the latest commit (`verify-build`, `managed-device-tests`).
+- [ ] No keys, signing files, personal data or copied caption/video dumps; no manual version bump.
+- [ ] From a fork: **Allow edits by maintainers** is ticked.
+- [ ] I (or my agent) will answer every review comment with a fix or a reason, and keep pushing to this branch until it is good.
+- [ ] AI-written changes are marked as such, and the agent followed AGENTS.md.
 
 ## Notes for reviewers
 

@@ -7,6 +7,9 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AI_TRANSLATION_MODEL_PREFERENCE
+import com.kienhoang.dualsubreplay.assistant.AiHttpTransport
+import com.kienhoang.dualsubreplay.assistant.aiTranslationModel
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.CaptionProvider
@@ -18,9 +21,6 @@ import com.kienhoang.dualsubreplay.data.ImmersionTimeTracker
 import com.kienhoang.dualsubreplay.data.JapaneseDictionaryStore
 import com.kienhoang.dualsubreplay.data.JapaneseMorphology
 import com.kienhoang.dualsubreplay.data.LearnerData
-import com.kienhoang.dualsubreplay.data.immersionLanguage
-import com.kienhoang.dualsubreplay.data.initialDailyGoalPromptCompleted
-import com.kienhoang.dualsubreplay.data.storedDailyGoalMinutes
 import com.kienhoang.dualsubreplay.data.LearningWordSelection
 import com.kienhoang.dualsubreplay.data.PageFirstCaptionProvider
 import com.kienhoang.dualsubreplay.data.PageTranscriptProblem
@@ -36,26 +36,35 @@ import com.kienhoang.dualsubreplay.data.VocabularyRepository
 import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.YouTubeCaptionProvider
 import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
+import com.kienhoang.dualsubreplay.data.immersionLanguage
+import com.kienhoang.dualsubreplay.data.initialDailyGoalPromptCompleted
 import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import com.kienhoang.dualsubreplay.playback.WebVideoBridge
 import com.kienhoang.dualsubreplay.data.savedWordFrom
+import com.kienhoang.dualsubreplay.data.storedDailyGoalMinutes
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
+import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE
+import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE
+import com.kienhoang.dualsubreplay.translation.AiSubtitleTranslator
+import com.kienhoang.dualsubreplay.translation.AiTranslationModel
 import com.kienhoang.dualsubreplay.translation.DEFAULT_TRANSLATION_ENGINE
 import com.kienhoang.dualsubreplay.translation.GOOGLE_EARLY_CHECK_POLL_MS
 import com.kienhoang.dualsubreplay.translation.GOOGLE_RECHECK_INTERVAL_MS
 import com.kienhoang.dualsubreplay.translation.GOOGLE_TRANSLATE_ADDRESS_KEY
 import com.kienhoang.dualsubreplay.translation.GOOGLE_WAIT_PREFERENCE
-import com.kienhoang.dualsubreplay.translation.googleAddressMemory
 import com.kienhoang.dualsubreplay.translation.GoogleSlowException
-import com.kienhoang.dualsubreplay.translation.googleSlowDetail
 import com.kienhoang.dualsubreplay.translation.GoogleWait
 import com.kienhoang.dualsubreplay.translation.GoogleWebTranslator
 import com.kienhoang.dualsubreplay.translation.OnDeviceTranslator
+import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TRANSLATION_ENGINE_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.TranslationEngine
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
+import com.kienhoang.dualsubreplay.translation.aiSentences
 import com.kienhoang.dualsubreplay.translation.awaitWithin
+import com.kienhoang.dualsubreplay.translation.googleAddressMemory
+import com.kienhoang.dualsubreplay.translation.googleSlowDetail
 import com.kienhoang.dualsubreplay.translation.googleWaitMs
 import com.kienhoang.dualsubreplay.translation.onWifi
 import com.kienhoang.dualsubreplay.translation.storedGoogleWait
@@ -157,6 +166,12 @@ data class DualSubUiState(
     val translationEngine: TranslationEngine = TranslationEngine.ON_DEVICE,
     /** Settings → Translation → Wait for Google: how long a row waits for Google before translating without it. */
     val googleWait: GoogleWait = GoogleWait.AUTO,
+    /** Settings → Translation → Translate subtitles with an AI choice: the AI assistant's service translates, Google fills the gaps. */
+    val aiTranslation: Boolean = false,
+    /** With [aiTranslation], rows wait for the AI instead of showing Google's lines first. */
+    val aiTranslationOnly: Boolean = false,
+    /** Settings → Translation → AI model for translation; empty uses the AI assistant's model. */
+    val aiTranslationModel: String = "",
     /**
      * Google failed, so this video translates on the device. The saved engine is unchanged: Google is
      * checked again every [GOOGLE_RECHECK_INTERVAL_MS] and tried again on the next load.
@@ -184,7 +199,7 @@ private fun withGoogleAgain(state: DualSubUiState): DualSubUiState =
 internal fun DualSubUiState.translatesWithGoogle(): Boolean = translationEngine == TranslationEngine.GOOGLE_WEB && !onDeviceFallback
 
 internal fun DualSubUiState.onlineTranslationSettings() =
-    OnlineTranslationSettings(translationEngine, googleWait)
+    OnlineTranslationSettings(translationEngine, googleWait, aiTranslation, aiTranslationOnly, aiTranslationModel)
 
 /**
  * A source-language choice is only rejected when the video's track list is
@@ -349,6 +364,9 @@ internal const val PRELOAD_MODELS_ENABLED_PREFERENCE = "preload_translation_mode
 
 /** After a switch away from Google, how long a row waits for YouTube's own translation before the device translates it. */
 private const val YOUTUBE_TRANSLATION_WAIT_MS = 1_000L
+
+/** Rows read to fill an AI request; 60 sentences need far fewer. */
+private const val AI_FILL_MAX_ROWS = 240
 internal const val NATURAL_SUBTITLES_PREFERENCE = "enhanced_natural_subtitles"
 internal const val HIDE_SOUND_CUES_PREFERENCE = "hide_sound_cues"
 internal const val WORD_LEARNING_ENABLED_PREFERENCE = "word_learning_mode_enabled"
@@ -362,8 +380,7 @@ internal const val MIN_FONT_SCALE = 0.8f
 internal const val MAX_FONT_SCALE = 2f
 
 /** Subtitle text size multiplier; the slider and stored value share these bounds (issue #88). */
-internal fun normalizeFontScale(scale: Float): Float =
-    if (scale.isFinite()) scale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE) else 1f
+internal fun normalizeFontScale(scale: Float): Float = if (scale.isFinite()) scale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE) else 1f
 
 /**
  * The "guide_completed" preference only exists after the first-launch guide has
@@ -403,6 +420,8 @@ class AppViewModel internal constructor(
             cacheDirectory = File(application.cacheDir, "google-translations"),
             addressMemory = application.googleAddressMemory(GOOGLE_TRANSLATE_ADDRESS_KEY),
         )
+    private val aiTranslator = AiSubtitleTranslator(File(application.cacheDir, "ai-translations"))
+    private val aiTransport by lazy { AiHttpTransport() }
 
     /** Google failed or was too slow on mobile data and has not answered since. */
     @Volatile private var googleFailedOnMobile = false
@@ -964,7 +983,11 @@ class AppViewModel internal constructor(
     ) {
         val languages = normalizedOnboardingLanguages(nativeLanguage, learningLanguage) ?: return
         val (native, learning) = languages
-        preferences.edit().putString("preferred_caption_language", learning).putString(LEARNING_LANGUAGE_PREFERENCE, learning).apply()
+        preferences
+            .edit()
+            .putString("preferred_caption_language", learning)
+            .putString(LEARNING_LANGUAGE_PREFERENCE, learning)
+            .apply()
         preferences.edit().putString("target_language", native).apply()
         _state.update { it.copy(sourcePreference = learning, targetLanguage = native) }
         warmTranslationModel(sourceLanguage = learning, targetLanguage = native)
@@ -1190,7 +1213,9 @@ class AppViewModel internal constructor(
         translated: Boolean,
     ): String {
         val current = _state.value
-        val source = com.kienhoang.dualsubreplay.data.learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
+        val source =
+            com.kienhoang.dualsubreplay.data
+                .learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
         return if (translated) {
             translateText(current.targetLanguage, source, text)
         } else {
@@ -1312,6 +1337,43 @@ class AppViewModel internal constructor(
         _state.update { it.copy(googleWait = wait) }
     }
 
+    /**
+     * Settings → Translation → Translate subtitles with: saves the engine and the AI settings together
+     * and reloads the current video's translations once.
+     */
+    fun setSubtitleTranslator(translator: SubtitleTranslator) {
+        val before = _state.value.onlineTranslationSettings().translator
+        preferences
+            .edit()
+            .putString(TRANSLATION_ENGINE_PREFERENCE, translator.engine.storageValue)
+            .putBoolean(AI_TRANSLATION_PREFERENCE, translator.usesAi)
+            .putBoolean(AI_TRANSLATION_ONLY_PREFERENCE, translator == SubtitleTranslator.AI_ONLY)
+            .apply()
+        // Choosing an engine tries Google first again, even on mobile data.
+        googleFailedOnMobile = false
+        val changed = before != translator || _state.value.onDeviceFallback
+        _state.update {
+            it.copy(
+                translationEngine = translator.engine,
+                aiTranslation = translator.usesAi,
+                aiTranslationOnly = translator == SubtitleTranslator.AI_ONLY,
+            )
+        }
+        val videoId = _state.value.activeVideoId
+        if (changed && videoId != null) loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
+    }
+
+    /** Settings → Translation → AI model for translation. Reloads the current video's translations. */
+    fun setAiTranslationModel(model: String) {
+        preferences.edit().putString(AI_TRANSLATION_MODEL_PREFERENCE, model).apply()
+        val changed = _state.value.aiTranslationModel != model
+        _state.update { it.copy(aiTranslationModel = model) }
+        val videoId = _state.value.activeVideoId
+        if (changed && videoId != null && _state.value.aiTranslation && _state.value.translatesWithGoogle()) {
+            loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
+        }
+    }
+
     private fun onWifiNow(): Boolean = getApplication<Application>().onWifi()
 
     /** How long a row waits for Google on the current network. */
@@ -1424,6 +1486,9 @@ class AppViewModel internal constructor(
                 selectedLearningWord = null,
                 translationEngine = DEFAULT_TRANSLATION_ENGINE,
                 googleWait = GoogleWait.AUTO,
+                aiTranslation = false,
+                aiTranslationOnly = false,
+                aiTranslationModel = "",
                 onDeviceFallback = false,
                 youTubeTranslationFallback = false,
                 onlineTranslationFailureDetail = null,
@@ -1724,7 +1789,17 @@ class AppViewModel internal constructor(
                 // Only the engine changed: the rows stay on screen until the other engine's lines replace them.
                 val keepRows = shown == (format to target)
                 shown = format to target
-                runStoredTranslation(rawStore, videoId, generation, sourceLanguage to generated, target, format, natural, googleRequests, keepRows)
+                runStoredTranslation(
+                    rawStore,
+                    videoId,
+                    generation,
+                    sourceLanguage to generated,
+                    target,
+                    format,
+                    natural,
+                    googleRequests,
+                    keepRows,
+                )
             }
     }
 
@@ -1749,6 +1824,7 @@ class AppViewModel internal constructor(
 
         suspend fun follow(
             prefetch: (suspend (List<String>) -> Unit)? = null,
+            upgrades: TranslationUpgrades? = null,
             translate: suspend (String) -> String,
         ) {
             following = true
@@ -1758,6 +1834,7 @@ class AppViewModel internal constructor(
                 translate,
                 onTranslationFailure = { error -> showTranslationUnavailable(videoId, generation, error) },
                 prefetch = prefetch,
+                upgrades = upgrades,
             ) { rows, preparing ->
                 publishSubtitleWindow(videoId, generation, rows, preparing)
             }
@@ -1776,8 +1853,14 @@ class AppViewModel internal constructor(
             thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests)
             try {
                 if (_state.value.translatesWithGoogle()) {
-                    followGoogleTranslation(store, videoId, generation, sourceLanguage to targetLanguage, googleRequests) { prefetch, translate ->
-                        follow(prefetch, translate)
+                    followGoogleTranslation(
+                        store,
+                        videoId,
+                        generation,
+                        sourceLanguage to targetLanguage,
+                        googleRequests,
+                    ) { prefetch, upgrades, translate ->
+                        follow(prefetch, upgrades, translate)
                     }
                 } else {
                     followOnDevice(store, videoId, generation, source, targetLanguage) { translate -> follow(translate = translate) }
@@ -1887,6 +1970,8 @@ class AppViewModel internal constructor(
      * sentences in one request that rows then read from the cache, while minutes 2 to 5 fill in the
      * background one request at a time. A row waits for Google at most [currentGoogleWaitMs]; then the
      * video moves off Google while the request runs on in [googleRequests] (see [catchUpWithGoogle]).
+     * With "AI, with Google while waiting", Google's lines show first and each sentence takes the AI's
+     * as it arrives; with "AI only", rows wait for the AI and Google translates only what it fails to.
      */
     private suspend fun followGoogleTranslation(
         store: SubtitleStore,
@@ -1894,16 +1979,84 @@ class AppViewModel internal constructor(
         generation: Long,
         languages: Pair<String, String>,
         googleRequests: CoroutineScope,
-        follow: suspend (prefetch: suspend (List<String>) -> Unit, translate: suspend (String) -> String) -> Unit,
+        follow: suspend (
+            prefetch: suspend (List<String>) -> Unit,
+            upgrades: TranslationUpgrades?,
+            translate: suspend (String) -> String,
+        ) -> Unit,
     ) = coroutineScope {
         val (source, target) = languages
-        launch { prefetchInBackground(store, playbackRequests) { texts -> googleTranslator.translateNextBatch(source, target, texts) } }
+        val ai =
+            if (_state.value.aiTranslation) {
+                withContext(
+                    Dispatchers.IO,
+                ) { getApplication<Application>().aiTranslationModel(_state.value.aiTranslationModel, aiTransport) }
+            } else {
+                null
+            }
+        launch {
+            prefetchInBackground(store, playbackRequests) { texts ->
+                ai?.let { model -> aiNextBatch(model, languages, texts) } ?: googleTranslator.translateNextBatch(source, target, texts)
+            }
+        }
         warmModelOnWifi(source, target)
         val waitMs = currentGoogleWaitMs()
-        follow({ texts -> awaitWithin(googleRequests, waitMs) { googleTranslator.translateAll(source, target, texts) } }) { text ->
-            // A line Google leaves blank on every address is translated on the device; the rest stays on Google.
-            awaitWithin(googleRequests, waitMs) { googleTranslator.translate(source, target, text) }
+        val upgrades =
+            ai?.let { model ->
+                TranslationUpgrades(aiTranslator.updates) { text -> aiTranslator.shownTranslation(model, source, target, text) }
+            }
+        val aiWindow = ai?.let { model -> AiWindowTranslation(this, aiTranslator, model, languages) { aiFillTexts(store) } }
+        val aiOnly = aiWindow != null && _state.value.aiTranslationOnly
+
+        // Google is down or slow: the AI's running request may still bring [text], so the video stays on it.
+        suspend fun aiInstead(
+            error: IOException,
+            text: String,
+        ): String = aiWindow?.await(text) ?: throw error
+        follow({ texts ->
+            if (aiOnly) {
+                aiWindow?.first(texts)
+                return@follow
+            }
+            aiWindow?.ask(texts)
+            val rest = aiWindow?.let { window -> texts.filter { window.cached(it) == null } } ?: texts
+            try {
+                if (rest.isNotEmpty()) awaitWithin(googleRequests, waitMs) { googleTranslator.translateAll(source, target, rest) }
+            } catch (error: IOException) {
+                aiInstead(error, aiSentences(texts).firstOrNull()?.text ?: throw error)
+            }
+        }, upgrades) { text ->
+            // AI only waits for the AI; a line Google leaves blank on every address is translated on the device.
+            aiWindow?.cached(text)
+                ?: (if (aiOnly) aiWindow?.await(text) else null)
+                ?: try {
+                    awaitWithin(googleRequests, waitMs) { googleTranslator.translate(source, target, text) }
+                } catch (error: IOException) {
+                    if (aiOnly) throw error
+                    aiInstead(error, text)
+                }
                 ?: translateOnDevice(videoId, generation, source, target, text)
+        }
+    }
+
+    /** The sentences of minutes 2 to 5 ahead, which fill the playing window's AI request. */
+    private suspend fun aiFillTexts(store: SubtitleStore): List<String> {
+        val timeMs = playbackRequests.value.timeMs
+        val indices = store.indicesBetween(timeMs + PREFETCH_AHEAD_MS, timeMs + BACKGROUND_PREFETCH_AHEAD_MS, AI_FILL_MAX_ROWS)
+        return translationTexts(withContext(Dispatchers.IO) { store.read(indices) })
+    }
+
+    /** One background step with the AI; when it fails, Google takes the step as before. */
+    private suspend fun aiNextBatch(
+        model: AiTranslationModel,
+        languages: Pair<String, String>,
+        texts: List<String>,
+    ): List<String> {
+        val (source, target) = languages
+        return try {
+            aiTranslator.translateNextBatch(model, source, target, texts)
+        } catch (_: IOException) {
+            googleTranslator.translateNextBatch(source, target, texts)
         }
     }
 
@@ -1986,7 +2139,16 @@ class AppViewModel internal constructor(
         val shownCues = if (cues != null && _state.value.hideSoundCues) SoundCues.filter(cues) else cues
         val translations = if (shownCues == null) emptyMap() else youTubeRowTranslations(rows, shownCues, targetLanguage)
         _state.update { current ->
-            if (!isCurrentLoad(current, videoId, generation)) current else current.copy(youTubeTranslationFallback = translations.isNotEmpty())
+            if (!isCurrentLoad(
+                    current,
+                    videoId,
+                    generation,
+                )
+            ) {
+                current
+            } else {
+                current.copy(youTubeTranslationFallback = translations.isNotEmpty())
+            }
         }
         return translations
     }
@@ -2049,7 +2211,12 @@ class AppViewModel internal constructor(
         _state.update { current ->
             if (!isCurrentLoad(current, videoId, generation)) return@update current
             // Restarts this video's translation on the device (the translation flow follows onDeviceFallback).
-            if (current.translatesWithGoogle()) return@update current.copy(onDeviceFallback = true, onlineTranslationFailureDetail = error.message)
+            if (current.translatesWithGoogle()) {
+                return@update current.copy(
+                    onDeviceFallback = true,
+                    onlineTranslationFailureDetail = error.message,
+                )
+            }
             current.copy(
                 isDownloadingTranslationModel = false,
                 translationError = reason,

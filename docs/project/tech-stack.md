@@ -134,6 +134,11 @@ Paths below are relative to
   `ChatGptTranslationModel.kt`, an `AiTranslationModel` that serves Subtitle 1 and Subtitle 2. Credentials live in the
   `chatgpt_subscription` preferences, excluded from backups. Off unless chosen; a missing or failing session falls back
   to Google or the device and never to a keyed service.
+- AI provider, model and effort for translation ([spec](../specs/2026-10-29-ai-translation-provider-selector.md)): one
+  dropdown each in Settings → Captions & translation. `assistant/AiTranslationChoice.kt` holds the provider options, the
+  effort rules per provider and the per-provider saved choices; `ui/AiTranslationConfig.kt` loads model lists (Claude's
+  `GET /v1/models` reports each model's effort levels) and runs Test translation. Claude and Gemini are API-key
+  providers only.
 - `data/JapaneseGrammar.kt` finds Japanese grammar points from Kuromoji morphemes: a data
   catalogue of N5 to N1 patterns (`JapaneseGrammarCatalogue.kt`, matched by `GrammarPattern.kt`)
   plus hand-written rules for context-dependent points. Every catalogue point needs an example

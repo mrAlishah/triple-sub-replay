@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_ai_access_title">Acceso a la IA</string>
-    <string name="settings_ai_access_keys">Servicio y claves del asistente de IA</string>
-    <string name="settings_ai_access_chatgpt">Suscripción a ChatGPT</string>
     <string name="chatgpt_note">Usa tu propio plan de ChatGPT mediante el inicio de sesión de OpenAI, sin clave de API. El texto de los subtítulos se envía a OpenAI para traducirlo; no se leen tus conversaciones de ChatGPT. Se aplican el cupo y los límites de tu plan, y la disponibilidad varía según el plan.</string>
     <string name="chatgpt_continue">Continuar con ChatGPT</string>
     <string name="chatgpt_status_not_connected">No conectado</string>
@@ -17,13 +14,8 @@
     <string name="chatgpt_sign_in_failed">El inicio de sesión no terminó. Inténtalo de nuevo.</string>
     <string name="chatgpt_account">Cuenta: %1$s</string>
     <string name="chatgpt_account_unknown">Cuenta de ChatGPT conectada</string>
-    <string name="chatgpt_model_title">Modelo de ChatGPT</string>
-    <string name="chatgpt_model_none">Aún no hay ningún modelo disponible para esta cuenta.</string>
     <string name="chatgpt_refresh">Actualizar estado</string>
     <string name="chatgpt_disconnect">Desconectar</string>
-    <string name="chatgpt_test">Probar traducción</string>
-    <string name="chatgpt_testing">Traduciendo…</string>
-    <string name="chatgpt_test_result">“Ich lerne jeden Tag Deutsch.” → %1$s</string>
     <string name="chatgpt_test_failed">La traducción de prueba falló.</string>
     <string name="chatgpt_cancel">Cancelar</string>
 </resources>

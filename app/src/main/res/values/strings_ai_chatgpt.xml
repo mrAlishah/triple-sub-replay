@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_ai_access_title">AI access</string>
-    <string name="settings_ai_access_keys">AI assistant\'s service and keys</string>
-    <string name="settings_ai_access_chatgpt">ChatGPT Subscription</string>
     <string name="chatgpt_note">Uses your own ChatGPT plan through OpenAI\'s sign-in, with no API key. Subtitle text is sent to OpenAI to be translated; your ChatGPT conversations are not read. Your plan\'s allowance and limits apply, and availability differs by plan.</string>
     <string name="chatgpt_continue">Continue with ChatGPT</string>
     <string name="chatgpt_status_not_connected">Not connected</string>
@@ -17,13 +14,8 @@
     <string name="chatgpt_sign_in_failed">The sign-in didn\'t finish. Try again.</string>
     <string name="chatgpt_account">Account: %1$s</string>
     <string name="chatgpt_account_unknown">Connected ChatGPT account</string>
-    <string name="chatgpt_model_title">ChatGPT model</string>
-    <string name="chatgpt_model_none">No model is available for this account yet.</string>
     <string name="chatgpt_refresh">Refresh status</string>
     <string name="chatgpt_disconnect">Disconnect</string>
-    <string name="chatgpt_test">Test translation</string>
-    <string name="chatgpt_testing">Translating…</string>
-    <string name="chatgpt_test_result">“Ich lerne jeden Tag Deutsch.” → %1$s</string>
     <string name="chatgpt_test_failed">The test translation failed.</string>
     <string name="chatgpt_cancel">Cancel</string>
 </resources>

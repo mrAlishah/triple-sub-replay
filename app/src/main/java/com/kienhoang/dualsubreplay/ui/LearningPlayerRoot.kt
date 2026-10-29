@@ -107,9 +107,11 @@ private const val OVERLAY_ACTION_BUTTON_DP = 48
 internal fun fullscreenOverlayTextMaxWidthDp(
     screenWidthDp: Int,
     actionsVisible: Boolean,
+    /** How many 48 dp action buttons the box shows: settings and close, plus Re-translate when a line uses the AI. */
+    buttons: Int = 2,
 ): Int {
     val box = (screenWidthDp * FULLSCREEN_OVERLAY_MAX_WIDTH_FRACTION).roundToInt().coerceAtMost(OVERLAY_MAX_WIDTH_DP)
-    val actions = if (actionsVisible) 2 * OVERLAY_ACTION_BUTTON_DP - 12 else 0
+    val actions = if (actionsVisible) buttons * OVERLAY_ACTION_BUTTON_DP - 12 else 0
     return (box - 28 - actions).coerceAtLeast(80)
 }
 
@@ -554,8 +556,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 viewModel::tryGoogleTranslationAgain,
                 viewModel::setGoogleWait,
                 viewModel::setSubtitleTranslator,
-                viewModel::setAiTranslationModel,
-                viewModel.chatGpt.actions(),
+                viewModel.aiConfig.actions(viewModel.chatGpt.actions()),
                 viewModel::setShowTranslationSource,
             )
         }
@@ -592,7 +593,17 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         }
     val translationSourceInfo =
         remember(viewModel, state.showTranslationSource) {
-            TranslationSourceInfo(state.showTranslationSource, viewModel.translationDiagnostics.events)
+            TranslationSourceInfo(
+                state.showTranslationSource,
+                viewModel.translationDiagnostics.events,
+                RefreshActions(
+                    viewModel.refreshSlots,
+                    viewModel.refresher.state,
+                    viewModel::refreshSentenceCount,
+                    viewModel::refreshTranslation,
+                    viewModel::cancelRefresh,
+                ),
+            )
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
     val aiAssistant = remember(aiViewModel) { AiAssistantHost(aiViewModel.controller) { aiViewModel.guide } }
@@ -735,6 +746,7 @@ internal fun LearningSubtitleOverlay(
     onRetryTranscript: (() -> Unit)? = null,
     onClose: () -> Unit,
 ) {
+    val retranslateOffered = LocalTranslationSourceInfo.current.refresh != null
     if (content.originalText == null && content.translatedText == null && content.statusText == null) {
         Box(modifier) { TextButton(onClick = onSettings) { Text(stringResource(R.string.player_subtitle_settings)) } }
         return
@@ -831,13 +843,19 @@ internal fun LearningSubtitleOverlay(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
-                modifier = if (isFullscreen) {
-                    Modifier.widthIn(
-                        max = fullscreenOverlayTextMaxWidthDp(configuration.screenWidthDp, overlayActionsVisible).dp,
-                    )
-                } else {
-                    Modifier.weight(1f)
-                },
+                modifier =
+                    if (isFullscreen) {
+                        Modifier.widthIn(
+                            max =
+                                fullscreenOverlayTextMaxWidthDp(
+                                    configuration.screenWidthDp,
+                                    overlayActionsVisible,
+                                    if (retranslateOffered) 3 else 2,
+                                ).dp,
+                        )
+                    } else {
+                        Modifier.weight(1f)
+                    },
                 horizontalAlignment = Alignment.Start,
             ) {
                 val slotControls = LocalTripleSubtitleControls.current
@@ -862,13 +880,14 @@ internal fun LearningSubtitleOverlay(
                                 SelectableSubtitleText(
                                     text = original,
                                     annotated = annotated,
-                                    style = TextStyle(
-                                        textAlign = slotControls.alignment.original.textAlign(),
-                                        fontSize = (17f * fontScale * slotScales.original).sp,
-                                        lineHeight = (21f * fontScale * slotScales.original).sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = originalColor,
-                                    ),
+                                    style =
+                                        TextStyle(
+                                            textAlign = slotControls.alignment.original.textAlign(),
+                                            fontSize = (17f * fontScale * slotScales.original).sp,
+                                            lineHeight = (21f * fontScale * slotScales.original).sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = originalColor,
+                                        ),
                                     languageCode = originalLanguageCode,
                                     segment = content.segment,
                                     translated = false,
@@ -922,12 +941,13 @@ internal fun LearningSubtitleOverlay(
                                 SelectableSubtitleText(
                                     text = translated,
                                     annotated = annotated,
-                                    style = TextStyle(
-                                        textAlign = slotControls.alignment.second.textAlign(),
-                                        fontSize = (14f * fontScale * slotScales.second).sp,
-                                        lineHeight = (18f * fontScale * slotScales.second).sp,
-                                        color = translatedColor,
-                                    ),
+                                    style =
+                                        TextStyle(
+                                            textAlign = slotControls.alignment.second.textAlign(),
+                                            fontSize = (14f * fontScale * slotScales.second).sp,
+                                            lineHeight = (18f * fontScale * slotScales.second).sp,
+                                            color = translatedColor,
+                                        ),
                                     languageCode = targetLanguageCode,
                                     segment = content.segment,
                                     translated = true,
@@ -952,7 +972,10 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
-                val showSource = LocalTranslationSourceInfo.current.show
+                val sourceInfo = LocalTranslationSourceInfo.current
+                val refreshMarks by sourceInfo.refreshState.collectAsStateWithLifecycle()
+                // The label, or the refreshing mark of a line being re-translated (shown without the debug setting).
+                val showSource = sourceInfo.show || refreshMarks.running.isNotEmpty() || refreshMarks.failed.isNotEmpty()
                 val orderedLines =
                     slotControls.order.arranged<@Composable () -> Unit> { slot ->
                         val line: (@Composable () -> Unit)? =
@@ -1037,6 +1060,7 @@ internal fun LearningSubtitleOverlay(
                 IconButton(onClick = onSettings) {
                     Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.player_dual_subtitle_settings))
                 }
+                RetranslateButton(LocalTranslationSourceInfo.current.refresh)
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.player_hide_dual_subtitles))
                 }

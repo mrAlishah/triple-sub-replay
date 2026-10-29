@@ -70,6 +70,8 @@ internal class ChatGptTranslationModel(
     private val retryDelaysMs: List<Long> = RETRY_DELAYS_MS,
     private val wait: suspend (Long) -> Unit = { delay(it) },
 ) : AiTranslationModel {
+    override fun isBlocked(): Boolean = gate.blocked() != null
+
     override suspend fun ask(
         system: String,
         user: String,

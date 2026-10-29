@@ -1,6 +1,7 @@
 package com.kienhoang.dualsubreplay.translation
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,6 +60,9 @@ internal interface AiTranslationModel {
         user: String,
         onText: (String) -> Unit = {},
     ): String
+
+    /** The model refuses every request for now (not eligible, signed out, usage limit), so asking again only repeats the refusal. */
+    fun isBlocked(): Boolean = false
 }
 
 /** The model answered with something that is not the translation asked for. */
@@ -315,6 +319,9 @@ internal class AiSubtitleTranslator(
      */
     private val attempted: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
+    /** Sentences a deliberate refresh ([forceTranslate]) is working on: a second refresh for them is not started. */
+    private val forcing: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
     /** Sentences of a request that is waiting or running: another call does not ask for them again. */
     private val asking: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
@@ -349,6 +356,41 @@ internal class AiSubtitleTranslator(
         return aiTranslationOrigin(model.scope, attemptKey(source, target, text) !in written)
     }
 
+    /**
+     * Whether some sentence of [texts] has no translation from [model] yet and was not already answered or left out by an earlier
+     * request. The failure rest is ignored (see [restMs]); a sentence of a request still running counts as owed.
+     */
+    suspend fun owes(
+        model: AiTranslationModel,
+        sourceLanguageCode: String,
+        targetLanguageCode: String,
+        texts: List<String>,
+    ): Boolean {
+        if (TranslationLanguages.normalize(sourceLanguageCode) == TranslationLanguages.normalize(targetLanguageCode)) return false
+        val (source, target) = pair(model, sourceLanguageCode, targetLanguageCode)
+        return aiSentences(texts).any { sentence ->
+            val key = attemptKey(source, target, sentence.text)
+            when {
+                key in attempted || cache.get(source, target, sentence.text) != null -> false
+                // The disk is asked once per sentence, not at every look.
+                key in notOnDisk -> true
+                else ->
+                    (cachedTranslation(model, sourceLanguageCode, targetLanguageCode, sentence.text) == null).also {
+                        if (it) {
+                            notOnDisk +=
+                                key
+                        }
+                    }
+            }
+        }
+    }
+
+    /** Sentences already looked up on the disk without finding them, so [owes] does not read the disk again for them. */
+    private val notOnDisk: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /** How long a failed request still keeps new requests away; 0 when asking is allowed. */
+    fun restMs(): Long = (restUntil - now()).coerceAtLeast(0)
+
     suspend fun cachedTranslation(
         model: AiTranslationModel,
         sourceLanguageCode: String,
@@ -376,6 +418,12 @@ internal class AiSubtitleTranslator(
     ) {
         val needed = missing(model, sourceLanguageCode, targetLanguageCode, texts)
         if (needed.isEmpty()) return
+        diagnostics?.record(
+            TranslationEventKind.AI_SCHEDULED,
+            TranslationLanguages.normalize(targetLanguageCode),
+            aiTranslationOrigin(model.scope, cached = false),
+            needed.size,
+        )
         val neededTexts = needed.mapTo(HashSet()) { it.text }
         val extra =
             ahead
@@ -386,6 +434,113 @@ internal class AiSubtitleTranslator(
         aiBatches(needed + extra).takeWhile { batch -> batch.any { it.text in neededTexts } }.forEach { batch ->
             translate(model, sourceLanguageCode, targetLanguageCode, batch)
         }
+    }
+
+    /**
+     * A deliberate fresh translation: asks [model] again for the sentences of [texts] even though they are stored (memory or disk)
+     * or were answered before, one request per batch, one after another on the same request lock as every other request (so never
+     * in parallel with a running one). Only the local failure rest is ignored; the model's own gate, key rest and service limits
+     * still apply and surface as the failure. The whole reply is read and checked first; only then are the entries of this model,
+     * pair and sentences replaced (memory and disk), so a failed batch changes nothing (batches already committed stay), and [updates] is raised so the screen takes the
+     * new text. Sentences already being refreshed are left to that refresh, so repeated taps never queue duplicates. Returns how
+     * many sentences got a new translation.
+     */
+    suspend fun forceTranslate(
+        model: AiTranslationModel,
+        sourceLanguageCode: String,
+        targetLanguageCode: String,
+        texts: List<String>,
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+    ): Int {
+        if (TranslationLanguages.normalize(sourceLanguageCode) == TranslationLanguages.normalize(targetLanguageCode)) return 0
+        val (source, target) = pair(model, sourceLanguageCode, targetLanguageCode)
+        val mine = aiSentences(texts).filter { forcing.add(attemptKey(source, target, it.text)) }
+        if (mine.isEmpty()) return 0
+        val keys = mine.map { attemptKey(source, target, it.text) }
+        asking += keys
+        var done = 0
+        try {
+            aiBatches(mine).forEach { batch ->
+                done += requests.withLock { forceNow(model, sourceLanguageCode to targetLanguageCode, source to target, batch) }
+                onProgress(done, mine.size)
+            }
+        } finally {
+            forcing -= keys.toSet()
+            asking -= keys.toSet()
+        }
+        return done
+    }
+
+    private suspend fun forceNow(
+        model: AiTranslationModel,
+        languages: Pair<String, String>,
+        scoped: Pair<String, String>,
+        batch: List<AiSentence>,
+    ): Int {
+        val (source, target) = scoped
+        val contextKey = "$source>$target"
+        val targetCode = TranslationLanguages.normalize(languages.second)
+        val origin = aiTranslationOrigin(model.scope, cached = false)
+
+        fun note(
+            kind: TranslationEventKind,
+            count: Int = 0,
+            reason: String? = null,
+        ) = diagnostics?.record(kind, targetCode, origin, count, reason)
+        note(TranslationEventKind.CACHE_BYPASSED)
+        note(TranslationEventKind.AI_REQUEST, batch.size)
+        val reply =
+            try {
+                // Not streamed: nothing on screen changes until the whole reply is valid.
+                model.ask(
+                    aiTranslationSystemPrompt(
+                        TranslationLanguages.normalize(languages.first),
+                        TranslationLanguages.normalize(languages.second),
+                    ),
+                    aiTranslationRequest(recent[contextKey].orEmpty(), batch),
+                )
+            } catch (error: IOException) {
+                restUntil = now() + AI_FAILURE_REST_MS
+                note(
+                    TranslationEventKind.AI_FAILED,
+                    0,
+                    (error as? DiagnosticReason)?.reason ?: error.javaClass.simpleName.ifEmpty { "error" },
+                )
+                throw error
+            }
+        val rows =
+            try {
+                parseAiTranslationReply(reply, batch)
+            } catch (error: AiTranslationException) {
+                note(TranslationEventKind.AI_FAILED, 0, "unreadable_reply")
+                throw error
+            }
+        val entries = HashMap<String, String>()
+        var sentences = 0
+        rows.forEachIndexed { index, sentenceRows ->
+            if (sentenceRows != null) {
+                entries += aiTranslationEntries(batch[index], sentenceRows)
+                sentences++
+            }
+        }
+        if (sentences == 0) {
+            note(TranslationEventKind.AI_FAILED, 0, "empty_reply")
+            throw AiTranslationException("The AI reply translated none of the ${batch.size} sentences.")
+        }
+        // Valid: replace this model's entries for these sentences (memory, then disk), then tell the screen. One step that a cancel
+        // cannot cut in half: either the old text stays everywhere or the new text is everywhere.
+        withContext(NonCancellable) {
+            entries.forEach { (text, translation) ->
+                written += attemptKey(source, target, text)
+                cache.put(source, target, text, translation)
+            }
+            batch.forEach { attempted += attemptKey(source, target, it.text) }
+            recent[contextKey] = batch.takeLast(AI_CONTEXT_SENTENCES).map { it.text }
+            save(scoped, entries)
+            arrivals.update { it + 1 }
+            note(TranslationEventKind.AI_SUCCEEDED, sentences)
+        }
+        return sentences
     }
 
     /** Sends one request at most, for the first sentences of [texts] not translated yet; returns the texts it covered. */

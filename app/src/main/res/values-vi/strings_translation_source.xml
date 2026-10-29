@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s cho văn bản giống đang hiển thị</string>
     <string name="translation_source_event_fallback">Đang hiện %1$s thay cho AI</string>
     <string name="translation_source_close">Đóng</string>
+    <string name="translation_source_event_scheduled">Đã nhờ AI dịch số câu: %1$d</string>
+    <string name="translation_source_event_upgraded">AI đã thay số dòng trên màn hình: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Đã yêu cầu dịch lại · số câu: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Bỏ qua bản dịch đã lưu cho yêu cầu mới</string>
+    <string name="translation_source_event_refresh_succeeded">Đã dịch lại · số câu: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Dịch lại thất bại · %1$s</string>
 </resources>

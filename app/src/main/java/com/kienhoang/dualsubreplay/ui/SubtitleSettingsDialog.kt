@@ -1158,12 +1158,7 @@ private fun OnlineTranslationSettingsRows(
         TranslatorOptionRow(option, translator, actions.selectTranslator)
     }
     if (translator.usesAi) {
-        val keyedAi: @Composable () -> Unit = {
-            AiTranslationModelSettings(settings.aiTranslationModel, actions.selectAiTranslationModel)
-            AiTranslationServiceNote(onOpenAiSettings)
-        }
-        val chatGpt = actions.chatGpt
-        if (chatGpt != null) AiAccessSettings(chatGpt, keyedAi) else keyedAi()
+        actions.aiConfig?.let { AiConfigurationSection(it, onOpenAiSettings) }
     }
     if (translator == SubtitleTranslator.GOOGLE || translator == SubtitleTranslator.AI_WITH_GOOGLE) {
         GoogleWaitSettings(settings.googleWait, actions.selectGoogleWait)

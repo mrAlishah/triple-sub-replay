@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s dio el mismo texto que se muestra</string>
     <string name="translation_source_event_fallback">Se muestra %1$s en lugar de la IA</string>
     <string name="translation_source_close">Cerrar</string>
+    <string name="translation_source_event_scheduled">Se pidieron frases a la IA: %1$d</string>
+    <string name="translation_source_event_upgraded">La IA reemplazó líneas en pantalla: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Nueva traducción solicitada · frases: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Se omitieron las traducciones guardadas en la nueva solicitud</string>
+    <string name="translation_source_event_refresh_succeeded">Traducido de nuevo · frases: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Falló la nueva traducción · %1$s</string>
 </resources>

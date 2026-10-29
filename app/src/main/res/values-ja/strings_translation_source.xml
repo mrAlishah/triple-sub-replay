@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s は表示中と同じテキストでした</string>
     <string name="translation_source_event_fallback">AIの代わりに%1$sを表示中</string>
     <string name="translation_source_close">閉じる</string>
+    <string name="translation_source_event_scheduled">AIに依頼した文数: %1$d</string>
+    <string name="translation_source_event_upgraded">AIが画面の行を置き換えた数: %1$d</string>
+    <string name="translation_source_event_refresh_requested">再翻訳を依頼 · 文数: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">新しい依頼では保存済みの翻訳を使用しません</string>
+    <string name="translation_source_event_refresh_succeeded">再翻訳しました · 文数: %1$d</string>
+    <string name="translation_source_event_refresh_failed">再翻訳に失敗 · %1$s</string>
 </resources>

@@ -53,7 +53,32 @@ internal interface DiagnosticReason {
     val reason: String
 }
 
-internal enum class TranslationEventKind { AI_REQUEST, AI_SUCCEEDED, AI_FAILED, AI_IDENTICAL, FALLBACK }
+internal enum class TranslationEventKind {
+    /** The AI was asked for sentences the window lacked (before the request is sent). */
+    AI_SCHEDULED,
+
+    /** A request was sent. */
+    AI_REQUEST,
+
+    /** The reply was complete and its sentences were stored. */
+    AI_SUCCEEDED,
+    AI_FAILED,
+
+    /** Rows on screen took the AI's text. */
+    AI_UPGRADED,
+
+    /** The AI's text agrees with what is shown, which keeps its label. */
+    AI_IDENTICAL,
+    FALLBACK,
+
+    /** The user asked for a fresh translation. */
+    REFRESH_REQUESTED,
+
+    /** The fresh request ignores the stored translations and earlier answers. */
+    CACHE_BYPASSED,
+    REFRESH_SUCCEEDED,
+    REFRESH_FAILED,
+}
 
 /** One diagnostics line. It never holds subtitle text: [count] is a number of sentences, [reason] a short code. */
 internal data class TranslationEvent(
@@ -68,6 +93,15 @@ internal data class TranslationEvent(
 
 private const val MAX_EVENTS = 60
 private const val REPEAT_WINDOW = 12
+
+/** Events a long video repeats many times; the same one within the last few is kept once. */
+private val COALESCED =
+    setOf(
+        TranslationEventKind.FALLBACK,
+        TranslationEventKind.AI_IDENTICAL,
+        TranslationEventKind.AI_UPGRADED,
+        TranslationEventKind.AI_SCHEDULED,
+    )
 
 /**
  * The last few translation events of this app run, for Settings → Captions & translation → Show translation
@@ -89,7 +123,7 @@ internal class TranslationDiagnostics(
         val event = TranslationEvent(now(), kind, target, origin, count, reason)
         all.update { current ->
             val repeats =
-                (kind == TranslationEventKind.FALLBACK || kind == TranslationEventKind.AI_IDENTICAL) &&
+                kind in COALESCED &&
                     current.takeLast(REPEAT_WINDOW).any { it.kind == kind && it.target == target && it.origin == origin }
             if (repeats) current else (current + event).takeLast(MAX_EVENTS)
         }

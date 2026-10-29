@@ -53,4 +53,44 @@ class TranslationUpgradesTest {
     @Test fun nothingArrivedLeavesTheRows() {
         assertSame(googleRows, withUpgrades(googleRows) { null })
     }
+
+    private val gpt =
+        com.kienhoang.dualsubreplay.translation.TranslationOrigin(
+            com.kienhoang.dualsubreplay.translation.TranslationProvider.CHATGPT,
+            false,
+            "gpt-x",
+        )
+
+    @Test fun aFreshAiTextReplacesAnOlderAiTextEvenWhenItOnlyExtendsIt() {
+        val old = listOf(SubtitleSegment(0, 0, 1000, "Hallo.", "Hello", translationOrigin = gpt))
+        val upgraded = withUpgrades(old) { "Hello there" }
+        assertEquals("Hello there", upgraded.single().translatedText)
+    }
+
+    @Test fun anAiTextThatIsTheSameIsLeftAlone() {
+        val old = listOf(SubtitleSegment(0, 0, 1000, "Hallo.", "Hello there", translationOrigin = gpt))
+        assertSame(old, withUpgrades(old) { " Hello  there " })
+    }
+
+    @Test fun googleTextThatTheAiMerelyContainsKeepsItsLabel() {
+        val google =
+            listOf(
+                SubtitleSegment(
+                    0,
+                    0,
+                    1000,
+                    "Hallo.",
+                    "Hello",
+                    translationOrigin = com.kienhoang.dualsubreplay.translation.TranslationOrigin.GOOGLE,
+                ),
+            )
+        assertSame(google, withUpgrades(google) { "Hello there" })
+    }
+
+    @Test fun theNumberOfReplacedSentencesIsReported() {
+        var reported = 0
+        withUpgrades(googleRows, onUpgraded = { count, _ -> reported = count }) { ai[it] }
+        // Rows 0-1 are one sentence and row 3 is another; row 2 has no AI text yet.
+        assertEquals(2, reported)
+    }
 }

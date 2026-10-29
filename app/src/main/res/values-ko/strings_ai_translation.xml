@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">AI 제공업체</string>
+    <string name="ai_config_model">AI 모델</string>
+    <string name="ai_config_effort">추론 강도</string>
+    <string name="ai_config_model_replaced">“%1$s” 모델은 더 이상 제공되지 않습니다. %2$s을(를) 사용합니다.</string>
+    <string name="ai_config_models_loading">모델 불러오는 중…</string>
+    <string name="ai_config_models_failed">모델 목록을 불러오지 못했습니다. 메뉴를 열고 새로고침을 탭하세요.</string>
+    <string name="ai_config_models_empty">사용할 수 있는 모델이 없습니다.</string>
+    <string name="ai_config_models_connect_chatgpt">ChatGPT를 연결하면 모델이 표시됩니다.</string>
+    <string name="ai_config_models_connect_key">키를 추가하면 전체 모델 목록을 불러옵니다.</string>
+    <string name="ai_config_models_refresh">모델 목록 새로고침</string>
+    <string name="ai_config_effort_replaced">이 모델에서는 “%1$s”을(를) 사용할 수 없어 자동을 사용합니다.</string>
+    <string name="ai_config_effort_fixed_chatgpt">ChatGPT 구독에서는 추론 강도를 조절할 수 없습니다.</string>
+    <string name="ai_config_effort_fixed">이 모델에는 조절할 수 있는 강도가 없습니다.</string>
+    <string name="ai_config_effort_unknown_claude">모델 목록을 불러오면 이 모델이 지원하는 단계가 표시됩니다.</string>
+    <string name="ai_config_effort_auto_note">모델이 허용하면 자막에 맞게 생각을 짧게 유지합니다.</string>
+    <string name="ai_config_key_saved">API 키 저장됨</string>
+    <string name="ai_config_key_missing">이 제공업체의 API 키가 없습니다. 추가하기 전까지 Google이 번역합니다.</string>
+    <string name="ai_config_manage_keys">키 관리</string>
+    <string name="ai_access_chatgpt_subscription">ChatGPT 구독</string>
+    <string name="ai_access_chatgpt_note">ChatGPT 요금제를 사용하며 API 키가 필요 없습니다.</string>
+    <string name="ai_access_gemini_api">Gemini API(무료 등급 제공)</string>
+    <string name="ai_access_gemini_note">Gemini API 키가 필요합니다. 무료 등급은 Google이 해당 키와 모델에 허용하는 경우에만 적용됩니다. Gemini AI Pro/Ultra 요금제는 별개의 제품이며 여기서 사용되지 않습니다. 요금은 Google 결제 설정에 따릅니다.</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">Anthropic 콘솔의 Claude API 키가 필요합니다. 사용량은 API 요금으로 청구되거나 보유한 콘솔 크레딧이 사용됩니다. Claude Pro 및 Max 구독은 여기서 사용되지 않습니다.</string>
+    <string name="ai_translation_effort_auto">자동(권장)</string>
+    <string name="ai_translation_effort_off">끔</string>
+    <string name="ai_translation_effort_minimal">최소</string>
+    <string name="ai_translation_effort_low">낮음</string>
+    <string name="ai_translation_effort_medium">보통</string>
+    <string name="ai_translation_effort_high">높음</string>
+    <string name="ai_translation_effort_xhigh">매우 높음</string>
+    <string name="ai_translation_effort_max">최대</string>
+    <string name="ai_translation_test">번역 테스트</string>
+    <string name="ai_translation_testing">번역 중…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">테스트 문장: 독일어 → 페르시아어</string>
+    <string name="ai_translation_test_result">결과: %1$s</string>
+    <string name="ai_translation_test_origin">응답: %1$s</string>
+    <string name="ai_translation_test_no_key">이 제공업체의 API 키가 저장되어 있지 않습니다.</string>
+    <string name="ai_translation_test_effort_refused">이 모델이 선택한 강도를 거부했습니다. 자동 또는 다른 단계를 선택하세요.</string>
+</resources>

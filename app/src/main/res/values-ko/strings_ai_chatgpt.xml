@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_ai_access_title">AI 이용 방식</string>
-    <string name="settings_ai_access_keys">AI 어시스턴트의 서비스와 키</string>
-    <string name="settings_ai_access_chatgpt">ChatGPT 구독</string>
     <string name="chatgpt_note">API 키 없이 OpenAI 로그인으로 내 ChatGPT 요금제를 사용합니다. 자막 텍스트는 번역을 위해 OpenAI로 전송되며 ChatGPT 대화는 읽지 않습니다. 요금제의 사용량과 한도가 적용되며 사용 가능 여부는 요금제에 따라 다릅니다.</string>
     <string name="chatgpt_continue">ChatGPT로 계속</string>
     <string name="chatgpt_status_not_connected">연결되지 않음</string>
@@ -17,13 +14,8 @@
     <string name="chatgpt_sign_in_failed">로그인이 완료되지 않았습니다. 다시 시도하세요.</string>
     <string name="chatgpt_account">계정: %1$s</string>
     <string name="chatgpt_account_unknown">연결된 ChatGPT 계정</string>
-    <string name="chatgpt_model_title">ChatGPT 모델</string>
-    <string name="chatgpt_model_none">이 계정에서 사용할 수 있는 모델이 아직 없습니다.</string>
     <string name="chatgpt_refresh">상태 새로고침</string>
     <string name="chatgpt_disconnect">연결 해제</string>
-    <string name="chatgpt_test">번역 테스트</string>
-    <string name="chatgpt_testing">번역 중…</string>
-    <string name="chatgpt_test_result">“Ich lerne jeden Tag Deutsch.” → %1$s</string>
     <string name="chatgpt_test_failed">테스트 번역에 실패했습니다.</string>
     <string name="chatgpt_cancel">취소</string>
 </resources>

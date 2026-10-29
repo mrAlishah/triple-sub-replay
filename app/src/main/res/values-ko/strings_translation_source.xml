@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s이(가) 표시된 것과 같은 텍스트를 제공했습니다</string>
     <string name="translation_source_event_fallback">AI 대신 %1$s을(를) 표시 중</string>
     <string name="translation_source_close">닫기</string>
+    <string name="translation_source_event_scheduled">AI에 요청한 문장 수: %1$d</string>
+    <string name="translation_source_event_upgraded">AI가 화면에서 바꾼 줄 수: %1$d</string>
+    <string name="translation_source_event_refresh_requested">다시 번역 요청 · 문장 수: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">새 요청에서는 저장된 번역을 건너뜁니다</string>
+    <string name="translation_source_event_refresh_succeeded">다시 번역함 · 문장 수: %1$d</string>
+    <string name="translation_source_event_refresh_failed">다시 번역 실패 · %1$s</string>
 </resources>

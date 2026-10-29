@@ -258,7 +258,13 @@ class SubtitleWordHighlightTest {
                 DIFFERENT_TAB_ACCOUNTS_PREFERENCE,
                 DRAWER_TABS_OPEN_PREFERENCE,
             )
-        assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())
+        // The AI provider choice, and each provider's saved model and effort (see aiTranslationChoiceKeys).
+        assertEquals(
+            expected +
+                com.kienhoang.dualsubreplay.assistant
+                    .aiTranslationChoiceKeys(),
+            RESETTABLE_SETTING_KEYS.toSet(),
+        )
         assertEquals(RESETTABLE_SETTING_KEYS.size, RESETTABLE_SETTING_KEYS.distinct().size)
     }
 

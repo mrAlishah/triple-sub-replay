@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">AI 提供商</string>
+    <string name="ai_config_model">AI 模型</string>
+    <string name="ai_config_effort">推理强度</string>
+    <string name="ai_config_model_replaced">“%1$s”已不再提供,改用 %2$s。</string>
+    <string name="ai_config_models_loading">正在加载模型…</string>
+    <string name="ai_config_models_failed">无法加载模型列表。请打开菜单并点按“刷新”。</string>
+    <string name="ai_config_models_empty">没有返回可用的模型。</string>
+    <string name="ai_config_models_connect_chatgpt">连接 ChatGPT 后即可查看你的模型。</string>
+    <string name="ai_config_models_connect_key">添加密钥后可加载完整的模型列表。</string>
+    <string name="ai_config_models_refresh">刷新模型列表</string>
+    <string name="ai_config_effort_replaced">此模型不支持“%1$s”,因此使用自动。</string>
+    <string name="ai_config_effort_fixed_chatgpt">ChatGPT 订阅不提供可调的推理强度。</string>
+    <string name="ai_config_effort_fixed">此模型没有可调的强度。</string>
+    <string name="ai_config_effort_unknown_claude">加载模型列表后可查看此模型支持的级别。</string>
+    <string name="ai_config_effort_auto_note">在模型允许时,为字幕保持较短的推理。</string>
+    <string name="ai_config_key_saved">已保存 API 密钥</string>
+    <string name="ai_config_key_missing">此提供商没有 API 密钥。添加之前由 Google 翻译。</string>
+    <string name="ai_config_manage_keys">管理密钥</string>
+    <string name="ai_access_chatgpt_subscription">ChatGPT 订阅</string>
+    <string name="ai_access_chatgpt_note">使用你的 ChatGPT 套餐,无需 API 密钥。</string>
+    <string name="ai_access_gemini_api">Gemini API(提供免费额度)</string>
+    <string name="ai_access_gemini_note">需要 Gemini API 密钥。仅当 Google 允许你的密钥和模型使用时才适用免费额度。Gemini AI Pro/Ultra 套餐是独立产品,此处不使用。费用取决于你在 Google 的计费设置。</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">需要来自 Anthropic 控制台的 Claude API 密钥。用量按 API 价格计费,或使用你已有的控制台额度。此处不使用 Claude Pro 和 Max 订阅。</string>
+    <string name="ai_translation_effort_auto">自动(推荐)</string>
+    <string name="ai_translation_effort_off">关闭</string>
+    <string name="ai_translation_effort_minimal">最低</string>
+    <string name="ai_translation_effort_low">低</string>
+    <string name="ai_translation_effort_medium">中</string>
+    <string name="ai_translation_effort_high">高</string>
+    <string name="ai_translation_effort_xhigh">极高</string>
+    <string name="ai_translation_effort_max">最大</string>
+    <string name="ai_translation_test">测试翻译</string>
+    <string name="ai_translation_testing">正在翻译…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">测试句子:德语 → 波斯语</string>
+    <string name="ai_translation_test_result">结果:%1$s</string>
+    <string name="ai_translation_test_origin">回答来源:%1$s</string>
+    <string name="ai_translation_test_no_key">此提供商未保存 API 密钥。</string>
+    <string name="ai_translation_test_effort_refused">此模型拒绝了所选强度。请选择自动或其他级别。</string>
+</resources>

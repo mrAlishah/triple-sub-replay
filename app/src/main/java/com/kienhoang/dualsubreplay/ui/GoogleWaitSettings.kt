@@ -10,16 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
-import com.kienhoang.dualsubreplay.assistant.aiTranslationModelChoices
 import com.kienhoang.dualsubreplay.translation.GoogleWait
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 
@@ -81,62 +77,3 @@ internal val SubtitleTranslator.descriptionRes: Int
             SubtitleTranslator.AI_ONLY -> R.string.settings_translator_ai_only_description
             SubtitleTranslator.ON_DEVICE -> R.string.settings_translator_on_device_description
         }
-
-/**
- * Settings → Translation → AI model for translation, shown with an AI translator: "Same as AI
- * assistant" (saved as empty, the default), then the other models of the assistant's service. A
- * model the service no longer offers falls back to the assistant's.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun AiTranslationModelSettings(
-    chosen: String,
-    onChange: (String) -> Unit,
-) {
-    val context = LocalContext.current
-    val (assistantModel, choices) = remember(context) { context.aiTranslationModelChoices() }
-    val selected = chosen.takeIf { it in choices }.orEmpty()
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text(stringResource(R.string.settings_ai_translation_model_title))
-        if (choices.isNotEmpty()) {
-            Text(
-                stringResource(R.string.settings_ai_translation_model_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = selected.isEmpty(),
-                onClick = { onChange("") },
-                label = { Text(stringResource(R.string.settings_ai_translation_model_same, assistantModel)) },
-                modifier = Modifier.testTag("ai_translation_model_same"),
-            )
-            choices.forEach { model ->
-                FilterChip(
-                    selected = selected == model,
-                    onClick = { onChange(model) },
-                    label = { Text(model) },
-                    modifier = Modifier.testTag("ai_translation_model_$model"),
-                )
-            }
-        }
-    }
-}
-
-/** Where the AI translator's service and key come from, with a way there when the dialog has one. */
-@Composable
-internal fun AiTranslationServiceNote(onOpenAiSettings: (() -> Unit)?) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text(
-            stringResource(R.string.settings_ai_translation_service_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (onOpenAiSettings != null) {
-            TextButton(onClick = onOpenAiSettings, modifier = Modifier.testTag("ai_translation_open_assistant_settings")) {
-                Text(stringResource(R.string.settings_ai_translation_service_open))
-            }
-        }
-    }
-}

@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s memberi teks yang sama dengan yang ditampilkan</string>
     <string name="translation_source_event_fallback">Menampilkan %1$s sebagai pengganti AI</string>
     <string name="translation_source_close">Tutup</string>
+    <string name="translation_source_event_scheduled">AI diminta menerjemahkan kalimat: %1$d</string>
+    <string name="translation_source_event_upgraded">AI menggantikan baris di layar: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Terjemahan ulang diminta · kalimat: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Terjemahan tersimpan dilewati untuk permintaan baru</string>
+    <string name="translation_source_event_refresh_succeeded">Diterjemahkan ulang · kalimat: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Terjemahan ulang gagal · %1$s</string>
 </resources>

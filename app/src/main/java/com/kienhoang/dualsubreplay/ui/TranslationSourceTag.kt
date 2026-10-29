@@ -2,7 +2,9 @@ package com.kienhoang.dualsubreplay.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
@@ -41,7 +44,12 @@ private const val DETAIL_EVENTS = 8
 internal class TranslationSourceInfo(
     val show: Boolean = false,
     val events: StateFlow<List<TranslationEvent>> = MutableStateFlow(emptyList()),
-)
+    /** "Re-translate with AI", when the build and the current run offer it. */
+    val refresh: RefreshActions? = null,
+) {
+    /** Which lines are being re-translated or failed to be, for the marks under the lines. */
+    val refreshState: StateFlow<RefreshState> = refresh?.state ?: MutableStateFlow(RefreshState())
+}
 
 internal val LocalTranslationSourceInfo = staticCompositionLocalOf { TranslationSourceInfo() }
 
@@ -75,6 +83,12 @@ internal fun translationEventText(
             strings.get(R.string.translation_source_event_identical, strings.get(translationSourceRes(event.origin)))
         TranslationEventKind.FALLBACK ->
             strings.get(R.string.translation_source_event_fallback, strings.get(translationSourceRes(event.origin)))
+        TranslationEventKind.AI_SCHEDULED -> strings.get(R.string.translation_source_event_scheduled, event.count)
+        TranslationEventKind.AI_UPGRADED -> strings.get(R.string.translation_source_event_upgraded, event.count)
+        TranslationEventKind.REFRESH_REQUESTED -> strings.get(R.string.translation_source_event_refresh_requested, event.count)
+        TranslationEventKind.CACHE_BYPASSED -> strings.get(R.string.translation_source_event_cache_bypassed)
+        TranslationEventKind.REFRESH_SUCCEEDED -> strings.get(R.string.translation_source_event_refresh_succeeded, event.count)
+        TranslationEventKind.REFRESH_FAILED -> strings.get(R.string.translation_source_event_refresh_failed, event.reason ?: "?")
     }
 
 /** The events of one target language, newest first, as the details view lists them. */
@@ -87,8 +101,9 @@ internal fun eventsFor(
 }
 
 /**
- * The small source label under a translated subtitle line, only while Show translation source is on. Tapping it
- * opens the details. [origin] is what was recorded when the shown text was produced.
+ * The small source label under a translated subtitle line, only while Show translation source is on, with the line's refreshing or
+ * failed-refresh mark whenever one applies. Tapping the label opens the details. [origin] is what was recorded when the shown
+ * text was produced; a refresh in progress does not change it.
  */
 @Composable
 internal fun TranslationSourceTag(
@@ -98,23 +113,30 @@ internal fun TranslationSourceTag(
     color: Color,
 ) {
     val info = LocalTranslationSourceInfo.current
-    if (!info.show) return
+    val refreshState by info.refreshState.collectAsState()
+    val marked = slot in refreshState.running || slot in refreshState.failed
+    if (!info.show && !marked) return
     var details by rememberSaveable { mutableStateOf(false) }
-    Text(
-        text = stringResource(translationSourceRes(origin)),
-        fontSize = 10.sp,
-        lineHeight = 12.sp,
-        color = color.copy(alpha = 0.7f),
-        modifier =
-            Modifier
-                .padding(top = 1.dp)
-                .clickable { details = true }
-                .testTag("translation_source_${slot.stableId}"),
-    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (info.show) {
+            Text(
+                text = stringResource(translationSourceRes(origin)),
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                color = color.copy(alpha = 0.7f),
+                modifier =
+                    Modifier
+                        .padding(top = 1.dp)
+                        .clickable { details = true }
+                        .testTag("translation_source_${slot.stableId}"),
+            )
+        }
+        RefreshStatusText(slot, color)
+    }
     if (details) {
         val events by info.events.collectAsState()
         DualSubTheme {
-            TranslationSourceDialog(origin, slot, targetLanguage, eventsFor(events, targetLanguage)) { details = false }
+            TranslationSourceDialog(origin, slot, targetLanguage, eventsFor(events, targetLanguage), info.refresh) { details = false }
         }
     }
 }
@@ -125,13 +147,24 @@ private fun TranslationSourceDialog(
     slot: SubtitleSlot,
     targetLanguage: String,
     events: List<TranslationEvent>,
+    refresh: RefreshActions?,
     onDismiss: () -> Unit,
 ) {
     val strings = LocalResources.current.uiStrings()
     val time = remember { DateFormat.getTimeInstance(DateFormat.MEDIUM) }
+    val offered by (refresh?.available ?: MutableStateFlow(emptySet<SubtitleSlot>())).collectAsState()
+    var retranslating by rememberSaveable { mutableStateOf(false) }
+    if (retranslating && refresh != null) RetranslateDialog(slot, refresh) { retranslating = false }
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.translation_source_close)) } },
+        confirmButton = {
+            if (slot in offered) {
+                TextButton(onClick = { retranslating = true }, modifier = Modifier.testTag("details_retranslate")) {
+                    Text(stringResource(R.string.retranslate_title))
+                }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.translation_source_close)) } },
         title = { Text(stringResource(R.string.translation_source_dialog_title)) },
         text = {
             Column {

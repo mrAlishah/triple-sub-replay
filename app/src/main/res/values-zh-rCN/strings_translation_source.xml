@@ -21,4 +21,10 @@
     <string name="translation_source_event_identical">%1$s 给出的文本与当前显示相同</string>
     <string name="translation_source_event_fallback">正在显示%1$s,而不是 AI</string>
     <string name="translation_source_close">关闭</string>
+    <string name="translation_source_event_scheduled">已请求 AI 翻译句数:%1$d</string>
+    <string name="translation_source_event_upgraded">AI 替换了屏幕上的行数:%1$d</string>
+    <string name="translation_source_event_refresh_requested">已请求重新翻译 · 句数:%1$d</string>
+    <string name="translation_source_event_cache_bypassed">新请求跳过了已保存的翻译</string>
+    <string name="translation_source_event_refresh_succeeded">已重新翻译 · 句数:%1$d</string>
+    <string name="translation_source_event_refresh_failed">重新翻译失败 · %1$s</string>
 </resources>

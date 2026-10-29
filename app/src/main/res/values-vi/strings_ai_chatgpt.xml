@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_ai_access_title">Cách dùng AI</string>
-    <string name="settings_ai_access_keys">Dịch vụ và khóa của trợ lý AI</string>
-    <string name="settings_ai_access_chatgpt">Gói ChatGPT</string>
     <string name="chatgpt_note">Dùng gói ChatGPT của chính bạn qua đăng nhập OpenAI, không cần khóa API. Văn bản phụ đề được gửi tới OpenAI để dịch; các cuộc trò chuyện ChatGPT của bạn không bị đọc. Hạn mức và giới hạn của gói áp dụng, và khả năng sử dụng khác nhau tùy gói.</string>
     <string name="chatgpt_continue">Tiếp tục với ChatGPT</string>
     <string name="chatgpt_status_not_connected">Chưa kết nối</string>
@@ -17,13 +14,8 @@
     <string name="chatgpt_sign_in_failed">Đăng nhập chưa hoàn tất. Hãy thử lại.</string>
     <string name="chatgpt_account">Tài khoản: %1$s</string>
     <string name="chatgpt_account_unknown">Tài khoản ChatGPT đã kết nối</string>
-    <string name="chatgpt_model_title">Mô hình ChatGPT</string>
-    <string name="chatgpt_model_none">Chưa có mô hình nào dùng được cho tài khoản này.</string>
     <string name="chatgpt_refresh">Làm mới trạng thái</string>
     <string name="chatgpt_disconnect">Ngắt kết nối</string>
-    <string name="chatgpt_test">Thử dịch</string>
-    <string name="chatgpt_testing">Đang dịch…</string>
-    <string name="chatgpt_test_result">“Ich lerne jeden Tag Deutsch.” → %1$s</string>
     <string name="chatgpt_test_failed">Dịch thử không thành công.</string>
     <string name="chatgpt_cancel">Hủy</string>
 </resources>

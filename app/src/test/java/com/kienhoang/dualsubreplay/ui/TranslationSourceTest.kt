@@ -160,7 +160,10 @@ class TranslationSourceTest {
                     translator.shownTranslation(failing, "de", "en", it)
                 }
             assertSame(googleRows, upgraded)
-            assertEquals(listOf(TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_FAILED), diagnostics.events.value.map { it.kind })
+            assertEquals(
+                listOf(TranslationEventKind.AI_SCHEDULED, TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_FAILED),
+                diagnostics.events.value.map { it.kind },
+            )
             val failure = diagnostics.events.value.last()
             assertEquals("UNAVAILABLE", failure.reason)
             assertEquals("en", failure.target)
@@ -368,7 +371,7 @@ class TranslationSourceTest {
             assertEquals(chatGpt, translator.originOf(dying, "de", "en", "Erster Satz."))
             assertNull(translator.originOf(dying, "de", "en", "Zweiter Satz."))
             val kinds = diagnostics.events.value.map { it.kind }
-            assertEquals(listOf(TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_FAILED), kinds)
+            assertEquals(listOf(TranslationEventKind.AI_SCHEDULED, TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_FAILED), kinds)
             assertEquals(
                 1,
                 diagnostics.events.value
@@ -384,7 +387,7 @@ class TranslationSourceTest {
             val translator = AiSubtitleTranslator(cacheDirectory = null, diagnostics = diagnostics)
             translator.translateAll(gpt(), "de", "en", listOf("Erster Satz.", "Zweiter Satz."))
             assertEquals(
-                listOf(TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_SUCCEEDED),
+                listOf(TranslationEventKind.AI_SCHEDULED, TranslationEventKind.AI_REQUEST, TranslationEventKind.AI_SUCCEEDED),
                 diagnostics.events.value.map { it.kind },
             )
             assertEquals(
@@ -484,5 +487,23 @@ class TranslationSourceTest {
             "${R.string.translation_source_event_fallback}:${R.string.translation_source_google}:",
             translationEventText(shown[0], strings),
         )
+    }
+
+    @Test
+    fun everyEventKindHasATextBuiltFromCountsAndCodesOnly() {
+        val strings =
+            object : UiStrings {
+                override fun get(
+                    id: Int,
+                    vararg formatArgs: Any,
+                ) = "$id:" + formatArgs.joinToString(",")
+            }
+        TranslationEventKind.entries.forEach { kind ->
+            val event = TranslationEvent(1, kind, "en", chatGpt, count = 3, reason = "USAGE_LIMIT")
+            val text = translationEventText(event, strings)
+            assertTrue(kind.name, text.isNotEmpty())
+        }
+        val failed = TranslationEvent(1, TranslationEventKind.REFRESH_FAILED, "en", chatGpt, reason = "USAGE_LIMIT")
+        assertEquals("${R.string.translation_source_event_refresh_failed}:USAGE_LIMIT", translationEventText(failed, strings))
     }
 }

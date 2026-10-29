@@ -168,7 +168,7 @@ private fun AiThinkingMenu(
 }
 
 @Composable
-private fun SelectedMark(selected: Boolean) {
+internal fun SelectedMark(selected: Boolean) {
     if (selected) {
         Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
     } else {

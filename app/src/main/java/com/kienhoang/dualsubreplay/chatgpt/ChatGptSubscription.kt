@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.content.edit
+import com.kienhoang.dualsubreplay.assistant.CHATGPT_ACCESS_ID
 import com.kienhoang.dualsubreplay.assistant.KeystoreSecretCipher
 import com.kienhoang.dualsubreplay.assistant.SharedPreferencesSecretStorage
 import com.kienhoang.dualsubreplay.translation.AiTranslationModel
@@ -23,10 +24,10 @@ import kotlinx.coroutines.withContext
 /** Settings → Translation → AI access: `keys` (the AI assistant's service and keys, the default) or `chatgpt`. */
 internal const val AI_ACCESS_METHOD_PREFERENCE = "ai_access_method"
 internal const val CHATGPT_MODEL_PREFERENCE = "chatgpt_translation_model"
-internal const val AI_ACCESS_CHATGPT = "chatgpt"
+internal const val AI_ACCESS_CHATGPT = CHATGPT_ACCESS_ID
 
-private const val TEST_INSTRUCTIONS = "Translate the German sentence the user sends into Persian. Reply with the translation only."
-private const val TEST_SENTENCE = "Ich lerne jeden Tag Deutsch."
+internal const val TEST_INSTRUCTIONS = "Translate the German sentence the user sends into Persian. Reply with the translation only."
+internal const val TEST_SENTENCE = "Ich lerne jeden Tag Deutsch."
 
 internal enum class ChatGptStatus {
     NOT_CONNECTED,

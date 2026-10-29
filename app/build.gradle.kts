@@ -98,6 +98,7 @@ abstract class LearnerLanguageData : DefaultTask() {
                 "data/dictionary/pinyin/pinyin.txt" to "zh-pinyin.txt",
                 "data/dictionary/tc/t2s.txt" to "zh-t2s.txt",
                 "opennlp-en-ud-ewt-pos-1.3-2.5.4.bin" to "en-pos.zip",
+                "opennlp-de-ud-gsd-pos-1.3-2.5.4.bin" to "de-pos.zip",
             )
         val directory = output.dir("learner-data").get().asFile
         directory.mkdirs()
@@ -329,6 +330,7 @@ dependencies {
     // word and exception lists (WordNet licence), jieba's Chinese word list (MIT, in an Apache-2.0 jar),
     // HanLP's pinyin and character tables (Apache-2.0).
     learnerData("org.apache.opennlp:opennlp-models-pos-en:1.3.0")
+    learnerData("org.apache.opennlp:opennlp-models-pos-de:1.3.0")
     learnerData("net.sf.extjwnl:extjwnl-data-wn31:1.2")
     learnerData("com.huaban:jieba-analysis:1.0.2")
     learnerData("com.hankcs:hanlp:portable-1.8.6")

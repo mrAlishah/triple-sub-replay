@@ -5,7 +5,6 @@
     <string name="ai_connection_title">Koneksi</string>
     <string name="ai_connection_chatgpt_connecting">Menghubungkan ke ChatGPT…</string>
     <string name="ai_connection_test_failed">Pengujian gagal. Periksa koneksi lalu coba lagi.</string>
-    <string name="ai_chat_chatgpt_unavailable">Obrolan belum bisa memakai Langganan ChatGPT; layanan ini dipakai untuk menerjemahkan subtitle. Pilih layanan AI lain untuk mengobrol.</string>
     <string name="ai_connection_summary">Koneksi AI: %1$s · %2$s</string>
     <string name="ai_connection_manage">Kelola koneksi AI</string>
     <string name="ai_connection_back">Kembali ke %1$s</string>
@@ -20,8 +19,11 @@
     <string name="ai_chat_service">Layanan AI untuk chat</string>
     <string name="ai_service_state_connected">Terhubung</string>
     <string name="ai_service_state_not_connected">Belum terhubung</string>
-    <string name="ai_service_chat_unsupported">Chat belum tersedia untuk layanan ini</string>
     <string name="ai_models_translation_conflict">Terjemahan subtitle masih memakai %1$s, yang disimpan sebelum kolom ini dibagi. Ubah model di sini agar keduanya memakai satu model.</string>
     <string name="ai_service_viewing_hint">Menampilkan pengaturan layanan ini. Pilih layanan untuk chat dan terjemahan subtitle di baris masing-masing.</string>
     <string name="ai_chat_gear_hint">Kunci, login, model, dan penalaran dikelola di Pengaturan → Koneksi AI.</string>
+    <string name="ai_error_plan_sign_in">Masuk lagi ke ChatGPT untuk terus mengobrol dengan paket Anda. Buka Pengaturan → Koneksi AI.</string>
+    <string name="ai_error_plan_not_available">Penggunaan paket ChatGPT tidak tersedia untuk akun ini. Pilih layanan AI lain.</string>
+    <string name="ai_error_plan_usage_limit">Batas penggunaan paket ChatGPT Anda tercapai. Coba lagi nanti.</string>
+    <string name="ai_chat_chatgpt_connect">Hubungkan langganan ChatGPT di Pengaturan → Koneksi AI untuk mengobrol dengannya.</string>
 </resources>

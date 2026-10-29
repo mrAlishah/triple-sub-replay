@@ -179,7 +179,7 @@ private fun AiSourceList(sources: List<AiWebSource>) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AiMessageText(message: AiChatMessage) {
+internal fun AiMessageText(message: AiChatMessage) {
     val user = message.role == AiRole.USER
     Box(Modifier.fillMaxWidth(), contentAlignment = if (user) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(

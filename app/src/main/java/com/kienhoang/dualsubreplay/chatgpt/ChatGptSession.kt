@@ -63,6 +63,13 @@ internal interface ChatGptApi {
         body: String,
         onText: (String) -> Unit,
     ): String
+
+    /** Like [stream], and also hands back the function calls the reply asked for. */
+    suspend fun respond(
+        accessToken: String,
+        body: String,
+        onText: (String) -> Unit,
+    ): ChatGptResult = ChatGptResult(stream(accessToken, body, onText))
 }
 
 /**

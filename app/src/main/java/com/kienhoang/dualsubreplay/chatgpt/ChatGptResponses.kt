@@ -103,15 +103,45 @@ internal fun chatGptErrorFor(
     return ChatGptException(kind, messageFor(kind) + (if (code.isNotEmpty()) " ($code, HTTP $status)" else " (HTTP $status)"))
 }
 
+/** One function call the model asked for, as the stream carried it. */
+internal data class ChatGptFunctionCall(
+    val callId: String,
+    val name: String,
+    /** The arguments as JSON text. */
+    val arguments: String,
+    /** The namespace the tool was grouped in, sent back with the call when the answer is replayed. */
+    val namespace: String? = null,
+)
+
+/** A completed reply: its text and the function calls it asked for. */
+internal data class ChatGptResult(
+    val text: String,
+    val calls: List<ChatGptFunctionCall> = emptyList(),
+)
+
+private fun functionCallFrom(item: JSONObject?): ChatGptFunctionCall? {
+    if (item == null || item.optString("type") != "function_call") return null
+    val callId = item.optString("call_id").ifEmpty { return null }
+    val name = item.optString("name").ifEmpty { return null }
+    return ChatGptFunctionCall(
+        callId,
+        name,
+        item.optString("arguments").ifBlank { "{}" },
+        item.optString("namespace").takeIf { it.isNotEmpty() },
+    )
+}
+
 /**
- * Reads server-sent events from [nextLine] (null at the end) and passes each text delta to [onText]. The text is
+ * Reads server-sent events from [nextLine] (null at the end) and passes each text delta to [onText]. The result is
  * returned only after `response.completed`; a stream that ends, fails or is incomplete is an error, never a result.
+ * Function calls come from `response.output_item.done` and, for any it did not carry, from the completed response.
  */
-internal fun readChatGptStream(
+internal fun readChatGptResponse(
     nextLine: () -> String?,
     onText: (String) -> Unit,
-): String {
+): ChatGptResult {
     val text = StringBuilder()
+    val calls = LinkedHashMap<String, ChatGptFunctionCall>()
     while (true) {
         val line = nextLine() ?: break
         if (!line.startsWith("data:")) continue
@@ -129,7 +159,16 @@ internal fun readChatGptStream(
                 if (text.length > MAX_REPLY_CHARS) throw ChatGptException(ChatGptErrorKind.BAD_REPLY, "The ChatGPT reply was too large.")
                 onText(delta)
             }
-            "response.completed" -> return text.toString()
+            "response.output_item.done" -> functionCallFrom(event.optJSONObject("item"))?.let { calls.putIfAbsent(it.callId, it) }
+            "response.completed" -> {
+                val output = event.optJSONObject("response")?.optJSONArray("output")
+                if (output != null) {
+                    for (index in 0 until output.length()) {
+                        functionCallFrom(output.optJSONObject(index))?.let { calls.putIfAbsent(it.callId, it) }
+                    }
+                }
+                return ChatGptResult(text.toString(), calls.values.toList())
+            }
             "response.incomplete" -> throw ChatGptException(ChatGptErrorKind.BAD_REPLY, messageFor(ChatGptErrorKind.BAD_REPLY))
             "response.failed" -> throw chatGptErrorFor(
                 500,
@@ -144,3 +183,9 @@ internal fun readChatGptStream(
     }
     throw ChatGptException(ChatGptErrorKind.UNAVAILABLE, "The ChatGPT reply ended before it was complete.")
 }
+
+/** The translation's reading of the same stream: text only. */
+internal fun readChatGptStream(
+    nextLine: () -> String?,
+    onText: (String) -> Unit,
+): String = readChatGptResponse(nextLine, onText).text

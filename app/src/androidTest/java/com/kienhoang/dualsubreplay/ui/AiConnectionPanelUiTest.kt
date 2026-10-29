@@ -172,13 +172,6 @@ class AiConnectionPanelUiTest {
         composeRule.waitForIdle()
     }
 
-    /** The Chat AI Service row: which service chat uses. */
-    private fun chooseChat(tag: String) {
-        composeRule.onNodeWithTag("ai_chat_service_menu").performScrollTo().performClick()
-        composeRule.onNodeWithTag(tag).performClick()
-        composeRule.waitForIdle()
-    }
-
     @Test
     fun everyKeyedServiceShowsTheApiKeysAndChatGptShowsTheConnection() {
         show()
@@ -240,30 +233,26 @@ class AiConnectionPanelUiTest {
     }
 
     @Test
-    fun choosingChatGptForChatSaysChatCannotUseItYetAndSendsNothing() {
+    fun theConnectionSettingsHaveNoChatServiceRowBecauseChatChoosesItsOwn() {
         show()
-        chooseChat("ai_chat_service_chatgpt")
-        composeRule.onNodeWithTag("ai_chatgpt_chat_unavailable").performScrollTo().assertIsDisplayed()
-        assertTrue(settings.chatGptService)
-        assertTrue(requests.isEmpty())
-        chooseChat("ai_chat_service_gemini")
-        composeRule.onNodeWithTag("ai_chatgpt_chat_unavailable").assertDoesNotExist()
-        assertFalse(settings.chatGptService)
+        composeRule.onNodeWithTag("ai_service_menu").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_chat_service_menu").assertDoesNotExist()
+        composeRule.onNodeWithText("Chat AI Service").assertDoesNotExist()
     }
 
     @Test
-    fun theShownServiceAndTheChatServiceAreIndependent() {
+    fun viewingAServiceHereNeverChangesWhichServiceChatUses() {
+        saveKey(AiProvider.GEMINI, "AIza-FAKE-test-key-for-unit-tests-rstu")
         settings = AiAssistantSettings(introSeen = true, provider = AiProvider.GEMINI)
         show()
         chooseService("ai_service_chatgpt")
-        assertFalse(settings.chatGptService)
-        assertEquals(AiProvider.GEMINI, settings.provider)
         composeRule.onNodeWithTag("chatgpt_continue").performScrollTo().assertIsDisplayed()
-        chooseChat("ai_chat_service_openai")
-        assertEquals(AiProvider.OPENAI, settings.provider)
-        // Changing chat did not change the service whose settings are shown.
-        composeRule.onNodeWithTag("chatgpt_continue").assertIsDisplayed()
-        assertTrue(translationChanges.isEmpty())
+        chooseService("ai_service_openai")
+        composeRule.onNodeWithTag("ai_key_field").assertExists()
+        assertEquals(AiProvider.GEMINI, settings.provider)
+        assertFalse(settings.chatGptService)
+        assertEquals(1, keyStore.keys(AiProvider.GEMINI).size)
+        assertTrue(requests.isEmpty())
     }
 
     @Test

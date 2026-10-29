@@ -5,7 +5,6 @@
     <string name="ai_connection_title">Connection</string>
     <string name="ai_connection_chatgpt_connecting">Connecting to ChatGPT…</string>
     <string name="ai_connection_test_failed">The test failed. Check the connection and try again.</string>
-    <string name="ai_chat_chatgpt_unavailable">Chat can\'t use ChatGPT Subscription yet; it is used for subtitle translation. Choose another AI service to chat.</string>
     <string name="ai_connection_summary">AI connection: %1$s · %2$s</string>
     <string name="ai_connection_manage">Manage AI connection</string>
     <string name="ai_connection_back">Back to %1$s</string>
@@ -20,8 +19,11 @@
     <string name="ai_chat_service">Chat AI Service</string>
     <string name="ai_service_state_connected">Connected</string>
     <string name="ai_service_state_not_connected">Not connected</string>
-    <string name="ai_service_chat_unsupported">Chat isn\'t available for this service yet</string>
     <string name="ai_models_translation_conflict">Subtitle translation still uses %1$s, saved before this box was shared. Edit the model here to use one model for both.</string>
     <string name="ai_service_viewing_hint">Showing the settings of this service. Choose which service chat and subtitle translation use in their own rows.</string>
     <string name="ai_chat_gear_hint">Keys, sign-in, models and thinking are managed in Settings → AI Connection.</string>
+    <string name="ai_error_plan_sign_in">Sign in to ChatGPT again to keep chatting with your plan. Open Settings → AI Connection.</string>
+    <string name="ai_error_plan_not_available">ChatGPT plan usage isn\'t available for this account. Choose another AI service.</string>
+    <string name="ai_error_plan_usage_limit">Your ChatGPT plan\'s usage limit was reached. Try again later.</string>
+    <string name="ai_chat_chatgpt_connect">Connect ChatGPT Subscription in Settings → AI Connection to chat with it.</string>
 </resources>

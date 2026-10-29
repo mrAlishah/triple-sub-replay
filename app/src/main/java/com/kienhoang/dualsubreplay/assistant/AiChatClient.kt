@@ -68,6 +68,15 @@ internal enum class AiErrorKind {
 
     /** The service refused its own web search (off for the account, or not for this model); asked again without it. */
     UNSUPPORTED_WEB_SEARCH,
+
+    /** ChatGPT Subscription: the sign-in ended or plan usage was not granted. */
+    PLAN_SIGN_IN_REQUIRED,
+
+    /** ChatGPT Subscription: this account cannot use plan usage. */
+    PLAN_NOT_AVAILABLE,
+
+    /** ChatGPT Subscription: the plan's usage limit was reached. */
+    PLAN_USAGE_LIMIT,
 }
 
 /** [detail] is the service's own English message, with the key removed, for reports. */
@@ -492,6 +501,8 @@ internal class AiHttpTransport(
     AiModelLister,
     AiHttpPoster {
     override suspend fun complete(request: AiChatRequest): AiReply {
+        // A ChatGPT request has no key and no keyed address; it never goes out through this transport.
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))
@@ -529,6 +540,7 @@ internal class AiHttpTransport(
         request: AiChatRequest,
         onText: (String) -> Unit,
     ): AiReply {
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))

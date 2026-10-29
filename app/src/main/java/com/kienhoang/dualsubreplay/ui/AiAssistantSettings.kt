@@ -118,18 +118,27 @@ internal fun AiConnectCard(
 }
 
 /**
- * Shown in place of the chat while ChatGPT Subscription is the Chat AI Service: it cannot answer chat yet, so the panel says so
- * and sends nothing, instead of asking for a key or using another service.
+ * Shown in place of the chat while ChatGPT Subscription is the Chat AI Service but its account cannot answer: what to do, and the
+ * account's real status. It never asks for a key and never uses another service.
  */
 @Composable
-internal fun AiChatUnavailableCard(onOpenSettings: () -> Unit) {
+internal fun AiChatGptStateCard(
+    status: ChatGptStatus,
+    onOpenSettings: () -> Unit,
+) {
     Surface(
-        modifier = Modifier.fillMaxWidth().testTag("ai_chat_unavailable_card"),
+        modifier = Modifier.fillMaxWidth().testTag("ai_chat_chatgpt_card"),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.ai_chat_chatgpt_unavailable), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.ai_chat_chatgpt_connect), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(status.labelRes),
+                color = if (status.isProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.testTag("ai_chat_chatgpt_status"),
+            )
             TextButton(onClick = onOpenSettings, modifier = Modifier.testTag("ai_open_settings")) {
                 Text(stringResource(R.string.ai_open_settings))
             }
@@ -337,34 +346,32 @@ internal fun AiAssistantSettingsSection(
         if (target == AiConnectionTarget.Key(AiProvider.CUSTOM)) AiCustomAddressField(aiState, controller)
         Spacer(Modifier.height(12.dp))
     }
-    // In the chat's own settings only the services that are configured are offered, and the one chat uses now is always among them.
-    val gptState by (host.chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
-    val offered: (AiConnectionTarget) -> Boolean = { service ->
-        !chatOnly || service == chatTarget ||
-            when (service) {
-                AiConnectionTarget.ChatGpt -> gptState.status == ChatGptStatus.READY
-                is AiConnectionTarget.Key -> aiState.keys[service.provider].orEmpty().isNotEmpty()
-            }
+    // Which service chat uses is chosen in the chat's own settings (its gear), not in Settings → AI Connection. There only the
+    // services that are set up are offered, and the one chat uses now is always among them.
+    if (chatOnly) {
+        val gptState by (host.chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
+        SettingsSubheading(stringResource(R.string.ai_chat_service))
+        AiServiceMenu(
+            aiState,
+            chatTarget,
+            offered = { service ->
+                service == chatTarget ||
+                    when (service) {
+                        AiConnectionTarget.ChatGpt -> gptState.status == ChatGptStatus.READY
+                        is AiConnectionTarget.Key -> aiState.keys[service.provider].orEmpty().isNotEmpty()
+                    }
+            },
+            onSelect = {
+                when (it) {
+                    AiConnectionTarget.ChatGpt -> controller.selectChatGptService()
+                    is AiConnectionTarget.Key -> controller.selectProvider(it.provider)
+                }
+            },
+            tag = "ai_chat_service",
+            showChatGpt = hasChatGpt,
+        )
+        SettingsHint(stringResource(R.string.ai_chat_gear_hint))
     }
-    SettingsSubheading(stringResource(R.string.ai_chat_service))
-    AiServiceMenu(
-        aiState,
-        chatTarget,
-        offered = offered,
-        onSelect = {
-            when (it) {
-                AiConnectionTarget.ChatGpt -> controller.selectChatGptService()
-                is AiConnectionTarget.Key -> controller.selectProvider(it.provider)
-            }
-        },
-        tag = "ai_chat_service",
-        showChatGpt = hasChatGpt,
-        chatGptNoteRes = R.string.ai_service_chat_unsupported,
-    )
-    if (chatTarget == AiConnectionTarget.ChatGpt) {
-        Box(Modifier.testTag("ai_chatgpt_chat_unavailable")) { SettingsHint(stringResource(R.string.ai_chat_chatgpt_unavailable)) }
-    }
-    if (chatOnly) SettingsHint(stringResource(R.string.ai_chat_gear_hint))
     Spacer(Modifier.height(12.dp))
     // Without a key, the connection section starts open: adding one is the next step.
     var open by rememberSaveable {

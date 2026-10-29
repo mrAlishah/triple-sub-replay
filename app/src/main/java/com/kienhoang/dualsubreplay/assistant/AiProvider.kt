@@ -10,6 +10,9 @@ internal enum class AiWireFormat {
 
     /** Anthropic's own Messages API (`messages`), with an `x-api-key` key. */
     ANTHROPIC_MESSAGES,
+
+    /** OpenAI's Responses API with a ChatGPT plan-usage token (no key); sent only by [ChatGptChatTransport]. */
+    CHATGPT_RESPONSES,
 }
 
 /**

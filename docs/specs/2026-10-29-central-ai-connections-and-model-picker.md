@@ -72,8 +72,9 @@ adapter (next task), Google-first/AI Only/re-translate/diagnostics changes.
 - **What the dropdown lists.** The services that are configured (an API service with a saved key, ChatGPT Subscription connected),
   plus the service chat is assigned to now, so a choice is never hidden. Rows say Connected / Not connected. A choice is never
   replaced by another service.
-- **ChatGPT Subscription for chat** has no Responses adapter yet (separate task). Chosen for chat, the panel shows an explicit
-  "not available for chat yet" card in place of the key-setup card and sends nothing; the translation assignment is untouched.
+- **ChatGPT Subscription for chat** had no Responses adapter when this was written (the "not available for chat yet" card). The adapter
+  landed in [ChatGPT Subscription for the AI assistant chat](2026-10-29-chatgpt-subscription-chat.md), which replaced that card by the
+  account's real state; the translation assignment is untouched.
 - Independence: the Translation AI Service (Captions & translation) is another preference and neither assignment writes the other.
 - Tests: title string (all languages), gear page shows the dropdown and none of keys/OAuth/Model/Thinking, only configured services
   listed, choosing persists and does not touch translation, ChatGPT chat shows the unavailable card.

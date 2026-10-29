@@ -5,7 +5,6 @@
     <string name="ai_connection_title">Conexión</string>
     <string name="ai_connection_chatgpt_connecting">Conectando con ChatGPT…</string>
     <string name="ai_connection_test_failed">La prueba falló. Revisa la conexión e inténtalo de nuevo.</string>
-    <string name="ai_chat_chatgpt_unavailable">El chat aún no puede usar la suscripción de ChatGPT; se usa para traducir subtítulos. Elige otro servicio de IA para chatear.</string>
     <string name="ai_connection_summary">Conexión de IA: %1$s · %2$s</string>
     <string name="ai_connection_manage">Administrar la conexión de IA</string>
     <string name="ai_connection_back">Volver a %1$s</string>
@@ -20,8 +19,11 @@
     <string name="ai_chat_service">Servicio de IA para el chat</string>
     <string name="ai_service_state_connected">Conectado</string>
     <string name="ai_service_state_not_connected">No conectado</string>
-    <string name="ai_service_chat_unsupported">El chat aún no está disponible con este servicio</string>
     <string name="ai_models_translation_conflict">La traducción de subtítulos sigue usando %1$s, guardado antes de compartir este cuadro. Edita el modelo aquí para usar un solo modelo en ambos.</string>
     <string name="ai_service_viewing_hint">Se muestran los ajustes de este servicio. Elige qué servicio usan el chat y la traducción de subtítulos en sus propias filas.</string>
     <string name="ai_chat_gear_hint">Las claves, el inicio de sesión, los modelos y el razonamiento se gestionan en Ajustes → Conexión de IA.</string>
+    <string name="ai_error_plan_sign_in">Vuelve a iniciar sesión en ChatGPT para seguir chateando con tu plan. Abre Ajustes → Conexión de IA.</string>
+    <string name="ai_error_plan_not_available">El uso del plan de ChatGPT no está disponible para esta cuenta. Elige otro servicio de IA.</string>
+    <string name="ai_error_plan_usage_limit">Se alcanzó el límite de uso de tu plan de ChatGPT. Inténtalo más tarde.</string>
+    <string name="ai_chat_chatgpt_connect">Conecta la suscripción de ChatGPT en Ajustes → Conexión de IA para chatear con ella.</string>
 </resources>

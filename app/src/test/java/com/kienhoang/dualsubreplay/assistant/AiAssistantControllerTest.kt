@@ -5,6 +5,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,6 +58,22 @@ private class FakeTransport : AiChatTransport {
 
     /** Thrown for every request with that key, as for a key the service rejects or that ran out. */
     val failForKey = mutableMapOf<String, AiChatException>()
+
+    /** When set, [stream] hands these over one by one, then waits for [holdStream] before the reply completes. */
+    var pieces = emptyList<String>()
+    var holdStream: CompletableDeferred<Unit>? = null
+
+    override suspend fun stream(
+        request: AiChatRequest,
+        onText: (String) -> Unit,
+    ): AiReply {
+        if (pieces.isEmpty()) return super.stream(request, onText)
+        requests += request
+        failure?.let { throw it }
+        pieces.forEach(onText)
+        holdStream?.await()
+        return AiReply(pieces.joinToString(""))
+    }
 
     override suspend fun complete(request: AiChatRequest): AiReply {
         requests += request
@@ -270,25 +289,166 @@ class AiAssistantControllerTest {
         assertEquals(AiProvider.OPENAI, controller.state.value.settings.provider)
     }
 
+    private val gptReady = MutableStateFlow(ChatGptUiState(status = ChatGptStatus.READY, model = "gpt-x"))
+
     @Test
-    fun choosingChatGptSendsNothingAndKeepsEveryKey() {
+    fun choosingChatGptWithoutAConnectedAccountSendsNothingAndKeepsEveryKey() {
         checkedGeminiKey()
         val controller = controller()
-        assertTrue(controller.state.value.ready)
+        controller.attachChatGpt(MutableStateFlow(ChatGptUiState(status = ChatGptStatus.NOT_CONNECTED)))
         controller.selectChatGptService()
         val chosen = controller.state.value
         assertTrue(chosen.settings.chatGptService)
-        assertTrue(settings.value.chatGptService)
         assertFalse(chosen.ready)
         controller.send("What does に mean?", "guide")
         assertTrue(controller.state.value.messages.isEmpty())
+        // No hidden fallback: the checked Gemini key is not used, and nothing was deleted.
         assertTrue(transport.requests.isEmpty())
-        // Nothing was deleted or activated: the keyed service and its checked key are as they were.
-        assertEquals(AiProvider.GEMINI, chosen.settings.provider)
         assertEquals(1, chosen.keys[AiProvider.GEMINI].orEmpty().size)
         controller.selectProvider(AiProvider.GEMINI)
         assertFalse(controller.state.value.settings.chatGptService)
         assertTrue(controller.state.value.ready)
+    }
+
+    @Test
+    fun aConnectedChatGptAnswersInTheResponsesFormatWithNoKeyAndItsOwnModel() {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        assertTrue(controller.state.value.ready)
+        controller.send("Hello, can you help me learn German?", "guide")
+        val request = transport.requests.single()
+        assertEquals(AiWireFormat.CHATGPT_RESPONSES, request.format)
+        assertEquals("gpt-x", request.model)
+        assertEquals("", request.apiKey)
+        assertNull(request.reasoningEffort)
+        assertFalse(request.webSearch)
+        assertEquals("OK", controller.state.value.messages.last().text)
+        assertEquals("", controller.state.value.draft)
+    }
+
+    @Test
+    fun theAccountIsLoadedWhenChatGptIsChosenForChatAndAtStartupWhenItAlreadyWas() {
+        var refreshes = 0
+        val controller = controller()
+        controller.attachChatGpt(gptReady) { refreshes++ }
+        assertEquals("a keyed chat service does not touch the account", 0, refreshes)
+        controller.selectChatGptService()
+        assertEquals(1, refreshes)
+        settings.value = settings.value.copy(chatGptService = true)
+        controller().attachChatGpt(gptReady) { refreshes++ }
+        assertEquals("a restart with ChatGPT already chosen loads it", 2, refreshes)
+    }
+
+    @Test
+    fun switchingBetweenChatGptAndGeminiRoutesEachToItsOwnFormat() {
+        checkedGeminiKey()
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        controller.send("one", "guide")
+        controller.selectProvider(AiProvider.GEMINI)
+        controller.send("two", "guide")
+        controller.selectChatGptService()
+        controller.send("three", "guide")
+        assertEquals(
+            listOf(AiWireFormat.CHATGPT_RESPONSES, AiWireFormat.OPENAI_CHAT, AiWireFormat.CHATGPT_RESPONSES),
+            transport.requests.map { it.format },
+        )
+        assertEquals(geminiKey, transport.requests[1].apiKey)
+        assertEquals("", transport.requests[0].apiKey)
+        assertEquals("", transport.requests[2].apiKey)
+    }
+
+    @Test
+    fun aFollowUpCarriesTheEarlierTurnsAndANewChatStartsEmpty() {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        controller.send("What does doch mean?", "guide")
+        controller.send("Three examples?", "guide")
+        val contents = transport.requests.last().messages.map { it.content }
+        assertTrue(contents.indexOf("What does doch mean?") < contents.indexOf("Three examples?"))
+        assertTrue("OK" in contents)
+        controller.newChat()
+        controller.send("Hello again", "guide")
+        val fresh = transport.requests.last().messages
+        assertEquals(2, fresh.size)
+        assertTrue(fresh.first().content.startsWith("guide"))
+        assertEquals("Hello again", fresh.last().content)
+    }
+
+    @Test
+    fun aFailedStreamStoresNoAssistantMessageAndShowsTheRealReason() {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        transport.failure = AiChatException(AiErrorKind.PLAN_USAGE_LIMIT)
+        controller.send("Hello", "guide")
+        val state = controller.state.value
+        assertEquals(listOf(AiRole.USER), state.messages.map { it.role })
+        assertEquals(AiErrorKind.PLAN_USAGE_LIMIT, state.failure?.kind)
+        assertFalse(state.sending)
+        assertEquals("", state.draft)
+        // The account state is explained; no keyed service answered instead.
+        assertTrue(transport.requests.all { it.format == AiWireFormat.CHATGPT_RESPONSES })
+    }
+
+    @Test
+    fun theReplyShowsAsADraftWhileItStreamsThenBecomesTheStoredMessage() {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        transport.pieces = listOf("Hal", "lo")
+        transport.holdStream = CompletableDeferred()
+        controller.send("Hi", "guide")
+        assertTrue(controller.state.value.sending)
+        assertEquals("Hallo", controller.state.value.draft)
+        assertEquals(listOf(AiRole.USER), controller.state.value.messages.map { it.role })
+        transport.holdStream!!.complete(Unit)
+        assertEquals("Hallo", controller.state.value.messages.last().text)
+        assertEquals("", controller.state.value.draft)
+        assertFalse(controller.state.value.sending)
+    }
+
+    @Test
+    fun stopCancelsTheStreamClearsTheDraftAndStoresNothing() {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        transport.pieces = listOf("Hal")
+        transport.holdStream = CompletableDeferred()
+        controller.send("Hi", "guide")
+        assertEquals("Hal", controller.state.value.draft)
+        controller.stop()
+        assertFalse(controller.state.value.sending)
+        assertEquals("", controller.state.value.draft)
+        assertEquals(listOf(AiRole.USER), controller.state.value.messages.map { it.role })
+    }
+
+    @Test
+    fun aServiceThatRefusesToolsIsAskedAgainWithoutThemAndChatGoesOn() {
+        val controller = controller().also { it.appActions = RecordingApp() }
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        transport.failOnce += AiChatException(AiErrorKind.UNSUPPORTED_TOOLS)
+        controller.send("Hi", "guide")
+        assertEquals(2, transport.requests.size)
+        assertTrue(transport.requests[0].tools.isNotEmpty())
+        assertTrue(transport.requests[1].tools.isEmpty())
+        assertEquals("OK", controller.state.value.messages.last().text)
+    }
+
+    @Test
+    fun theServicesOwnWebSearchIsNeverSentToChatGptAndNoOtherServiceStandsIn() {
+        settings.value = AiAssistantSettings(provider = AiProvider.CLAUDE, webSearch = AiWebSearchMode.SERVICE)
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        assertEquals(AiWebSearchRoute.NONE, controller.state.value.webSearchRoute)
+        controller.send("Search this", "guide")
+        assertFalse(transport.requests.single().webSearch)
+        assertTrue(transport.requests.single().tools.none { it.name == "web_search" })
     }
 
     @Test

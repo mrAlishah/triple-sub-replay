@@ -5,7 +5,6 @@ import kotlinx.coroutines.delay
 
 private const val USAGE_LIMIT_REST_MS = 5 * 60_000L
 private const val BAD_REQUEST_REST_MS = 60_000L
-private val RETRY_DELAYS_MS = listOf(1_000L, 3_000L)
 
 /**
  * Remembers a failure that no retry can fix, so the translation stops asking OpenAI: ineligible and failing
@@ -67,7 +66,7 @@ internal class ChatGptTranslationModel(
     private val session: ChatGptSession,
     private val api: ChatGptApi,
     private val gate: ChatGptGate,
-    private val retryDelaysMs: List<Long> = RETRY_DELAYS_MS,
+    private val retryDelaysMs: List<Long> = CHATGPT_RETRY_DELAYS_MS,
     private val wait: suspend (Long) -> Unit = { delay(it) },
 ) : AiTranslationModel {
     override fun isBlocked(): Boolean = gate.blocked() != null
@@ -76,40 +75,11 @@ internal class ChatGptTranslationModel(
         system: String,
         user: String,
         onText: (String) -> Unit,
-    ): String {
-        gate.blocked()?.let { throw it }
-        var started = false
-        var renewed = false
-        val delays = retryDelaysMs.iterator()
-        while (true) {
-            var used: String? = null
-            try {
-                val access = session.accessToken().also { used = it }
-                return api.stream(access, chatGptResponsesBody(model, system, user)) {
-                    started = true
-                    onText(it)
-                }
-            } catch (error: ChatGptException) {
-                val rejected = used
-                // A 401 can mean the token was revoked early: renew it once, then try the same request again.
-                if (error.kind == ChatGptErrorKind.SIGN_IN_REQUIRED && rejected != null && !renewed && !started) {
-                    renewed = true
-                    try {
-                        session.renew(rejected)
-                        continue
-                    } catch (renewal: ChatGptException) {
-                        gate.record(renewal)
-                        throw renewal
-                    }
-                }
-                // Text already handed to the screen must not arrive twice; only a passing failure is worth another try.
-                if (error.kind == ChatGptErrorKind.UNAVAILABLE && !started && delays.hasNext()) {
-                    wait(delays.next())
-                    continue
-                }
-                gate.record(error)
-                throw error
+    ): String =
+        chatGptCall(session, gate, retryDelaysMs, wait) { access, started ->
+            api.stream(access, chatGptResponsesBody(model, system, user)) {
+                started()
+                onText(it)
             }
         }
-    }
 }

@@ -164,7 +164,13 @@ internal class ChatGptHttpApi(
         accessToken: String,
         body: String,
         onText: (String) -> Unit,
-    ): String {
+    ): String = respond(accessToken, body, onText).text
+
+    override suspend fun respond(
+        accessToken: String,
+        body: String,
+        onText: (String) -> Unit,
+    ): ChatGptResult {
         val request =
             Request
                 .Builder()
@@ -176,7 +182,7 @@ internal class ChatGptHttpApi(
         return run(request) { response ->
             if (!response.isSuccessful) throw chatGptErrorFor(response.code, response.peekBody(MAX_ERROR_BODY).string())
             val source = response.body.source()
-            readChatGptStream({ source.readUtf8Line() }, onText)
+            readChatGptResponse({ source.readUtf8Line() }, onText)
         }
     }
 

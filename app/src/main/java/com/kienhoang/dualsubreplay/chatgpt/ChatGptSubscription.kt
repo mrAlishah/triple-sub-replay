@@ -121,6 +121,9 @@ internal class ChatGptSubscription(
         return ChatGptTranslationModel(model, credentials.cacheScope(model), session, api, gate)
     }
 
+    /** The chat's way to the same account: same session, same refresh lock, same gate as the translation. */
+    fun chatBackend(): ChatGptChatBackend = ChatGptChatBackend(session, api, gate)
+
     /** Resets the choice only; the signed-in account stays until the user disconnects. */
     fun resetChoice() {
         preferences.edit { remove(AI_ACCESS_METHOD_PREFERENCE).remove(CHATGPT_MODEL_PREFERENCE) }

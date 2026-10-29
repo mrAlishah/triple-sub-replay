@@ -194,6 +194,9 @@ internal fun AiErrorKind.messageRes(): Int =
         AiErrorKind.BAD_REPLY -> R.string.ai_error_bad_reply
         AiErrorKind.UNSUPPORTED_THINKING -> R.string.ai_error_unsupported_thinking
         AiErrorKind.UNSUPPORTED_ATTACHMENT -> R.string.ai_error_unsupported_attachment
+        AiErrorKind.PLAN_SIGN_IN_REQUIRED -> R.string.ai_error_plan_sign_in
+        AiErrorKind.PLAN_NOT_AVAILABLE -> R.string.ai_error_plan_not_available
+        AiErrorKind.PLAN_USAGE_LIMIT -> R.string.ai_error_plan_usage_limit
     }
 
 /** Opens [url] in the browser; false when no browser can open it. */

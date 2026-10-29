@@ -1,5 +1,7 @@
 package com.kienhoang.dualsubreplay.assistant
 
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
 import com.kienhoang.dualsubreplay.data.MAX_YOUTUBE_SEARCH_BYTES
 import com.kienhoang.dualsubreplay.data.YOUTUBE_SEARCH_URL
 import com.kienhoang.dualsubreplay.data.YouTubeVideoResult
@@ -213,10 +215,17 @@ internal data class AiAssistantUiState(
     val pendingQuestion: AiPendingQuestion? = null,
     /** The last 4 characters of the saved Tavily key, or null when none is saved. */
     val tavilyKeyHint: String? = null,
+    /** The ChatGPT Subscription account as Settings → AI Connection shows it; the chat reads its status and model. */
+    val chatGpt: ChatGptUiState = ChatGptUiState(),
+    /** The reply so far while ChatGPT streams it; empty otherwise. Never stored: only a completed reply becomes a message. */
+    val draft: String = "",
 ) {
+    /** ChatGPT Subscription is the chat service and its account can answer: connected, plan usage allowed, a model set. */
+    val chatGptChatReady: Boolean get() = chatGpt.status == ChatGptStatus.READY && chatGpt.model.isNotBlank()
+
     /** How web searches run now, for the chosen service and settings. */
     val webSearchRoute: AiWebSearchRoute
-        get() = aiWebSearchRoute(settings.webSearch, settings.provider, tavilyKeyHint != null)
+        get() = aiWebSearchRoute(settings.webSearch, settings.provider, tavilyKeyHint != null, settings.chatGptService)
 
     /** The chosen service's keys. */
     val currentKeys: List<AiSavedKey> get() = keys[settings.provider].orEmpty()
@@ -239,7 +248,7 @@ internal data class AiAssistantUiState(
 
     /** The assistant can be asked: on, with a key that has answered through the current setup. */
     val ready: Boolean
-        get() = settings.enabled && !settings.chatGptService && keyChecked && addressValid
+        get() = settings.enabled && if (settings.chatGptService) chatGptChatReady else keyChecked && addressValid
 
     /** Whether the open chat, or the next new one, reads and saves memories. */
     val memoryUse: AiMemoryUse get() = aiMemoryUse(settings.memoryEnabled, chat?.memory ?: newChatMemory)
@@ -275,6 +284,8 @@ internal class AiAssistantController(
     private var testJob: Job? = null
     private var modelJob: Job? = null
     private var listJob: Job? = null
+    private var chatGptJob: Job? = null
+    private var refreshChatGpt: () -> Unit = {}
 
     /** The app's actions; the panel binds them while it is shown. Without them no actions are offered. */
     @Volatile var appActions: AiAppActions? = null
@@ -426,6 +437,8 @@ internal class AiAssistantController(
         modelJob?.cancel()
         updateSettings { it.copy(chatGptService = true) }
         _state.update { it.copy(connectionTest = AiConnectionTest.Idle, keyTests = emptyMap(), failure = null, modelCheck = null) }
+        // The account's status and models are read now, not only when translation happens to use it.
+        refreshChatGpt()
     }
 
     /** Off by default: on, the assistant may also change its own settings, keys, saved words and reset settings. */
@@ -779,7 +792,7 @@ internal class AiAssistantController(
         val chatId = current.chat?.id
         val settings = current.settings
         val generation = keyGeneration
-        val setup = aiCheckedSetup(settings, settings.provider)
+        val setup = if (settings.chatGptService) "chatgpt/" + current.chatGpt.model else aiCheckedSetup(settings, settings.provider)
         val memoryUse = current.memoryUse
         val memories = if (memoryUse == AiMemoryUse.ON) current.memory.memories else emptyList()
         val route = current.webSearchRoute
@@ -820,7 +833,8 @@ internal class AiAssistantController(
                     _state.update { it.copy(sending = false) }
                     throw cancelled
                 } finally {
-                    if (run.toolsRefused) noToolSetups += setup
+                    _state.update { it.copy(draft = "") }
+                if (run.toolsRefused) noToolSetups += setup
                     if (run.webSearchRefused) noWebSearchSetups += setup
                 }
                 persistChats()
@@ -897,6 +911,39 @@ internal class AiAssistantController(
     }
 
     /**
+     * Follows the ChatGPT Subscription account that Settings → AI Connection manages, so the chat knows when that account can
+     * answer. The chat never signs in, refreshes or stores anything itself.
+     */
+    fun attachChatGpt(
+        account: StateFlow<ChatGptUiState>,
+        refresh: () -> Unit = {},
+    ) {
+        chatGptJob?.cancel()
+        refreshChatGpt = refresh
+        chatGptJob = scope.launch { account.collect { gpt -> _state.update { it.copy(chatGpt = gpt) } } }
+        // After a restart nobody else loads the account when only the chat uses it.
+        if (_state.value.settings.chatGptService) refresh()
+    }
+
+    /**
+     * One ChatGPT Subscription request: no key, the account's model, the reply streamed into [AiAssistantUiState.draft]. Failures
+     * keep their meaning; nothing falls back to a keyed service.
+     */
+    private suspend fun requestChatGpt(
+        messages: List<AiWireMessage>,
+        timeoutMs: Long,
+        tools: List<AiTool>,
+    ): AiReply {
+        val current = _state.value
+        if (!current.chatGptChatReady) throw AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
+        val request = AiChatRequest("", current.chatGpt.model, "", messages, timeoutMs, null, tools, AiWireFormat.CHATGPT_RESPONSES, false)
+        _state.update { it.copy(draft = "") }
+        return withContext(io) {
+            aiCall { transport.stream(request) { piece -> _state.update { it.copy(draft = it.draft + piece) } } }
+        }
+    }
+
+    /**
      * Asks the service, trying its keys from the one in use until one answers. Each key is unlocked
      * for its one request only and never kept in the state. [markChecked] records the setup on the
      * key that answered.
@@ -910,6 +957,7 @@ internal class AiAssistantController(
         markChecked: Boolean = true,
         webSearch: Boolean = false,
     ): AiReply {
+        if (settings.chatGptService) return requestChatGpt(messages, timeoutMs, tools)
         val provider = settings.provider
         val baseUrl = settings.baseUrlFor(provider)
         if (chatCompletionsUrl(baseUrl) == null) throw AiChatException(AiErrorKind.BAD_ADDRESS)
@@ -1180,6 +1228,6 @@ internal class AiAssistantController(
     private fun cancelRequests() {
         sendJob?.cancel()
         sendJob = null
-        _state.update { it.copy(sending = false) }
+        _state.update { it.copy(sending = false, draft = "") }
     }
 }

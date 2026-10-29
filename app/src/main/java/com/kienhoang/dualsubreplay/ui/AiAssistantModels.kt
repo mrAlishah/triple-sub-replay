@@ -73,8 +73,11 @@ internal fun AiChatOptionsBar(
         // On a narrow panel the model name gives way first and ends with "…".
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             leading()
-            AiModelMenu(aiState, controller, Modifier.weight(1f, fill = false))
-            AiThinkingMenu(aiState.settings.thinkingFor(aiState.settings.provider), controller)
+            // ChatGPT Subscription's model is set once in Settings → AI Connection, and it has no thinking level to pick.
+            if (!aiState.settings.chatGptService) {
+                AiModelMenu(aiState, controller, Modifier.weight(1f, fill = false))
+                AiThinkingMenu(aiState.settings.thinkingFor(aiState.settings.provider), controller)
+            }
         }
     }
 }

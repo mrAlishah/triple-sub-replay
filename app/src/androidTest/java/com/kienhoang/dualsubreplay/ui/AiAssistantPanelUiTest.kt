@@ -462,17 +462,17 @@ class AiAssistantPanelUiTest {
     }
 
     @Test
-    fun chatGptAsTheChatServiceShowsAnExplicitUnavailableCardAndSendsNothing() {
+    fun chatGptAsTheChatServiceWithoutAConnectedAccountShowsItsRealStateAndSendsNothing() {
         checkedGeminiKey()
         settings = settings.copy(chatGptService = true)
         showTopBarAndPanel(DualSubUiState())
         composeRule.onNodeWithTag("ai_assistant_button").performClick()
-        composeRule.onNodeWithTag("ai_chat_unavailable_card").assertIsDisplayed()
-        composeRule.onNodeWithText("Chat can't use ChatGPT Subscription yet", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_chat_chatgpt_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_chat_chatgpt_status").assertTextContains("Not connected")
         composeRule.onNodeWithTag("ai_input").assertDoesNotExist()
         composeRule.onNodeWithTag("ai_setup_card").assertDoesNotExist()
         assertTrue(requests.isEmpty())
-        saveUiEvidence("ai_chat_unavailable")
+        saveUiEvidence("ai_chat_chatgpt_not_connected")
     }
 
     /** Runs the assistant's actions at once and records them, with labels like the app's. */
@@ -500,6 +500,7 @@ class AiAssistantPanelUiTest {
         name: String,
         arguments: String,
     ) = AiToolCall("call_$name", name, arguments, """{"id":"call_$name","type":"function","function":{"name":"$name"}}""")
+
 
     @Test
     fun aSettingChangeShowsAChipWithUndo() {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">번역 출처 표시(디버그)</string>
+    <string name="translation_source_setting_description">번역된 각 자막에 텍스트의 출처를 표시합니다. 라벨을 탭하면 자세한 내용을 볼 수 있습니다.</string>
+    <string name="translation_source_chatgpt">ChatGPT 구독</string>
+    <string name="translation_source_chatgpt_cached">ChatGPT 구독(캐시)</string>
+    <string name="translation_source_google">Google 번역</string>
+    <string name="translation_source_on_device">기기 내 번역</string>
+    <string name="translation_source_youtube">YouTube 번역 자막</string>
+    <string name="translation_source_ai_provider">AI 제공업체</string>
+    <string name="translation_source_ai_provider_cached">AI 제공업체(캐시)</string>
+    <string name="translation_source_unknown">알 수 없음</string>
+    <string name="translation_source_dialog_title">번역 출처</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">모델: %1$s</string>
+    <string name="translation_source_dialog_events">최근 AI 및 대체 이벤트</string>
+    <string name="translation_source_dialog_no_events">이 언어에 대한 기록이 아직 없습니다.</string>
+    <string name="translation_source_event_request">AI 요청 · 문장 수: %1$d</string>
+    <string name="translation_source_event_succeeded">AI 응답 · 문장 수: %1$d</string>
+    <string name="translation_source_event_failed">AI 실패 · %1$s · 유지된 문장 수: %2$d</string>
+    <string name="translation_source_event_identical">%1$s이(가) 표시된 것과 같은 텍스트를 제공했습니다</string>
+    <string name="translation_source_event_fallback">AI 대신 %1$s을(를) 표시 중</string>
+    <string name="translation_source_close">닫기</string>
+</resources>

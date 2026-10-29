@@ -40,6 +40,7 @@ internal class TranslationEngineActions(
     val selectTranslator: (SubtitleTranslator) -> Unit = {},
     val selectAiTranslationModel: (String) -> Unit = {},
     val chatGpt: ChatGptActions? = null,
+    val setShowSource: (Boolean) -> Unit = {},
 )
 
 /** What Settings → Translation shows about the online engine. */
@@ -50,6 +51,8 @@ internal data class OnlineTranslationSettings(
     val aiTranslationOnly: Boolean = false,
     /** Empty uses the AI assistant's model. */
     val aiTranslationModel: String = "",
+    /** Show translation source (debug): a label under each translated line. */
+    val showSource: Boolean = false,
 ) {
     val translator: SubtitleTranslator
         get() = subtitleTranslator(engine, aiTranslation, aiTranslationOnly)

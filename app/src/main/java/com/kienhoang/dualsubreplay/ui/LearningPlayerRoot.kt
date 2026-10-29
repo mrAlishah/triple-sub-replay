@@ -556,6 +556,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 viewModel::setSubtitleTranslator,
                 viewModel::setAiTranslationModel,
                 viewModel.chatGpt.actions(),
+                viewModel::setShowTranslationSource,
             )
         }
     val tripleControls =
@@ -589,6 +590,10 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 onAlignmentChange = viewModel::setSlotAlignment,
             )
         }
+    val translationSourceInfo =
+        remember(viewModel, state.showTranslationSource) {
+            TranslationSourceInfo(state.showTranslationSource, viewModel.translationDiagnostics.events)
+        }
     val aiViewModel: AiAssistantViewModel = viewModel()
     val aiAssistant = remember(aiViewModel) { AiAssistantHost(aiViewModel.controller) { aiViewModel.guide } }
     val studySavedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
@@ -598,6 +603,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         LocalLanguageDownloads provides viewModel.languageDownloads,
         LocalTranslationEngineActions provides translationEngineActions,
         LocalTripleSubtitleControls provides tripleControls,
+        LocalTranslationSourceInfo provides translationSourceInfo,
         LocalAiAssistant provides aiAssistant,
         LocalStudyTools provides studyTools,
     ) {
@@ -946,6 +952,7 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
+                val showSource = LocalTranslationSourceInfo.current.show
                 val orderedLines =
                     slotControls.order.arranged<@Composable () -> Unit> { slot ->
                         val line: (@Composable () -> Unit)? =
@@ -970,9 +977,35 @@ internal fun LearningSubtitleOverlay(
                                         }
                                     }
                             }
+                        // Show translation source: a small label under a line that really shows a translation.
+                        val sourceTag: (@Composable () -> Unit)? =
+                            when (slot) {
+                                SubtitleSlot.SECOND ->
+                                    content.segment?.takeIf { it.translatedText != null }?.let { row ->
+                                        @Composable {
+                                            TranslationSourceTag(row.translationOrigin, slot, targetLanguageCode.orEmpty(), translatedColor)
+                                        }
+                                    }
+                                SubtitleSlot.THIRD ->
+                                    content.thirdText?.let {
+                                        @Composable {
+                                            TranslationSourceTag(content.thirdOrigin, slot, slotControls.language, translatedColor)
+                                        }
+                                    }
+                                SubtitleSlot.ORIGINAL -> null
+                            }.takeIf { showSource }
                         line?.let { inner ->
                             @Composable {
-                                Box(Modifier.align(slotControls.alignment[slot].horizontal())) { inner() }
+                                Box(Modifier.align(slotControls.alignment[slot].horizontal())) {
+                                    if (sourceTag == null) {
+                                        inner()
+                                    } else {
+                                        Column {
+                                            inner()
+                                            sourceTag()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

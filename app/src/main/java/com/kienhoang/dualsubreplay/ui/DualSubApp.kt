@@ -966,6 +966,7 @@ internal fun SubtitleTimeline(
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
                     thirdText = state.thirdLineFor(segment.id)?.takeIf { state.showThird() },
+                    thirdOrigin = state.thirdOriginFor(segment.id),
                 )
             }
         }

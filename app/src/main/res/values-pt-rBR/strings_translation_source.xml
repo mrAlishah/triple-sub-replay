@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">Mostrar origem da tradução (depuração)</string>
+    <string name="translation_source_setting_description">Marca cada legenda traduzida com a origem do texto. Toque no rótulo para ver detalhes.</string>
+    <string name="translation_source_chatgpt">Assinatura do ChatGPT</string>
+    <string name="translation_source_chatgpt_cached">Assinatura do ChatGPT (em cache)</string>
+    <string name="translation_source_google">Google Tradutor</string>
+    <string name="translation_source_on_device">Tradução no dispositivo</string>
+    <string name="translation_source_youtube">Legendas traduzidas do YouTube</string>
+    <string name="translation_source_ai_provider">Provedor de IA</string>
+    <string name="translation_source_ai_provider_cached">Provedor de IA (em cache)</string>
+    <string name="translation_source_unknown">Desconhecido</string>
+    <string name="translation_source_dialog_title">Origem da tradução</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">Modelo: %1$s</string>
+    <string name="translation_source_dialog_events">Eventos recentes de IA e de alternativa</string>
+    <string name="translation_source_dialog_no_events">Nada registrado ainda para este idioma.</string>
+    <string name="translation_source_event_request">Solicitação à IA · frases: %1$d</string>
+    <string name="translation_source_event_succeeded">A IA respondeu · frases: %1$d</string>
+    <string name="translation_source_event_failed">A IA falhou · %1$s · frases mantidas: %2$d</string>
+    <string name="translation_source_event_identical">%1$s deu o mesmo texto que está sendo mostrado</string>
+    <string name="translation_source_event_fallback">Mostrando %1$s no lugar da IA</string>
+    <string name="translation_source_close">Fechar</string>
+</resources>

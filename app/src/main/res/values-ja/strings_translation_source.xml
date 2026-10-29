@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">翻訳の出どころを表示(デバッグ)</string>
+    <string name="translation_source_setting_description">翻訳された各字幕に、その出どころを表示します。ラベルをタップすると詳細が見られます。</string>
+    <string name="translation_source_chatgpt">ChatGPTサブスクリプション</string>
+    <string name="translation_source_chatgpt_cached">ChatGPTサブスクリプション(キャッシュ)</string>
+    <string name="translation_source_google">Google翻訳</string>
+    <string name="translation_source_on_device">端末内翻訳</string>
+    <string name="translation_source_youtube">YouTubeの翻訳字幕</string>
+    <string name="translation_source_ai_provider">AIプロバイダー</string>
+    <string name="translation_source_ai_provider_cached">AIプロバイダー(キャッシュ)</string>
+    <string name="translation_source_unknown">不明</string>
+    <string name="translation_source_dialog_title">翻訳の出どころ</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">モデル: %1$s</string>
+    <string name="translation_source_dialog_events">最近のAIとフォールバックのイベント</string>
+    <string name="translation_source_dialog_no_events">この言語の記録はまだありません。</string>
+    <string name="translation_source_event_request">AIリクエスト · 文数: %1$d</string>
+    <string name="translation_source_event_succeeded">AIが応答 · 文数: %1$d</string>
+    <string name="translation_source_event_failed">AIが失敗 · %1$s · 保持した文数: %2$d</string>
+    <string name="translation_source_event_identical">%1$s は表示中と同じテキストでした</string>
+    <string name="translation_source_event_fallback">AIの代わりに%1$sを表示中</string>
+    <string name="translation_source_close">閉じる</string>
+</resources>

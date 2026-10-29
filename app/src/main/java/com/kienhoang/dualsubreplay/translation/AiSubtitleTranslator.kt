@@ -293,6 +293,7 @@ internal fun aiBatches(sentences: List<AiSentence>): List<List<AiSentence>> {
  */
 internal class AiSubtitleTranslator(
     cacheDirectory: File?,
+    private val diagnostics: TranslationDiagnostics? = null,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private val cache = TranslationCache(maxEntries = 2_048, maxCharacters = 512_000)
@@ -317,6 +318,9 @@ internal class AiSubtitleTranslator(
     /** Sentences of a request that is waiting or running: another call does not ask for them again. */
     private val asking: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
+    /** Sentences a request of this app run wrote; any other entry in [cache] was read from the disk cache. */
+    private val written: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
     @Volatile private var restUntil = Long.MIN_VALUE
 
     /** What the AI has translated [text] to in this app run, without reading the disk; null when nothing yet. */
@@ -328,6 +332,21 @@ internal class AiSubtitleTranslator(
     ): String? {
         val (source, target) = pair(model, sourceLanguageCode, targetLanguageCode)
         return cache.get(source, target, text)
+    }
+
+    /**
+     * Who wrote [text]'s translation as it is held now: the model of [model]'s scope, live when a request of this
+     * app run wrote it and cached when it came from the disk cache. Null when there is none.
+     */
+    fun originOf(
+        model: AiTranslationModel,
+        sourceLanguageCode: String,
+        targetLanguageCode: String,
+        text: String,
+    ): TranslationOrigin? {
+        val (source, target) = pair(model, sourceLanguageCode, targetLanguageCode)
+        if (cache.get(source, target, text) == null) return null
+        return aiTranslationOrigin(model.scope, attemptKey(source, target, text) !in written)
     }
 
     suspend fun cachedTranslation(
@@ -431,11 +450,24 @@ internal class AiSubtitleTranslator(
         ) {
             if (!translated.add(index)) return
             val entries = aiTranslationEntries(pending[index], rows)
-            entries.forEach { (text, translation) -> cache.put(source, target, text, translation) }
+            entries.forEach { (text, translation) ->
+                // Marked before it can be read, so a line of this run is never taken for one read from the disk cache.
+                written += attemptKey(source, target, text)
+                cache.put(source, target, text, translation)
+            }
             found += entries
             arrivals.update { it + 1 }
         }
         val reader = AiReplyReader(pending)
+        val requestOrigin = aiTranslationOrigin(model.scope, cached = false)
+        val targetCode = TranslationLanguages.normalize(languages.second)
+
+        fun note(
+            kind: TranslationEventKind,
+            count: Int = 0,
+            reason: String? = null,
+        ) = diagnostics?.record(kind, targetCode, requestOrigin, count, reason)
+        note(TranslationEventKind.AI_REQUEST, pending.size)
         val reply =
             try {
                 model.ask(
@@ -447,6 +479,11 @@ internal class AiSubtitleTranslator(
                 ) { piece -> reader.add(piece).forEach { (index, rows) -> keep(index, rows) } }
             } catch (error: IOException) {
                 restUntil = now() + AI_FAILURE_REST_MS
+                note(
+                    TranslationEventKind.AI_FAILED,
+                    translated.size,
+                    (error as? DiagnosticReason)?.reason ?: error.javaClass.simpleName.ifEmpty { "error" },
+                )
                 // Sentences that arrived before the failure stay; the others are asked again after the rest.
                 translated.forEach { attempted += attemptKey(source, target, pending[it].text) }
                 save(scoped, found)
@@ -458,11 +495,18 @@ internal class AiSubtitleTranslator(
             try {
                 parseAiTranslationReply(reply, pending)
             } catch (error: AiTranslationException) {
-                if (found.isEmpty()) throw error
+                if (found.isEmpty()) {
+                    note(TranslationEventKind.AI_FAILED, 0, "unreadable_reply")
+                    throw error
+                }
                 emptyList()
             }
         whole.forEachIndexed { index, rows -> if (rows != null) keep(index, rows) }
-        if (found.isEmpty()) throw AiTranslationException("The AI reply translated none of the ${pending.size} sentences.")
+        if (found.isEmpty()) {
+            note(TranslationEventKind.AI_FAILED, 0, "empty_reply")
+            throw AiTranslationException("The AI reply translated none of the ${pending.size} sentences.")
+        }
+        note(TranslationEventKind.AI_SUCCEEDED, translated.size)
         recent[contextKey] = pending.takeLast(AI_CONTEXT_SENTENCES).map { it.text }
         save(scoped, found)
     }

@@ -2,6 +2,7 @@ package com.kienhoang.dualsubreplay.ui
 
 import com.kienhoang.dualsubreplay.translation.AiSubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.AiTranslationModel
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
 import com.kienhoang.dualsubreplay.translation.aiSentences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +29,9 @@ internal class AiWindowTranslation(
     private var job: Job? = null
 
     suspend fun cached(text: String): String? = translator.cachedTranslation(model, source, target, text)
+
+    /** Who wrote [text]'s translation held now (call right after [cached] or [await] returned it); null if none. */
+    fun originOf(text: String): TranslationOrigin? = translator.originOf(model, source, target, text)
 
     /** Sends [texts] unless a request is already running; the next row step sends what is still missing. */
     fun ask(texts: List<String>) {

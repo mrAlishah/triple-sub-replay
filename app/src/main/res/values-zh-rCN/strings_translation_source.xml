@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">显示翻译来源(调试)</string>
+    <string name="translation_source_setting_description">在每条已翻译的字幕上标注其文本来源。点按标签可查看详情。</string>
+    <string name="translation_source_chatgpt">ChatGPT 订阅</string>
+    <string name="translation_source_chatgpt_cached">ChatGPT 订阅(缓存)</string>
+    <string name="translation_source_google">谷歌翻译</string>
+    <string name="translation_source_on_device">设备端翻译</string>
+    <string name="translation_source_youtube">YouTube 翻译字幕</string>
+    <string name="translation_source_ai_provider">AI 提供商</string>
+    <string name="translation_source_ai_provider_cached">AI 提供商(缓存)</string>
+    <string name="translation_source_unknown">未知</string>
+    <string name="translation_source_dialog_title">翻译来源</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">模型:%1$s</string>
+    <string name="translation_source_dialog_events">最近的 AI 与回退事件</string>
+    <string name="translation_source_dialog_no_events">此语言暂无记录。</string>
+    <string name="translation_source_event_request">AI 请求 · 句数:%1$d</string>
+    <string name="translation_source_event_succeeded">AI 已回复 · 句数:%1$d</string>
+    <string name="translation_source_event_failed">AI 失败 · %1$s · 保留句数:%2$d</string>
+    <string name="translation_source_event_identical">%1$s 给出的文本与当前显示相同</string>
+    <string name="translation_source_event_fallback">正在显示%1$s,而不是 AI</string>
+    <string name="translation_source_close">关闭</string>
+</resources>

@@ -1168,6 +1168,13 @@ private fun OnlineTranslationSettingsRows(
     if (translator == SubtitleTranslator.GOOGLE || translator == SubtitleTranslator.AI_WITH_GOOGLE) {
         GoogleWaitSettings(settings.googleWait, actions.selectGoogleWait)
     }
+    SettingsSwitchRow(
+        title = stringResource(R.string.translation_source_setting_title),
+        description = stringResource(R.string.translation_source_setting_description),
+        checked = settings.showSource,
+        onCheckedChange = actions.setShowSource,
+        testTag = "translation_source_switch",
+    )
 }
 
 @Composable

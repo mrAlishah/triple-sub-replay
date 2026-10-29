@@ -1,5 +1,6 @@
 package com.kienhoang.dualsubreplay.chatgpt
 
+import com.kienhoang.dualsubreplay.translation.DiagnosticReason
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -44,7 +45,10 @@ internal class ChatGptException(
     val kind: ChatGptErrorKind,
     message: String,
     cause: Throwable? = null,
-) : IOException(message, cause)
+) : IOException(message, cause),
+    DiagnosticReason {
+    override val reason: String get() = kind.name
+}
 
 /** Everything one sign-in attempt needs back at the callback. Kept in memory only. */
 internal data class ChatGptAttempt(

@@ -3,6 +3,7 @@ package com.kienhoang.dualsubreplay.assistant
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptSubscription
 import java.io.File
 
 /** Directory under the app's files for saved chats; backups leave it out. */
@@ -25,12 +26,15 @@ class AiAssistantViewModel(
     }
 
     private val transport = AiHttpTransport()
+
+    /** Keyed services go to [transport]; ChatGPT Subscription goes only to the transport attached by [attachChatGpt]. */
+    private val router = AiTransportRouter(transport)
     private val secrets = SharedPreferencesSecretStorage(application.getSharedPreferences(AI_KEYS_PREFERENCES, 0))
 
     internal val controller =
         AiAssistantController(
             scope = viewModelScope,
-            transport = transport,
+            transport = router,
             keyStore = AiKeyStore(secrets, KeystoreSecretCipher()),
             settingsStorage =
                 object : AiSettingsStorage {
@@ -56,4 +60,13 @@ class AiAssistantViewModel(
             searchKeys = AiSearchKeyStore(secrets, KeystoreSecretCipher()),
             poster = transport,
         )
+
+    /**
+     * Lets the chat use the ChatGPT Subscription account that Settings → AI Connection manages. It is the same object the subtitle
+     * translation uses: one session, one refresh lock, one usage-limit gate.
+     */
+    internal fun attachChatGpt(subscription: ChatGptSubscription) {
+        router.chatGpt = ChatGptChatTransport(subscription.chatBackend())
+        controller.attachChatGpt(subscription.state, subscription::refresh)
+    }
 }

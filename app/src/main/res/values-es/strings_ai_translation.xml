@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">Proveedor de IA</string>
+    <string name="ai_config_model">Modelo de IA</string>
+    <string name="ai_config_effort">Esfuerzo de razonamiento</string>
+    <string name="ai_config_model_replaced">«%1$s» ya no está disponible. Se usa %2$s.</string>
+    <string name="ai_config_models_loading">Cargando modelos…</string>
+    <string name="ai_config_models_failed">No se pudo cargar la lista de modelos. Abre el menú y toca Actualizar.</string>
+    <string name="ai_config_models_empty">No se devolvió ningún modelo utilizable.</string>
+    <string name="ai_config_models_connect_chatgpt">Conecta ChatGPT para ver tus modelos.</string>
+    <string name="ai_config_models_connect_key">Añade una clave para cargar la lista completa de modelos.</string>
+    <string name="ai_config_models_refresh">Actualizar lista de modelos</string>
+    <string name="ai_config_effort_replaced">«%1$s» no está disponible en este modelo, así que se usa Automático.</string>
+    <string name="ai_config_effort_fixed_chatgpt">La suscripción a ChatGPT no tiene esfuerzo de razonamiento ajustable.</string>
+    <string name="ai_config_effort_fixed">Este modelo no tiene esfuerzo ajustable.</string>
+    <string name="ai_config_effort_unknown_claude">Carga la lista de modelos para ver los niveles que admite este modelo.</string>
+    <string name="ai_config_effort_auto_note">Mantiene el razonamiento corto para los subtítulos cuando el modelo lo permite.</string>
+    <string name="ai_config_key_saved">Clave de API guardada</string>
+    <string name="ai_config_key_missing">No hay clave de API para este proveedor. Google traduce hasta que añadas una.</string>
+    <string name="ai_config_manage_keys">Gestionar claves</string>
+    <string name="ai_access_chatgpt_subscription">Suscripción a ChatGPT</string>
+    <string name="ai_access_chatgpt_note">Usa tu plan de ChatGPT, sin clave de API.</string>
+    <string name="ai_access_gemini_api">API de Gemini (nivel gratuito disponible)</string>
+    <string name="ai_access_gemini_note">Necesita una clave de la API de Gemini. El nivel gratuito solo se aplica donde Google lo permite para tu clave y modelo. Los planes Gemini AI Pro/Ultra son productos aparte y no se usan aquí. Los cargos dependen de tu configuración de facturación de Google.</string>
+    <string name="ai_access_claude_api">API de Claude</string>
+    <string name="ai_access_claude_note">Necesita una clave de la API de Claude de la consola de Anthropic. El uso se factura a tarifas de API o con los créditos de la consola que tengas. Las suscripciones Claude Pro y Max no se usan aquí.</string>
+    <string name="ai_translation_effort_auto">Automático (recomendado)</string>
+    <string name="ai_translation_effort_off">Desactivado</string>
+    <string name="ai_translation_effort_minimal">Mínimo</string>
+    <string name="ai_translation_effort_low">Bajo</string>
+    <string name="ai_translation_effort_medium">Medio</string>
+    <string name="ai_translation_effort_high">Alto</string>
+    <string name="ai_translation_effort_xhigh">Muy alto</string>
+    <string name="ai_translation_effort_max">Máximo</string>
+    <string name="ai_translation_test">Probar traducción</string>
+    <string name="ai_translation_testing">Traduciendo…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">Frase de prueba: alemán → persa</string>
+    <string name="ai_translation_test_result">Resultado: %1$s</string>
+    <string name="ai_translation_test_origin">Respondió: %1$s</string>
+    <string name="ai_translation_test_no_key">No hay clave de API guardada para este proveedor.</string>
+    <string name="ai_translation_test_effort_refused">Este modelo rechazó el esfuerzo elegido. Elige Automático u otro nivel.</string>
+</resources>

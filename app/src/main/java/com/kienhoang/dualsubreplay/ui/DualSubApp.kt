@@ -655,20 +655,7 @@ private fun SubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    IconButton(onClick = onSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.player_subtitle_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                    IconButton(onClick = onHide) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+                    PanelHeaderActions(onSettings, onHide, compact = false)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -839,22 +826,7 @@ private fun SideSubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    IconButton(onClick = onSettings, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.player_subtitle_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    IconButton(onClick = onHide, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                    PanelHeaderActions(onSettings, onHide, compact = true)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -966,6 +938,7 @@ internal fun SubtitleTimeline(
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
                     thirdText = state.thirdLineFor(segment.id)?.takeIf { state.showThird() },
+                    thirdOrigin = state.thirdOriginFor(segment.id),
                 )
             }
         }
@@ -1284,3 +1257,31 @@ internal fun captionTrackLabel(
     generated: Boolean,
     markGenerated: (String) -> String,
 ): String = if (generated && !name.contains("auto-generated", ignoreCase = true)) markGenerated(name) else name
+
+/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 36 dp buttons. */
+@Composable
+private fun PanelHeaderActions(
+    onSettings: () -> Unit,
+    onHide: () -> Unit,
+    compact: Boolean,
+) {
+    val button = if (compact) Modifier.size(36.dp) else Modifier
+    val icon = if (compact) Modifier.size(20.dp) else Modifier
+    RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
+    IconButton(onClick = onSettings, modifier = button) {
+        Icon(
+            Icons.Default.Settings,
+            contentDescription = stringResource(R.string.player_subtitle_settings),
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = icon,
+        )
+    }
+    IconButton(onClick = onHide, modifier = button) {
+        Icon(
+            Icons.Default.Close,
+            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = icon,
+        )
+    }
+}

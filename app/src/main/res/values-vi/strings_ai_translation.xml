@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">Nhà cung cấp AI</string>
+    <string name="ai_config_model">Mô hình AI</string>
+    <string name="ai_config_effort">Mức suy luận</string>
+    <string name="ai_config_model_replaced">“%1$s” không còn khả dụng. Đang dùng %2$s.</string>
+    <string name="ai_config_models_loading">Đang tải mô hình…</string>
+    <string name="ai_config_models_failed">Không tải được danh sách mô hình. Mở menu và chạm Làm mới.</string>
+    <string name="ai_config_models_empty">Không có mô hình nào dùng được.</string>
+    <string name="ai_config_models_connect_chatgpt">Kết nối ChatGPT để xem các mô hình của bạn.</string>
+    <string name="ai_config_models_connect_key">Thêm khóa để tải danh sách mô hình đầy đủ.</string>
+    <string name="ai_config_models_refresh">Làm mới danh sách mô hình</string>
+    <string name="ai_config_effort_replaced">“%1$s” không khả dụng với mô hình này nên dùng Tự động.</string>
+    <string name="ai_config_effort_fixed_chatgpt">Gói ChatGPT không có mức suy luận để điều chỉnh.</string>
+    <string name="ai_config_effort_fixed">Mô hình này không có mức điều chỉnh.</string>
+    <string name="ai_config_effort_unknown_claude">Tải danh sách mô hình để xem các mức mô hình này hỗ trợ.</string>
+    <string name="ai_config_effort_auto_note">Giữ suy luận ngắn cho phụ đề khi mô hình cho phép.</string>
+    <string name="ai_config_key_saved">Đã lưu khóa API</string>
+    <string name="ai_config_key_missing">Chưa có khóa API cho nhà cung cấp này. Google sẽ dịch cho đến khi bạn thêm.</string>
+    <string name="ai_config_manage_keys">Quản lý khóa</string>
+    <string name="ai_access_chatgpt_subscription">Gói ChatGPT</string>
+    <string name="ai_access_chatgpt_note">Dùng gói ChatGPT của bạn, không cần khóa API.</string>
+    <string name="ai_access_gemini_api">Gemini API (có gói miễn phí)</string>
+    <string name="ai_access_gemini_note">Cần khóa Gemini API. Gói miễn phí chỉ áp dụng khi Google cho phép với khóa và mô hình của bạn. Gói Gemini AI Pro/Ultra là sản phẩm riêng và không được dùng ở đây. Phí phụ thuộc vào cài đặt thanh toán Google của bạn.</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">Cần khóa Claude API từ Anthropic Console. Mức dùng được tính theo giá API hoặc trừ vào tín dụng Console nếu bạn có. Gói Claude Pro và Max không được dùng ở đây.</string>
+    <string name="ai_translation_effort_auto">Tự động (khuyên dùng)</string>
+    <string name="ai_translation_effort_off">Tắt</string>
+    <string name="ai_translation_effort_minimal">Tối thiểu</string>
+    <string name="ai_translation_effort_low">Thấp</string>
+    <string name="ai_translation_effort_medium">Trung bình</string>
+    <string name="ai_translation_effort_high">Cao</string>
+    <string name="ai_translation_effort_xhigh">Rất cao</string>
+    <string name="ai_translation_effort_max">Tối đa</string>
+    <string name="ai_translation_test">Thử dịch</string>
+    <string name="ai_translation_testing">Đang dịch…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">Câu thử: tiếng Đức → tiếng Ba Tư</string>
+    <string name="ai_translation_test_result">Kết quả: %1$s</string>
+    <string name="ai_translation_test_origin">Do %1$s trả lời</string>
+    <string name="ai_translation_test_no_key">Chưa lưu khóa API cho nhà cung cấp này.</string>
+    <string name="ai_translation_test_effort_refused">Mô hình từ chối mức đã chọn. Hãy chọn Tự động hoặc mức khác.</string>
+</resources>

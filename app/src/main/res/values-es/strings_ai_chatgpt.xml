@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatgpt_note">Usa tu propio plan de ChatGPT mediante el inicio de sesión de OpenAI, sin clave de API. El texto de los subtítulos se envía a OpenAI para traducirlo; no se leen tus conversaciones de ChatGPT. Se aplican el cupo y los límites de tu plan, y la disponibilidad varía según el plan.</string>
+    <string name="chatgpt_continue">Continuar con ChatGPT</string>
+    <string name="chatgpt_status_not_connected">No conectado</string>
+    <string name="chatgpt_status_connecting">Conectando… termina el inicio de sesión en tu navegador</string>
+    <string name="chatgpt_status_checking">Comprobando tu cuenta…</string>
+    <string name="chatgpt_status_ready">Conectado · uso del plan permitido</string>
+    <string name="chatgpt_status_no_plan">Conectado, pero no se permitió el uso del plan. Continúa de nuevo y permítelo.</string>
+    <string name="chatgpt_status_not_eligible">El uso del plan de ChatGPT no está disponible para esta cuenta.</string>
+    <string name="chatgpt_status_sign_in">Inicia sesión de nuevo para seguir usando tu plan de ChatGPT.</string>
+    <string name="chatgpt_status_limit">Se alcanzó el límite de uso de tu plan de ChatGPT. Mira Ajustes de ChatGPT → Uso.</string>
+    <string name="chatgpt_status_temporary">ChatGPT no está disponible por ahora. Inténtalo más tarde.</string>
+    <string name="chatgpt_sign_in_failed">El inicio de sesión no terminó. Inténtalo de nuevo.</string>
+    <string name="chatgpt_account">Cuenta: %1$s</string>
+    <string name="chatgpt_account_unknown">Cuenta de ChatGPT conectada</string>
+    <string name="chatgpt_refresh">Actualizar estado</string>
+    <string name="chatgpt_disconnect">Desconectar</string>
+    <string name="chatgpt_test_failed">La traducción de prueba falló.</string>
+    <string name="chatgpt_cancel">Cancelar</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatgpt_note">通过 OpenAI 登录使用你自己的 ChatGPT 套餐，无需 API 密钥。字幕文本会发送给 OpenAI 进行翻译，不会读取你的 ChatGPT 对话。套餐的额度和限制适用，不同套餐的可用情况不同。</string>
+    <string name="chatgpt_continue">使用 ChatGPT 继续</string>
+    <string name="chatgpt_status_not_connected">未连接</string>
+    <string name="chatgpt_status_connecting">正在连接… 请在浏览器中完成登录</string>
+    <string name="chatgpt_status_checking">正在检查你的账号…</string>
+    <string name="chatgpt_status_ready">已连接 · 已允许使用套餐</string>
+    <string name="chatgpt_status_no_plan">已连接，但未允许使用套餐。请再次继续并允许。</string>
+    <string name="chatgpt_status_not_eligible">此账号无法使用 ChatGPT 套餐。</string>
+    <string name="chatgpt_status_sign_in">请重新登录以继续使用你的 ChatGPT 套餐。</string>
+    <string name="chatgpt_status_limit">已达到 ChatGPT 套餐的使用上限。请查看 ChatGPT 设置 → 用量。</string>
+    <string name="chatgpt_status_temporary">ChatGPT 暂时不可用，请稍后再试。</string>
+    <string name="chatgpt_sign_in_failed">登录未完成，请重试。</string>
+    <string name="chatgpt_account">账号：%1$s</string>
+    <string name="chatgpt_account_unknown">已连接的 ChatGPT 账号</string>
+    <string name="chatgpt_refresh">刷新状态</string>
+    <string name="chatgpt_disconnect">断开连接</string>
+    <string name="chatgpt_test_failed">测试翻译失败。</string>
+    <string name="chatgpt_cancel">取消</string>
+</resources>

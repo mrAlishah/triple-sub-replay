@@ -47,6 +47,7 @@ import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.LanguageAwareTokenizer
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.WordTap
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
 
 @Composable
 internal fun CompactSubtitleCard(
@@ -72,6 +73,7 @@ internal fun CompactSubtitleCard(
     showTranslation: Boolean = true,
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
     thirdText: String? = null,
+    thirdOrigin: TranslationOrigin? = null,
 ) {
     if (!showOriginal && !showTranslation && thirdText == null) return
     val slotControls = LocalTripleSubtitleControls.current
@@ -142,6 +144,9 @@ internal fun CompactSubtitleCard(
                                         onReplay,
                                     )
                                 }
+                                if (segment.translatedText != null) {
+                                    TranslationSourceTag(segment.translationOrigin, SubtitleSlot.SECOND, targetLanguage, translatedColor)
+                                }
                             }
                         SubtitleSlot.THIRD ->
                             thirdText?.let {
@@ -156,6 +161,7 @@ internal fun CompactSubtitleCard(
                                     onWordClick,
                                     onReplay,
                                 )
+                                TranslationSourceTag(thirdOrigin, SubtitleSlot.THIRD, slotControls.language, translatedColor)
                             }
                     }
                 }

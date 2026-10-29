@@ -188,6 +188,7 @@ val RESETTABLE_SETTING_KEYS =
         PRELOAD_MODELS_ENABLED_PREFERENCE,
         NATURAL_SUBTITLES_PREFERENCE,
         HIDE_SOUND_CUES_PREFERENCE,
+        SHOW_TRANSLATION_SOURCE_PREFERENCE,
         WORD_LEARNING_ENABLED_PREFERENCE,
         WORD_LEARNING_TARGET_PREFERENCE,
         TAP_TO_LEARN_PREFERENCE,
@@ -197,5 +198,10 @@ val RESETTABLE_SETTING_KEYS =
         com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE,
         com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE,
         com.kienhoang.dualsubreplay.assistant.AI_TRANSLATION_MODEL_PREFERENCE,
+        com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_METHOD_PREFERENCE,
+        com.kienhoang.dualsubreplay.chatgpt.CHATGPT_MODEL_PREFERENCE,
         com.kienhoang.dualsubreplay.update.APP_AUTO_UPDATE_PREFERENCE,
-    ) + STUDY_SETTING_KEYS + WORD_CARD_SECTION_KEYS + AD_SKIP_SETTING_KEYS + TRIPLE_SETTING_KEYS + YOUTUBE_TABS_SETTING_KEYS
+    ) +
+        com.kienhoang.dualsubreplay.assistant
+            .aiTranslationChoiceKeys() + STUDY_SETTING_KEYS + WORD_CARD_SECTION_KEYS + AD_SKIP_SETTING_KEYS +
+        TRIPLE_SETTING_KEYS + YOUTUBE_TABS_SETTING_KEYS

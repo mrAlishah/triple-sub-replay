@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">Tampilkan sumber terjemahan (debug)</string>
+    <string name="translation_source_setting_description">Memberi label pada setiap subtitle terjemahan dengan asal teksnya. Ketuk label untuk detail.</string>
+    <string name="translation_source_chatgpt">Langganan ChatGPT</string>
+    <string name="translation_source_chatgpt_cached">Langganan ChatGPT (cache)</string>
+    <string name="translation_source_google">Google Translate</string>
+    <string name="translation_source_on_device">Terjemahan di perangkat</string>
+    <string name="translation_source_youtube">Teks terjemahan YouTube</string>
+    <string name="translation_source_ai_provider">Penyedia AI</string>
+    <string name="translation_source_ai_provider_cached">Penyedia AI (cache)</string>
+    <string name="translation_source_unknown">Tidak diketahui</string>
+    <string name="translation_source_dialog_title">Sumber terjemahan</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">Model: %1$s</string>
+    <string name="translation_source_dialog_events">Peristiwa AI dan cadangan terbaru</string>
+    <string name="translation_source_dialog_no_events">Belum ada yang tercatat untuk bahasa ini.</string>
+    <string name="translation_source_event_request">Permintaan AI · kalimat: %1$d</string>
+    <string name="translation_source_event_succeeded">AI menjawab · kalimat: %1$d</string>
+    <string name="translation_source_event_failed">AI gagal · %1$s · kalimat tersimpan: %2$d</string>
+    <string name="translation_source_event_identical">%1$s memberi teks yang sama dengan yang ditampilkan</string>
+    <string name="translation_source_event_fallback">Menampilkan %1$s sebagai pengganti AI</string>
+    <string name="translation_source_close">Tutup</string>
+    <string name="translation_source_event_scheduled">AI diminta menerjemahkan kalimat: %1$d</string>
+    <string name="translation_source_event_upgraded">AI menggantikan baris di layar: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Terjemahan ulang diminta · kalimat: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Terjemahan tersimpan dilewati untuk permintaan baru</string>
+    <string name="translation_source_event_refresh_succeeded">Diterjemahkan ulang · kalimat: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Terjemahan ulang gagal · %1$s</string>
+</resources>

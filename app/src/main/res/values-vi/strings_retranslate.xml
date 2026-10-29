@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">Dịch lại bằng AI</string>
+    <string name="retranslate_subtitles">Phụ đề nào</string>
+    <string name="retranslate_both">Cả hai</string>
+    <string name="retranslate_scope">Phạm vi</string>
+    <string name="retranslate_scope_sentence">Câu hiện tại</string>
+    <string name="retranslate_scope_window">Đoạn đang phát</string>
+    <string name="retranslate_scope_video">Toàn bộ video</string>
+    <string name="retranslate_note">Hỏi lại AI và có thể dùng thêm hạn mức gói ChatGPT hoặc tín dụng API. Phụ đề trên màn hình được giữ cho đến khi có phụ đề mới.</string>
+    <string name="retranslate_video_warning">Gửi khoảng %1$d câu trong khoảng %2$d yêu cầu và có thể tốn nhiều hạn mức hoặc tín dụng.</string>
+    <string name="retranslate_video_confirm">Tôi hiểu và muốn tiếp tục</string>
+    <string name="retranslate_start">Dịch lại</string>
+    <string name="retranslate_stop">Dừng</string>
+    <string name="retranslate_progress">Đang dịch lại… %1$d / %2$d</string>
+    <string name="retranslate_refreshing">Đang làm mới…</string>
+    <string name="retranslate_failed">Không dịch lại được (%1$s). Các dòng chưa được làm mới giữ nguyên.</string>
+    <string name="retranslate_failed_short">Không làm mới được</string>
+    <string name="retranslate_unavailable">Hãy kết nối nhà cung cấp AI trước: đăng nhập ChatGPT hoặc thêm khóa API trong cài đặt AI.</string>
+</resources>

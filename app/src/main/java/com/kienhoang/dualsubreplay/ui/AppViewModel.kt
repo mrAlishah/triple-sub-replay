@@ -7,9 +7,17 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kienhoang.dualsubreplay.R
-import com.kienhoang.dualsubreplay.assistant.AI_TRANSLATION_MODEL_PREFERENCE
+import com.kienhoang.dualsubreplay.assistant.AI_KEYS_PREFERENCES
+import com.kienhoang.dualsubreplay.assistant.AI_SETTINGS_PREFERENCES
 import com.kienhoang.dualsubreplay.assistant.AiHttpTransport
-import com.kienhoang.dualsubreplay.assistant.aiTranslationModel
+import com.kienhoang.dualsubreplay.assistant.AiKeyStore
+import com.kienhoang.dualsubreplay.assistant.AiModelLister
+import com.kienhoang.dualsubreplay.assistant.AiTranslationChoices
+import com.kienhoang.dualsubreplay.assistant.KeystoreSecretCipher
+import com.kienhoang.dualsubreplay.assistant.SharedPreferencesSecretStorage
+import com.kienhoang.dualsubreplay.assistant.aiTranslationModelFor
+import com.kienhoang.dualsubreplay.assistant.readAiAssistantSettings
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptSubscription
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.CaptionProvider
@@ -38,12 +46,12 @@ import com.kienhoang.dualsubreplay.data.YouTubeCaptionProvider
 import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
 import com.kienhoang.dualsubreplay.data.immersionLanguage
 import com.kienhoang.dualsubreplay.data.initialDailyGoalPromptCompleted
-import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
-import com.kienhoang.dualsubreplay.playback.WebVideoBridge
+import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
 import com.kienhoang.dualsubreplay.data.savedWordFrom
 import com.kienhoang.dualsubreplay.data.storedDailyGoalMinutes
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
+import com.kienhoang.dualsubreplay.playback.WebVideoBridge
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AiSubtitleTranslator
@@ -59,8 +67,13 @@ import com.kienhoang.dualsubreplay.translation.GoogleWebTranslator
 import com.kienhoang.dualsubreplay.translation.OnDeviceTranslator
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TRANSLATION_ENGINE_PREFERENCE
+import com.kienhoang.dualsubreplay.translation.Translated
+import com.kienhoang.dualsubreplay.translation.TranslationDiagnostics
 import com.kienhoang.dualsubreplay.translation.TranslationEngine
+import com.kienhoang.dualsubreplay.translation.TranslationEventKind
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
+import com.kienhoang.dualsubreplay.translation.TranslationProvider
 import com.kienhoang.dualsubreplay.translation.aiSentences
 import com.kienhoang.dualsubreplay.translation.awaitWithin
 import com.kienhoang.dualsubreplay.translation.googleAddressMemory
@@ -154,6 +167,8 @@ data class DualSubUiState(
     val preloadModelsEnabled: Boolean = true,
     val naturalSubtitlesEnabled: Boolean = true,
     val hideSoundCues: Boolean = true,
+    /** Settings → Captions & translation → Show translation source (debug). */
+    val showTranslationSource: Boolean = false,
     val wordLearningEnabled: Boolean = true,
     val wordLearningTarget: String = DEFAULT_WORD_LEARNING_TARGET,
     val wordLearningActiveOnly: Boolean = true,
@@ -172,8 +187,6 @@ data class DualSubUiState(
     val aiTranslation: Boolean = false,
     /** With [aiTranslation], rows wait for the AI instead of showing Google's lines first. */
     val aiTranslationOnly: Boolean = false,
-    /** Settings → Translation → AI model for translation; empty uses the AI assistant's model. */
-    val aiTranslationModel: String = "",
     /**
      * Google failed, so this video translates on the device. The saved engine is unchanged: Google is
      * checked again every [GOOGLE_RECHECK_INTERVAL_MS] and tried again on the next load.
@@ -201,7 +214,7 @@ private fun withGoogleAgain(state: DualSubUiState): DualSubUiState =
 internal fun DualSubUiState.translatesWithGoogle(): Boolean = translationEngine == TranslationEngine.GOOGLE_WEB && !onDeviceFallback
 
 internal fun DualSubUiState.onlineTranslationSettings() =
-    OnlineTranslationSettings(translationEngine, googleWait, aiTranslation, aiTranslationOnly, aiTranslationModel)
+    OnlineTranslationSettings(translationEngine, googleWait, aiTranslation, aiTranslationOnly, showTranslationSource)
 
 /**
  * A source-language choice is only rejected when the video's track list is
@@ -369,8 +382,12 @@ private const val YOUTUBE_TRANSLATION_WAIT_MS = 1_000L
 
 /** Rows read to fill an AI request; 60 sentences need far fewer. */
 private const val AI_FILL_MAX_ROWS = 240
+
+/** Rows read at a time when an entire-video re-translation walks the whole track. */
+private const val REFRESH_CHUNK_ROWS = 400
 internal const val NATURAL_SUBTITLES_PREFERENCE = "enhanced_natural_subtitles"
 internal const val HIDE_SOUND_CUES_PREFERENCE = "hide_sound_cues"
+internal const val SHOW_TRANSLATION_SOURCE_PREFERENCE = "show_translation_source"
 internal const val WORD_LEARNING_ENABLED_PREFERENCE = "word_learning_mode_enabled"
 internal const val WORD_LEARNING_TARGET_PREFERENCE = "word_learning_target"
 
@@ -422,8 +439,45 @@ class AppViewModel internal constructor(
             cacheDirectory = File(application.cacheDir, "google-translations"),
             addressMemory = application.googleAddressMemory(GOOGLE_TRANSLATE_ADDRESS_KEY),
         )
-    private val aiTranslator = AiSubtitleTranslator(File(application.cacheDir, "ai-translations"))
+    internal val translationDiagnostics = TranslationDiagnostics()
+    private val aiTranslator = AiSubtitleTranslator(File(application.cacheDir, "ai-translations"), translationDiagnostics)
+
+    /** Settings → Translation → AI access → ChatGPT Subscription (off unless chosen). */
+    internal val chatGpt =
+        ChatGptSubscription.create(
+            application,
+            preferences,
+            viewModelScope,
+            application.getString(R.string.app_name),
+        ) { reloadAfterAiAccessChange() }
     private val aiTransport by lazy { AiHttpTransport() }
+
+    /** "Re-translate with AI": the refresh runner, what the current run offers it, and the lines it can refresh. */
+    internal val refresher = TranslationRefresher(aiTranslator, translationDiagnostics, viewModelScope)
+    private var refreshContext: RefreshContext? = null
+
+    /** The whole track's texts, read once for the dialog's estimate and reused by the run. */
+    private var videoTexts: Pair<SubtitleStore, List<String>>? = null
+    private val mutableRefreshSlots = MutableStateFlow<Set<SubtitleSlot>>(emptySet())
+    internal val refreshSlots: StateFlow<Set<SubtitleSlot>> = mutableRefreshSlots.asStateFlow()
+
+    /** Settings → Captions & translation → AI provider, model and effort for the AI translation modes. */
+    internal val aiConfig =
+        AiTranslationConfig(
+            choices = AiTranslationChoices(preferences.aiTranslationPrefs()) { chatGpt.useSubscription },
+            assistant = { readAiAssistantSettings(application.getSharedPreferences(AI_SETTINGS_PREFERENCES, 0)) },
+            keyStore =
+                AiKeyStore(
+                    SharedPreferencesSecretStorage(application.getSharedPreferences(AI_KEYS_PREFERENCES, 0)),
+                    KeystoreSecretCipher(),
+                ),
+            lister = AiModelLister { baseUrl, apiKey, format -> aiTransport.listModels(baseUrl, apiKey, format) },
+            chatGpt = chatGpt,
+            scope = viewModelScope,
+            buildKeyed = { provider, model, effort, dropRefused ->
+                application.aiTranslationModelFor(provider, model, effort, aiTransport, dropRefused)
+            },
+        ) { reloadAfterAiAccessChange() }
 
     /** Google failed or was too slow on mobile data and has not answered since. */
     @Volatile private var googleFailedOnMobile = false
@@ -579,6 +633,7 @@ class AppViewModel internal constructor(
                         preferences.getBoolean(NATURAL_SUBTITLES_PREFERENCE, true),
                     ),
                 hideSoundCues = preferences.getBoolean(HIDE_SOUND_CUES_PREFERENCE, true),
+                showTranslationSource = preferences.getBoolean(SHOW_TRANSLATION_SOURCE_PREFERENCE, false),
                 wordLearningEnabled =
                     storedFeatureEnabled(
                         preferences.getBoolean(WORD_LEARNING_ENABLED_PREFERENCE, true),
@@ -1159,6 +1214,11 @@ class AppViewModel internal constructor(
         }
     }
 
+    fun setShowTranslationSource(enabled: Boolean) {
+        preferences.edit().putBoolean(SHOW_TRANSLATION_SOURCE_PREFERENCE, enabled).apply()
+        _state.update { it.copy(showTranslationSource = enabled) }
+    }
+
     fun setHideSoundCues(enabled: Boolean) {
         preferences.edit().putBoolean(HIDE_SOUND_CUES_PREFERENCE, enabled).apply()
         _state.update { it.copy(hideSoundCues = enabled) }
@@ -1190,7 +1250,9 @@ class AppViewModel internal constructor(
 
     fun selectLearningWord(tap: WordTap?) {
         val current = _state.value
-        val source = com.kienhoang.dualsubreplay.data.learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
+        val source =
+            com.kienhoang.dualsubreplay.data
+                .learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
         val selection =
             tap?.let { selected ->
                 com.kienhoang.dualsubreplay.data.learningSelection(
@@ -1374,17 +1436,6 @@ class AppViewModel internal constructor(
         if (changed && videoId != null) loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
     }
 
-    /** Settings → Translation → AI model for translation. Reloads the current video's translations. */
-    fun setAiTranslationModel(model: String) {
-        preferences.edit().putString(AI_TRANSLATION_MODEL_PREFERENCE, model).apply()
-        val changed = _state.value.aiTranslationModel != model
-        _state.update { it.copy(aiTranslationModel = model) }
-        val videoId = _state.value.activeVideoId
-        if (changed && videoId != null && _state.value.aiTranslation && _state.value.translatesWithGoogle()) {
-            loadVideo(videoId = videoId, showPanel = _state.value.subtitlePanelVisible)
-        }
-    }
-
     private fun onWifiNow(): Boolean = getApplication<Application>().onWifi()
 
     /** How long a row waits for Google on the current network. */
@@ -1463,6 +1514,8 @@ class AppViewModel internal constructor(
         val editor = preferences.edit()
         RESETTABLE_SETTING_KEYS.forEach(editor::remove)
         editor.apply()
+        chatGpt.resetChoice()
+        aiConfig.resetChoice()
         _state.update { it.copy(autoPronounce = true) }
         latestPlaybackSecondMs = 0L
         liveCaptionTracker.reset()
@@ -1490,6 +1543,7 @@ class AppViewModel internal constructor(
                 preloadModelsEnabled = true,
                 naturalSubtitlesEnabled = true,
                 hideSoundCues = true,
+                showTranslationSource = false,
                 wordLearningEnabled = true,
                 wordLearningTarget = DEFAULT_WORD_LEARNING_TARGET,
                 wordLearningActiveOnly = true,
@@ -1499,7 +1553,6 @@ class AppViewModel internal constructor(
                 googleWait = GoogleWait.AUTO,
                 aiTranslation = false,
                 aiTranslationOnly = false,
-                aiTranslationModel = "",
                 onDeviceFallback = false,
                 youTubeTranslationFallback = false,
                 onlineTranslationFailureDetail = null,
@@ -1830,18 +1883,20 @@ class AppViewModel internal constructor(
         val sourceLanguage = source.first
         var displayStore: SubtitleStore? = null
         var thirdLine: Job? = null
+        var refreshInstalled: RefreshContext? = null
         liveCaptionTracker.reset()
         captionHighlightResolver.reset()
+        translationDiagnostics.clear()
         showPreparingSubtitles(keepRows)
         var following = false
 
         suspend fun follow(
             prefetch: (suspend (List<String>) -> Unit)? = null,
             upgrades: TranslationUpgrades? = null,
-            translate: suspend (String) -> String,
+            translate: suspend (String) -> Translated,
         ) {
             following = true
-            translatePlaybackWindow(
+            translatePlaybackWindowTracked(
                 checkNotNull(displayStore),
                 playbackRequests,
                 translate,
@@ -1863,7 +1918,16 @@ class AppViewModel internal constructor(
                     )
             }
             val store = checkNotNull(displayStore)
-            thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests)
+            // One model for both lines, so Subtitle 1 and Subtitle 2 share its pacing and its stop on a limit.
+            val ai = if (_state.value.translatesWithGoogle()) selectedAiModel() else null
+            // Subtitle 2 uses the AI only with ChatGPT Subscription: keyed users keep Google there, as before.
+            val thirdAi = ai.takeIf { chatGpt.useSubscription }
+            // A manual Re-translate always uses the chosen AI provider, whatever the translation mode: its model is ready here when a
+            // provider is, and in Google only it makes no request of its own, it only shows what a manual Re-translate brought.
+            val manualAi =
+                if (_state.value.translatesWithGoogle()) ai ?: withContext(Dispatchers.IO) { aiConfig.translationModel() } else null
+            thirdLine = startThirdLine(store, videoId, generation, sourceLanguage, googleRequests, thirdAi, manualAi)
+            refreshInstalled = installRefreshContext(store, videoId, generation, sourceLanguage, targetLanguage, manualAi)
             try {
                 if (_state.value.translatesWithGoogle()) {
                     followGoogleTranslation(
@@ -1872,6 +1936,8 @@ class AppViewModel internal constructor(
                         generation,
                         sourceLanguage to targetLanguage,
                         googleRequests,
+                        ai,
+                        manualAi,
                     ) { prefetch, upgrades, translate ->
                         follow(prefetch, upgrades, translate)
                     }
@@ -1899,28 +1965,153 @@ class AppViewModel internal constructor(
                 }
             }
         } finally {
+            endRefreshContext(refreshInstalled)
             thirdLine?.cancel()
             withContext(NonCancellable + Dispatchers.IO) { displayStore?.close() }
         }
     }
 
     /**
+     * What "Re-translate with AI" can use while this run is current: the chosen AI provider's model for both lines, the
+     * texts of each scope, and whether the run is still the current one.
+     */
+    private fun installRefreshContext(
+        store: SubtitleStore,
+        videoId: String,
+        generation: Long,
+        sourceLanguage: String,
+        targetLanguage: String,
+        manualAi: AiTranslationModel?,
+    ): RefreshContext {
+        val third = _state.value.thirdLanguageFor(sourceLanguage)
+        val context =
+            RefreshContext(
+                targets =
+                    buildMap {
+                        if (manualAi != null) put(SubtitleSlot.SECOND, RefreshTarget(manualAi, sourceLanguage, targetLanguage))
+                        if (manualAi != null && third != null) put(SubtitleSlot.THIRD, RefreshTarget(manualAi, sourceLanguage, third))
+                    },
+                texts = { scope -> refreshTexts(store, scope) },
+                isCurrent = { isCurrentLoad(_state.value, videoId, generation) },
+            )
+        refresher.reset()
+        refreshContext = context
+        mutableRefreshSlots.value = context.targets.keys
+        return context
+    }
+
+    /** Ends a run's offer, unless a newer run has already replaced it. */
+    private fun endRefreshContext(installed: RefreshContext?) {
+        if (installed == null || refreshContext !== installed) return
+        refresher.reset()
+        refreshContext = null
+        videoTexts = null
+        mutableRefreshSlots.value = emptySet()
+    }
+
+    /** The texts a scope covers, in the form the AI is asked for: the playing sentence, the rows now in the window, or every row. */
+    private suspend fun refreshTexts(
+        store: SubtitleStore,
+        scope: RefreshScope,
+    ): List<String> =
+        when (scope) {
+            RefreshScope.SENTENCE ->
+                _state.value
+                    .let { it.segments.getOrNull(it.currentIndex) }
+                    ?.let(::rowTranslationTexts)
+                    .orEmpty()
+            RefreshScope.WINDOW -> translationTexts(_state.value.segments)
+            RefreshScope.VIDEO ->
+                videoTexts?.takeIf { it.first === store }?.second
+                    ?: withContext(Dispatchers.IO) {
+                        // By row index, so rows that share a start time are never skipped.
+                        val all = store.indicesBetween(-1L, Long.MAX_VALUE, Int.MAX_VALUE)
+                        val rows = mutableListOf<SubtitleSegment>()
+                        for (first in all step REFRESH_CHUNK_ROWS) {
+                            currentCoroutineContext().ensureActive()
+                            rows += store.read(first..minOf(first + REFRESH_CHUNK_ROWS - 1, all.last))
+                        }
+                        translationTexts(rows)
+                    }.also { videoTexts = store to it }
+        }
+
+    /** Starts "Re-translate with AI" for [slots] and [scope]; nothing happens when the current run offers none of them. */
+    internal fun refreshTranslation(
+        slots: Set<SubtitleSlot>,
+        scope: RefreshScope,
+    ) {
+        refreshContext?.let { refresher.start(it, slots, scope) }
+    }
+
+    internal fun cancelRefresh() = refresher.cancel()
+
+    /** How many sentences [scope] would send for each line, for the warning before an entire-video refresh. */
+    internal suspend fun refreshSentenceCount(scope: RefreshScope): Int = refreshContext?.let { aiSentences(it.texts(scope)).size } ?: 0
+
+/**
      * The fork's third line (see [runThirdLanguage]): one more window loop on the same display [store], so
      * its row ids match [DualSubUiState.segments]. Null when the mode is off or would repeat another line.
-     * It runs in [scope] (the load's Google scope) and is cancelled when this translation run ends.
+     * It runs in [scope] (the load's Google scope) and is cancelled when this translation run ends. With an [ai]
+     * model (ChatGPT Subscription) the line is also asked from the AI, straight from the Original.
      */
+
     private fun startThirdLine(
         store: SubtitleStore,
         videoId: String,
         generation: Long,
         source: String,
         scope: CoroutineScope,
+        ai: AiTranslationModel?,
+        manualAi: AiTranslationModel?,
     ): Job? {
         publishThirdLines(videoId, generation, emptyMap(), null)
         val third = _state.value.thirdLanguageFor(source) ?: return null
-        val translate: suspend (String) -> String = { text -> translateThird(videoId, generation, source, third, text, scope) }
+        // The AI translates this line straight from the Original, never from Subtitle 1; Google and the device keep what it leaves out.
+        val window =
+            ai?.let { model ->
+                AiWindowTranslation(scope, aiTranslator, model, source to third) { aiFillTexts(store) }
+            }
+        val aiOnly = window != null && _state.value.aiTranslationOnly
+
+        suspend fun translate(text: String): Translated {
+            window?.cached(text)?.let { return Translated(it, window.originOf(text)) }
+            if (aiOnly) window.await(text)?.let { return Translated(it, window.originOf(text)) }
+            return translateThird(videoId, generation, source, third, text, scope).also { noteFallback(third, aiOnly, it) }
+        }
+
+        suspend fun prefetch(texts: List<String>) {
+            if (aiOnly) window.first(texts) else window?.ask(texts)
+        }
+        val upgrades =
+            (ai ?: manualAi)?.let { model ->
+                aiTranslationUpgrades(aiTranslator, translationDiagnostics, model, source, third, window.takeUnless { aiOnly })
+            }
         return scope.launch {
-            runThirdLanguage(store, playbackRequests, translate) { lines -> publishThirdLines(videoId, generation, lines, third) }
+            runThirdLanguageTracked(
+                store,
+                playbackRequests,
+                ::translate,
+                if (window != null) ::prefetch else null,
+                upgrades,
+            ) { lines, origins -> publishThirdLines(videoId, generation, lines, third, origins) }
+        }
+    }
+
+    /**
+     * The AI that translates subtitles, or null so Google or the device does: ChatGPT Subscription when the user chose it
+     * (a missing session never turns into a keyed service), otherwise the AI assistant's service and keys.
+     */
+    private suspend fun selectedAiModel(): AiTranslationModel? {
+        if (!_state.value.aiTranslation) return null
+        return withContext(Dispatchers.IO) { aiConfig.translationModel() }
+    }
+
+    /** A new ChatGPT account, model or access choice: the playing video translates again with it. */
+    private fun reloadAfterAiAccessChange() {
+        val videoId = _state.value.activeVideoId ?: return
+        val current = _state.value
+        if (current.aiTranslation && current.translatesWithGoogle()) {
+            loadVideo(videoId = videoId, showPanel = current.subtitlePanelVisible)
         }
     }
 
@@ -1932,7 +2123,7 @@ class AppViewModel internal constructor(
         third: String,
         text: String,
         googleRequests: CoroutineScope,
-    ): String {
+    ): Translated {
         if (_state.value.translatesWithGoogle()) {
             val viaGoogle =
                 try {
@@ -1942,9 +2133,9 @@ class AppViewModel internal constructor(
                 } catch (_: Exception) {
                     null
                 }
-            if (viaGoogle != null) return viaGoogle
+            if (viaGoogle != null) return Translated(viaGoogle, TranslationOrigin.GOOGLE)
         }
-        return translateOnDevice(videoId, generation, source, third, text)
+        return Translated(translateOnDevice(videoId, generation, source, third, text), TranslationOrigin.ON_DEVICE)
     }
 
     private fun publishThirdLines(
@@ -1952,9 +2143,14 @@ class AppViewModel internal constructor(
         generation: Long,
         lines: Map<Long, String>,
         language: String?,
+        origins: Map<Long, TranslationOrigin> = emptyMap(),
     ) {
         _state.update { current ->
-            if (isCurrentLoad(current, videoId, generation)) current.copy(thirdLines = ThirdLines(videoId, lines, language)) else current
+            if (isCurrentLoad(current, videoId, generation)) {
+                current.copy(thirdLines = ThirdLines(videoId, lines, language, origins))
+            } else {
+                current
+            }
         }
     }
 
@@ -1992,21 +2188,15 @@ class AppViewModel internal constructor(
         generation: Long,
         languages: Pair<String, String>,
         googleRequests: CoroutineScope,
+        ai: AiTranslationModel?,
+        manualAi: AiTranslationModel?,
         follow: suspend (
             prefetch: suspend (List<String>) -> Unit,
             upgrades: TranslationUpgrades?,
-            translate: suspend (String) -> String,
+            translate: suspend (String) -> Translated,
         ) -> Unit,
     ) = coroutineScope {
         val (source, target) = languages
-        val ai =
-            if (_state.value.aiTranslation) {
-                withContext(
-                    Dispatchers.IO,
-                ) { getApplication<Application>().aiTranslationModel(_state.value.aiTranslationModel, aiTransport) }
-            } else {
-                null
-            }
         launch {
             prefetchInBackground(store, playbackRequests) { texts ->
                 ai?.let { model -> aiNextBatch(model, languages, texts) } ?: googleTranslator.translateNextBatch(source, target, texts)
@@ -2014,18 +2204,24 @@ class AppViewModel internal constructor(
         }
         warmModelOnWifi(source, target)
         val waitMs = currentGoogleWaitMs()
-        val upgrades =
-            ai?.let { model ->
-                TranslationUpgrades(aiTranslator.updates) { text -> aiTranslator.shownTranslation(model, source, target, text) }
-            }
         val aiWindow = ai?.let { model -> AiWindowTranslation(this, aiTranslator, model, languages) { aiFillTexts(store) } }
         val aiOnly = aiWindow != null && _state.value.aiTranslationOnly
+        // AI only waits for the AI itself; with Google first the window keeps asking until the AI has what it owes.
+        // Google only has no window: the model is there only to show what a manual Re-translate brought, never to ask by itself.
+        val upgrades =
+            (ai ?: manualAi)?.let { model ->
+                aiTranslationUpgrades(aiTranslator, translationDiagnostics, model, source, target, aiWindow.takeUnless { aiOnly })
+            }
 
-        // Google is down or slow: the AI's running request may still bring [text], so the video stays on it.
-        suspend fun aiInstead(
-            error: IOException,
+        // The AI's translation of [text] with who wrote it, read right after the lookup; [wait] lets a running request finish first.
+        suspend fun fromAi(
             text: String,
-        ): String = aiWindow?.await(text) ?: throw error
+            wait: Boolean,
+        ): Translated? {
+            val window = aiWindow ?: return null
+            return (if (wait) window.await(text) else window.cached(text))?.let { Translated(it, window.originOf(text)) }
+        }
+
         follow({ texts ->
             if (aiOnly) {
                 aiWindow?.first(texts)
@@ -2036,19 +2232,35 @@ class AppViewModel internal constructor(
             try {
                 if (rest.isNotEmpty()) awaitWithin(googleRequests, waitMs) { googleTranslator.translateAll(source, target, rest) }
             } catch (error: IOException) {
-                aiInstead(error, aiSentences(texts).firstOrNull()?.text ?: throw error)
+                // Google is down or slow: the AI's running request may still bring the first sentence, so the video stays on it.
+                aiWindow?.await(aiSentences(texts).firstOrNull()?.text ?: throw error) ?: throw error
             }
         }, upgrades) { text ->
             // AI only waits for the AI; a line Google leaves blank on every address is translated on the device.
-            aiWindow?.cached(text)
-                ?: (if (aiOnly) aiWindow?.await(text) else null)
-                ?: try {
+            chooseTranslation(
+                aiOnly,
+                fromAi = { wait -> fromAi(text, wait) },
+                fromGoogle = {
                     awaitWithin(googleRequests, waitMs) { googleTranslator.translate(source, target, text) }
-                } catch (error: IOException) {
-                    if (aiOnly) throw error
-                    aiInstead(error, text)
-                }
-                ?: translateOnDevice(videoId, generation, source, target, text)
+                        ?.let { Translated(it, TranslationOrigin.GOOGLE) }
+                },
+                onDevice = { Translated(translateOnDevice(videoId, generation, source, target, text), TranslationOrigin.ON_DEVICE) },
+            ).also { noteFallback(target, aiOnly, it) }
+        }
+    }
+
+    /**
+     * AI only took Google, the device or YouTube for a row: the AI failed or left it out, and the diagnostics keep that.
+     * With Google first this is the normal order while the AI loads, so it is not recorded; AI failures are.
+     */
+    private fun noteFallback(
+        target: String,
+        aiOnly: Boolean,
+        result: Translated,
+    ) {
+        val origin = result.origin ?: return
+        if (aiOnly && origin.provider != TranslationProvider.CHATGPT && origin.provider != TranslationProvider.AI_PROVIDER) {
+            translationDiagnostics.record(TranslationEventKind.FALLBACK, TranslationLanguages.normalize(target), origin)
         }
     }
 
@@ -2086,7 +2298,7 @@ class AppViewModel internal constructor(
         generation: Long,
         source: Pair<String, Boolean>,
         targetLanguage: String,
-        follow: suspend (translate: suspend (String) -> String) -> Unit,
+        follow: suspend (translate: suspend (String) -> Translated) -> Unit,
     ) = coroutineScope {
         val sourceLanguage = source.first
         val fallback = _state.value.onDeviceFallback
@@ -2097,13 +2309,21 @@ class AppViewModel internal constructor(
         translator.withSession(sourceLanguage, targetLanguage, onDownloadingChange = { downloading ->
             showTranslationModelDownload(videoId, generation, downloading)
         }) { translate ->
+            val onDevice: suspend (String) -> Translated = { text -> Translated(translate(text), TranslationOrigin.ON_DEVICE) }
             if (fromYouTube == null || youTubeInTime == null) {
-                follow(translate)
+                follow(onDevice)
             } else {
                 follow { text ->
-                    googleTranslator.cachedTranslation(sourceLanguage, targetLanguage, text)
-                        ?: (if (fromYouTube.isCompleted) fromYouTube.await() else youTubeInTime.await())?.get(text)
-                        ?: translate(text)
+                    googleTranslator
+                        .cachedTranslation(
+                            sourceLanguage,
+                            targetLanguage,
+                            text,
+                        )?.let { Translated(it, TranslationOrigin.GOOGLE) }
+                        ?: (if (fromYouTube.isCompleted) fromYouTube.await() else youTubeInTime.await())
+                            ?.get(text)
+                            ?.let { Translated(it, TranslationOrigin.YOUTUBE) }
+                        ?: onDevice(text)
                 }
             }
         }

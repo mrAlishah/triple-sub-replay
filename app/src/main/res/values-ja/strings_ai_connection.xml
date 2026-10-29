@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_service_chatgpt">ChatGPT サブスクリプション</string>
+    <string name="ai_service_chatgpt_note">お使いの ChatGPT プラン · サインインのみ、キー不要</string>
+    <string name="ai_connection_title">接続</string>
+    <string name="ai_connection_chatgpt_connecting">ChatGPT に接続中…</string>
+    <string name="ai_connection_test_failed">テストに失敗しました。接続を確認してもう一度お試しください。</string>
+    <string name="ai_connection_summary">AI 接続: %1$s · %2$s</string>
+    <string name="ai_connection_manage">AI 接続を管理</string>
+    <string name="ai_connection_back">%1$s に戻る</string>
+    <string name="ai_models_available">利用可能なモデル</string>
+    <string name="ai_models_custom">カスタムモデル</string>
+    <string name="ai_models_not_in_list">一覧にありません。下に入力したモデルが使われます。</string>
+    <string name="ai_models_connect">モデルを一覧表示するにはキーを追加してください。下にモデル名を入力することもできます。</string>
+    <string name="ai_models_picker_failed">一覧を読み込めませんでした。下にモデル名を入力することもできます。</string>
+    <string name="ai_models_picker_empty">一覧にモデルがありません。下にモデル名を入力してください。</string>
+    <string name="ai_models_refresh">モデルを更新</string>
+    <string name="ai_translation_service">翻訳に使うAIサービス</string>
+    <string name="ai_chat_service">チャットに使うAIサービス</string>
+    <string name="ai_service_state_connected">接続済み</string>
+    <string name="ai_service_state_not_connected">未接続</string>
+    <string name="ai_models_translation_conflict">字幕翻訳は、この欄を共有する前に保存された %1$s をまだ使っています。ここでモデルを編集すると、両方で同じモデルを使います。</string>
+    <string name="ai_service_viewing_hint">このサービスの設定を表示しています。チャットと字幕翻訳が使うサービスは、それぞれの行で選びます。</string>
+    <string name="ai_chat_gear_hint">キー、サインイン、モデル、思考レベルは「設定 → AI接続」で管理します。</string>
+    <string name="ai_error_plan_sign_in">ChatGPTのプランでチャットを続けるには、もう一度サインインしてください。「設定 → AI接続」を開いてください。</string>
+    <string name="ai_error_plan_not_available">このアカウントではChatGPTプランの利用ができません。別のAIサービスを選んでください。</string>
+    <string name="ai_error_plan_usage_limit">ChatGPTプランの利用上限に達しました。しばらくしてからもう一度お試しください。</string>
+    <string name="ai_chat_chatgpt_connect">ChatGPTサブスクリプションでチャットするには、「設定 → AI接続」で接続してください。</string>
+</resources>

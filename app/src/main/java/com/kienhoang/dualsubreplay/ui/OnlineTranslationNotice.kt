@@ -38,7 +38,9 @@ internal class TranslationEngineActions(
     val tryGoogleAgain: () -> Unit = {},
     val selectGoogleWait: (GoogleWait) -> Unit = {},
     val selectTranslator: (SubtitleTranslator) -> Unit = {},
-    val selectAiTranslationModel: (String) -> Unit = {},
+    /** The AI provider, model and effort of the AI translation modes; null in builds without them. */
+    val aiConfig: AiTranslationActions? = null,
+    val setShowSource: (Boolean) -> Unit = {},
 )
 
 /** What Settings → Translation shows about the online engine. */
@@ -47,8 +49,8 @@ internal data class OnlineTranslationSettings(
     val googleWait: GoogleWait = GoogleWait.AUTO,
     val aiTranslation: Boolean = false,
     val aiTranslationOnly: Boolean = false,
-    /** Empty uses the AI assistant's model. */
-    val aiTranslationModel: String = "",
+    /** Show translation source (debug): a label under each translated line. */
+    val showSource: Boolean = false,
 ) {
     val translator: SubtitleTranslator
         get() = subtitleTranslator(engine, aiTranslation, aiTranslationOnly)

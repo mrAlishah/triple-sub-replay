@@ -315,11 +315,14 @@ internal fun aiWebSearchRoute(
     mode: AiWebSearchMode,
     provider: AiProvider,
     hasTavilyKey: Boolean,
+    chatGpt: Boolean = false,
 ): AiWebSearchRoute =
     when (mode) {
         AiWebSearchMode.OFF -> AiWebSearchRoute.NONE
         AiWebSearchMode.SERVICE ->
             when {
+                // The plan-usage preview does not state hosted web search as supported, and another service's search never stands in.
+                chatGpt -> AiWebSearchRoute.NONE
                 provider.searchesInRequest -> AiWebSearchRoute.IN_REQUEST
                 provider == AiProvider.OPENAI -> AiWebSearchRoute.SEARCH_MODEL
                 else -> AiWebSearchRoute.NONE

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">AI provider</string>
+    <string name="ai_config_model">AI model</string>
+    <string name="ai_config_effort">Reasoning effort</string>
+    <string name="ai_config_model_replaced">“%1$s” is no longer offered. Using %2$s.</string>
+    <string name="ai_config_models_loading">Loading models…</string>
+    <string name="ai_config_models_failed">Couldn\'t load the model list. Open the menu and tap Refresh.</string>
+    <string name="ai_config_models_empty">No usable models were returned.</string>
+    <string name="ai_config_models_connect_chatgpt">Connect ChatGPT to see your models.</string>
+    <string name="ai_config_models_connect_key">Add a key to load the full model list.</string>
+    <string name="ai_config_models_refresh">Refresh model list</string>
+    <string name="ai_config_effort_replaced">“%1$s” isn\'t available on this model, so Automatic is used.</string>
+    <string name="ai_config_effort_fixed_chatgpt">ChatGPT Subscription has no adjustable reasoning effort.</string>
+    <string name="ai_config_effort_fixed">This model has no adjustable effort.</string>
+    <string name="ai_config_effort_unknown_claude">Load the model list to see the levels this model supports.</string>
+    <string name="ai_config_effort_auto_note">Keeps thinking short for subtitles where the model allows it.</string>
+    <string name="ai_config_key_saved">API key saved</string>
+    <string name="ai_config_key_missing">No API key for this provider. Google translates until you add one.</string>
+    <string name="ai_config_manage_keys">Manage keys</string>
+    <string name="ai_access_chatgpt_subscription">ChatGPT Subscription</string>
+    <string name="ai_access_chatgpt_note">Uses your ChatGPT plan, no API key.</string>
+    <string name="ai_access_gemini_api">Gemini API (free tier available)</string>
+    <string name="ai_access_gemini_note">Needs a Gemini API key. The free tier applies only where Google allows it for your key and model. Gemini AI Pro/Ultra plans are separate products and aren\'t used here. Charges depend on your Google billing settings.</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">Needs a Claude API key from the Anthropic Console. Usage is billed at API rates or by any Console credits you have. Claude Pro and Max subscriptions aren\'t used here.</string>
+    <string name="ai_translation_effort_auto">Automatic (recommended)</string>
+    <string name="ai_translation_effort_off">Off</string>
+    <string name="ai_translation_effort_minimal">Minimal</string>
+    <string name="ai_translation_effort_low">Low</string>
+    <string name="ai_translation_effort_medium">Medium</string>
+    <string name="ai_translation_effort_high">High</string>
+    <string name="ai_translation_effort_xhigh">Extra high</string>
+    <string name="ai_translation_effort_max">Max</string>
+    <string name="ai_translation_test">Test translation</string>
+    <string name="ai_translation_testing">Translating…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">Test sentence: German → Persian</string>
+    <string name="ai_translation_test_result">Result: %1$s</string>
+    <string name="ai_translation_test_origin">Answered by: %1$s</string>
+    <string name="ai_translation_test_no_key">No API key is saved for this provider.</string>
+    <string name="ai_translation_test_effort_refused">This model refused the chosen effort. Pick Automatic or another level.</string>
+</resources>

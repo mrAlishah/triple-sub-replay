@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">Hiện nguồn bản dịch (gỡ lỗi)</string>
+    <string name="translation_source_setting_description">Gắn nhãn nguồn gốc cho từng phụ đề đã dịch. Chạm vào nhãn để xem chi tiết.</string>
+    <string name="translation_source_chatgpt">Gói ChatGPT</string>
+    <string name="translation_source_chatgpt_cached">Gói ChatGPT (bộ nhớ đệm)</string>
+    <string name="translation_source_google">Google Dịch</string>
+    <string name="translation_source_on_device">Dịch trên thiết bị</string>
+    <string name="translation_source_youtube">Phụ đề dịch của YouTube</string>
+    <string name="translation_source_ai_provider">Nhà cung cấp AI</string>
+    <string name="translation_source_ai_provider_cached">Nhà cung cấp AI (bộ nhớ đệm)</string>
+    <string name="translation_source_unknown">Không rõ</string>
+    <string name="translation_source_dialog_title">Nguồn bản dịch</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">Mô hình: %1$s</string>
+    <string name="translation_source_dialog_events">Sự kiện AI và dự phòng gần đây</string>
+    <string name="translation_source_dialog_no_events">Chưa ghi nhận gì cho ngôn ngữ này.</string>
+    <string name="translation_source_event_request">Yêu cầu AI · số câu: %1$d</string>
+    <string name="translation_source_event_succeeded">AI đã trả lời · số câu: %1$d</string>
+    <string name="translation_source_event_failed">AI thất bại · %1$s · số câu giữ lại: %2$d</string>
+    <string name="translation_source_event_identical">%1$s cho văn bản giống đang hiển thị</string>
+    <string name="translation_source_event_fallback">Đang hiện %1$s thay cho AI</string>
+    <string name="translation_source_close">Đóng</string>
+    <string name="translation_source_event_scheduled">Đã nhờ AI dịch số câu: %1$d</string>
+    <string name="translation_source_event_upgraded">AI đã thay số dòng trên màn hình: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Đã yêu cầu dịch lại · số câu: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Bỏ qua bản dịch đã lưu cho yêu cầu mới</string>
+    <string name="translation_source_event_refresh_succeeded">Đã dịch lại · số câu: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Dịch lại thất bại · %1$s</string>
+</resources>

@@ -68,6 +68,15 @@ internal enum class AiErrorKind {
 
     /** The service refused its own web search (off for the account, or not for this model); asked again without it. */
     UNSUPPORTED_WEB_SEARCH,
+
+    /** ChatGPT Subscription: the sign-in ended or plan usage was not granted. */
+    PLAN_SIGN_IN_REQUIRED,
+
+    /** ChatGPT Subscription: this account cannot use plan usage. */
+    PLAN_NOT_AVAILABLE,
+
+    /** ChatGPT Subscription: the plan's usage limit was reached. */
+    PLAN_USAGE_LIMIT,
 }
 
 /** [detail] is the service's own English message, with the key removed, for reports. */
@@ -75,7 +84,10 @@ internal class AiChatException(
     val kind: AiErrorKind,
     val detail: String? = null,
     cause: Throwable? = null,
-) : IOException(detail ?: kind.name, cause)
+) : IOException(detail ?: kind.name, cause),
+    com.kienhoang.dualsubreplay.translation.DiagnosticReason {
+    override val reason: String get() = kind.name
+}
 
 internal enum class AiRole(
     val wire: String,
@@ -135,6 +147,10 @@ internal data class AiModelInfo(
     val id: String,
     val free: Boolean = false,
     val pictures: Boolean = false,
+    /** The service's own name for the model (Claude's `display_name`), when it gives one. */
+    val name: String? = null,
+    /** The effort levels the model accepts (Claude's `capabilities.effort`); empty when none, null when the service does not say. */
+    val efforts: Set<String>? = null,
 )
 
 /** Reads the service's model list, or throws [AiChatException]. */
@@ -236,10 +252,22 @@ internal fun parseAiModelList(body: String): List<AiModelInfo> {
                     id.endsWith(":free") || id.endsWith("-free") ||
                         (pricing?.optString("prompt") == "0" && pricing.optString("completion") == "0"),
                 pictures = inputs != null && (0 until inputs.length()).any { inputs.optString(it) == "image" },
+                name = model.optString("display_name").trim().takeIf { it.isNotEmpty() },
+                efforts = model.optJSONObject("capabilities")?.optJSONObject("effort")?.let(::supportedEfforts),
             )
         }.distinctBy { it.id }
         .sortedBy { it.id.lowercase() }
 }
+
+private val EFFORT_LEVELS = listOf("low", "medium", "high", "xhigh", "max")
+
+/** Claude's `capabilities.effort`: `{"supported": true, "low": {"supported": true}, …}`; only levels it marks supported. */
+private fun supportedEfforts(effort: JSONObject): Set<String> =
+    if (!effort.optBoolean("supported", false)) {
+        emptySet()
+    } else {
+        EFFORT_LEVELS.filterTo(LinkedHashSet()) { effort.optJSONObject(it)?.optBoolean("supported", false) == true }
+    }
 
 /** Parts of model names that mean the model makes embeddings, speech, pictures or moderation, not chat. */
 private val NON_CHAT_MODEL_WORDS =
@@ -473,6 +501,8 @@ internal class AiHttpTransport(
     AiModelLister,
     AiHttpPoster {
     override suspend fun complete(request: AiChatRequest): AiReply {
+        // A ChatGPT request has no key and no keyed address; it never goes out through this transport.
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))
@@ -510,6 +540,7 @@ internal class AiHttpTransport(
         request: AiChatRequest,
         onText: (String) -> Unit,
     ): AiReply {
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))

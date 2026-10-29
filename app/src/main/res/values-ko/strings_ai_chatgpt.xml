@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatgpt_note">API 키 없이 OpenAI 로그인으로 내 ChatGPT 요금제를 사용합니다. 자막 텍스트는 번역을 위해 OpenAI로 전송되며 ChatGPT 대화는 읽지 않습니다. 요금제의 사용량과 한도가 적용되며 사용 가능 여부는 요금제에 따라 다릅니다.</string>
+    <string name="chatgpt_continue">ChatGPT로 계속</string>
+    <string name="chatgpt_status_not_connected">연결되지 않음</string>
+    <string name="chatgpt_status_connecting">연결 중… 브라우저에서 로그인을 완료하세요</string>
+    <string name="chatgpt_status_checking">계정 확인 중…</string>
+    <string name="chatgpt_status_ready">연결됨 · 요금제 사용 허용됨</string>
+    <string name="chatgpt_status_no_plan">연결되었지만 요금제 사용이 허용되지 않았습니다. 다시 계속하여 허용하세요.</string>
+    <string name="chatgpt_status_not_eligible">이 계정은 ChatGPT 요금제를 사용할 수 없습니다.</string>
+    <string name="chatgpt_status_sign_in">ChatGPT 요금제를 계속 쓰려면 다시 로그인하세요.</string>
+    <string name="chatgpt_status_limit">ChatGPT 요금제 사용 한도에 도달했습니다. ChatGPT 설정 → 사용량을 확인하세요.</string>
+    <string name="chatgpt_status_temporary">ChatGPT를 일시적으로 사용할 수 없습니다. 나중에 다시 시도하세요.</string>
+    <string name="chatgpt_sign_in_failed">로그인이 완료되지 않았습니다. 다시 시도하세요.</string>
+    <string name="chatgpt_account">계정: %1$s</string>
+    <string name="chatgpt_account_unknown">연결된 ChatGPT 계정</string>
+    <string name="chatgpt_refresh">상태 새로고침</string>
+    <string name="chatgpt_disconnect">연결 해제</string>
+    <string name="chatgpt_test_failed">테스트 번역에 실패했습니다.</string>
+    <string name="chatgpt_cancel">취소</string>
+</resources>

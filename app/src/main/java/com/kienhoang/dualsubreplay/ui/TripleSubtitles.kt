@@ -35,7 +35,9 @@ import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
 import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
+import com.kienhoang.dualsubreplay.translation.Translated
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
 
@@ -178,11 +180,18 @@ data class ThirdLines(
     val lines: Map<Long, String> = emptyMap(),
     /** The language [lines] were translated into; null until the run starts. */
     val language: String? = null,
+    /** Who wrote each of [lines] (diagnostics); a line without an entry reads as unknown. */
+    val origins: Map<Long, TranslationOrigin> = emptyMap(),
 ) {
     fun textFor(
         activeVideoId: String?,
         segmentId: Long,
     ): String? = if (activeVideoId != null && activeVideoId == videoId) lines[segmentId] else null
+
+    fun originFor(
+        activeVideoId: String?,
+        segmentId: Long,
+    ): TranslationOrigin? = if (activeVideoId != null && activeVideoId == videoId) origins[segmentId] else null
 }
 
 internal fun thirdSentenceTranslations(
@@ -215,20 +224,43 @@ internal fun DualSubUiState.thirdSentenceFor(selection: LearningWordSelection): 
 internal fun DualSubUiState.thirdLineFor(segmentId: Long): String? =
     thirdLines.takeIf { it.language == thirdLanguage }?.textFor(activeVideoId, segmentId)
 
+/** Who wrote the third line of row [segmentId] (same language rule as [thirdLineFor]); null when not recorded. */
+internal fun DualSubUiState.thirdOriginFor(segmentId: Long): TranslationOrigin? =
+    thirdLines.takeIf { it.language == thirdLanguage }?.originFor(activeVideoId, segmentId)
+
 /**
  * Translates the rows near playback into the third language with the same window loop as the second
- * line, and hands the finished lines to [publish]. A translator error only stops this line: the loop
- * reports it to nobody, so the original and the second line never learn of it. Cancellation propagates.
+ * line, and hands the finished lines to [publish]. [prefetch] and [upgrades] are the second line's AI hooks.
+ * A translator error only stops this line: the loop reports it to nobody, so the original and the second
+ * line never learn of it. Cancellation propagates.
  */
 internal suspend fun runThirdLanguage(
     store: SubtitleStore,
     requests: StateFlow<CaptionPlaybackRequest>,
     translate: suspend (String) -> String,
+    prefetch: (suspend (List<String>) -> Unit)? = null,
+    upgrades: TranslationUpgrades? = null,
     publish: (Map<Long, String>) -> Unit,
+) = runThirdLanguageTracked(store, requests, { text -> Translated(translate(text), null) }, prefetch, upgrades) { lines, _ ->
+    publish(lines)
+}
+
+/** [runThirdLanguage] where each line says who wrote it, handed to [publish] beside the lines (by row id). */
+internal suspend fun runThirdLanguageTracked(
+    store: SubtitleStore,
+    requests: StateFlow<CaptionPlaybackRequest>,
+    translate: suspend (String) -> Translated,
+    prefetch: (suspend (List<String>) -> Unit)? = null,
+    upgrades: TranslationUpgrades? = null,
+    publish: (Map<Long, String>, Map<Long, TranslationOrigin>) -> Unit,
 ) {
     try {
-        translatePlaybackWindow(store, requests, translate) { rows, _ ->
-            publish(rows.mapNotNull { row -> row.translatedText?.takeIf(String::isNotBlank)?.let { row.id to it } }.toMap())
+        translatePlaybackWindowTracked(store, requests, translate, prefetch = prefetch, upgrades = upgrades) { rows, _ ->
+            val shown = rows.filter { !it.translatedText.isNullOrBlank() }
+            publish(
+                shown.associate { it.id to it.translatedText.orEmpty() },
+                shown.mapNotNull { row -> row.translationOrigin?.let { row.id to it } }.toMap(),
+            )
         }
     } catch (error: CancellationException) {
         throw error

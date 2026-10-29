@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">Terjemahkan ulang dengan AI</string>
+    <string name="retranslate_subtitles">Subtitle mana</string>
+    <string name="retranslate_both">Keduanya</string>
+    <string name="retranslate_scope">Seberapa banyak</string>
+    <string name="retranslate_scope_sentence">Kalimat saat ini</string>
+    <string name="retranslate_scope_window">Jendela pemutaran saat ini</string>
+    <string name="retranslate_scope_video">Seluruh video</string>
+    <string name="retranslate_note">Meminta AI lagi dan dapat memakai lebih banyak jatah paket ChatGPT atau kredit API Anda. Subtitle di layar tetap sampai yang baru tiba.</string>
+    <string name="retranslate_video_warning">Mengirim sekitar %1$d kalimat dalam kira-kira %2$d permintaan dan dapat memakai banyak jatah atau kredit.</string>
+    <string name="retranslate_video_confirm">Saya mengerti dan ingin melanjutkan</string>
+    <string name="retranslate_start">Terjemahkan ulang</string>
+    <string name="retranslate_stop">Hentikan</string>
+    <string name="retranslate_progress">Menerjemahkan ulang… %1$d dari %2$d</string>
+    <string name="retranslate_refreshing">Memperbarui…</string>
+    <string name="retranslate_failed">Gagal menerjemahkan ulang (%1$s). Baris yang belum diperbarui tetap seperti semula.</string>
+    <string name="retranslate_failed_short">Gagal memperbarui</string>
+    <string name="retranslate_unavailable">Hubungkan penyedia AI dulu: masuk dengan ChatGPT atau tambahkan kunci API di pengaturan AI.</string>
+</resources>

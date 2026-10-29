@@ -86,7 +86,9 @@ class AiTranslationAccessTest {
                     if (request.reasoningEffort != null) throw AiChatException(AiErrorKind.UNSUPPORTED_THINKING)
                     AiReply("ok")
                 }
-            val model = aiTranslationModel(gemini, null, store, transport, AiKeyPacer(intervalMs = 0))!!
+            // A Pro model cannot turn thinking off, so Automatic sends nothing for it (see aiTranslationEffort); Flash does.
+            val flash = AiAssistantSettings(provider = AiProvider.GEMINI, models = mapOf(AiProvider.GEMINI to "gemini-flash-latest"))
+            val model = aiTranslationModel(flash, null, store, transport, AiKeyPacer(intervalMs = 0))!!
             assertEquals("ok", model.ask("system", "user"))
             assertEquals(listOf("none", null), efforts)
         }

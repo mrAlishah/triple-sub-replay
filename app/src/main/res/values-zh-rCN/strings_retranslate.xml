@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">用 AI 重新翻译</string>
+    <string name="retranslate_subtitles">哪些字幕</string>
+    <string name="retranslate_both">两者</string>
+    <string name="retranslate_scope">范围</string>
+    <string name="retranslate_scope_sentence">当前句子</string>
+    <string name="retranslate_scope_window">当前播放范围</string>
+    <string name="retranslate_scope_video">整个视频</string>
+    <string name="retranslate_note">会再次请求 AI,可能消耗更多 ChatGPT 套餐额度或 API 额度。新字幕到达前,屏幕上的字幕保持不变。</string>
+    <string name="retranslate_video_warning">将发送约 %1$d 个句子,约 %2$d 次请求,可能消耗大量额度。</string>
+    <string name="retranslate_video_confirm">我已了解并要继续</string>
+    <string name="retranslate_start">重新翻译</string>
+    <string name="retranslate_stop">停止</string>
+    <string name="retranslate_progress">正在重新翻译… %1$d / %2$d</string>
+    <string name="retranslate_refreshing">正在刷新…</string>
+    <string name="retranslate_failed">无法重新翻译(%1$s)。尚未刷新的行保持原样。</string>
+    <string name="retranslate_failed_short">刷新失败</string>
+    <string name="retranslate_unavailable">请先连接 AI 提供商:用 ChatGPT 登录,或在 AI 设置中添加 API 密钥。</string>
+</resources>

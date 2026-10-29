@@ -50,14 +50,6 @@ internal fun aiTranslationModelName(
     chosen: String?,
 ): String = chosen?.takeIf { it in aiTranslationModelChoices(settings) } ?: aiTranslationDefaultModel(settings)
 
-/** Turns thinking off where the service allows it: translation needs speed, and free limits count thinking tokens. */
-internal fun aiTranslationEffort(provider: AiProvider): String? =
-    when (provider) {
-        AiProvider.GEMINI -> "none"
-        AiProvider.OPENAI -> "minimal"
-        else -> null
-    }
-
 /**
  * The model subtitles are translated with: the service and keys chosen in More settings → AI
  * assistant, and the model chosen in Settings → Translation (owner request 2026-10-28). Null when
@@ -71,30 +63,53 @@ internal fun aiTranslationModel(
     pacer: AiKeyPacer = AiKeyPacer.Shared,
 ): AiTranslationModel? {
     val provider = settings.provider
-    val ids = keyStore.keys(provider).map { it.id }
-    val model = aiTranslationModelName(settings, chosenModel)
-    if (ids.isEmpty() || model.isBlank()) return null
-    return KeyedAiTranslationModel(provider, model, settings.baseUrlFor(provider), ids, keyStore, transport, pacer)
+    return aiTranslationModel(
+        provider,
+        aiTranslationModelName(settings, chosenModel),
+        AiEffort.AUTO,
+        settings.baseUrlFor(provider),
+        keyStore,
+        transport,
+        pacer,
+    )
 }
 
-/** Reads the AI assistant's settings and keys from the app's own storage. */
-internal fun Context.aiTranslationModel(
-    chosenModel: String?,
+/**
+ * [provider]'s model [model] with the user's keys for that provider, sending [effort] only as [aiEffortWire] allows. Null when
+ * the provider has no key or no model, so Google translates; another provider's keys are never used.
+ */
+internal fun aiTranslationModel(
+    provider: AiProvider,
+    model: String,
+    effort: AiEffort,
+    baseUrl: String,
+    keyStore: AiKeyStore,
     transport: AiChatTransport,
+    pacer: AiKeyPacer = AiKeyPacer.Shared,
+    dropRefusedEffort: Boolean = true,
+): AiTranslationModel? {
+    val ids = keyStore.keys(provider).map { it.id }
+    if (ids.isEmpty() || model.isBlank()) return null
+    return KeyedAiTranslationModel(provider, model, baseUrl, ids, keyStore, transport, pacer, effort, dropRefusedEffort)
+}
+
+/** The user's own [provider] keys and settings from the app's storage, for the chosen [model] and [effort]. */
+internal fun Context.aiTranslationModelFor(
+    provider: AiProvider,
+    model: String,
+    effort: AiEffort,
+    transport: AiChatTransport,
+    dropRefusedEffort: Boolean = true,
 ): AiTranslationModel? =
     aiTranslationModel(
-        readAiAssistantSettings(getSharedPreferences(AI_SETTINGS_PREFERENCES, 0)),
-        chosenModel,
+        provider,
+        model,
+        effort,
+        readAiAssistantSettings(getSharedPreferences(AI_SETTINGS_PREFERENCES, 0)).baseUrlFor(provider),
         AiKeyStore(SharedPreferencesSecretStorage(getSharedPreferences(AI_KEYS_PREFERENCES, 0)), KeystoreSecretCipher()),
         transport,
+        dropRefusedEffort = dropRefusedEffort,
     )
-
-/** The AI assistant's model, then the other translation models its current service offers (without it again). */
-internal fun Context.aiTranslationModelChoices(): Pair<String, List<String>> {
-    val settings = readAiAssistantSettings(getSharedPreferences(AI_SETTINGS_PREFERENCES, 0))
-    val assistant = aiTranslationDefaultModel(settings)
-    return assistant to aiTranslationModelChoices(settings).filter { it != assistant }
-}
 
 /**
  * When each key was last asked and how long it rests, kept for the whole app run so a new video does
@@ -162,13 +177,16 @@ private class KeyedAiTranslationModel(
     private val keyStore: AiKeyStore,
     private val transport: AiChatTransport,
     private val pacer: AiKeyPacer,
+    chosenEffort: AiEffort = AiEffort.AUTO,
+    /** Subtitles go on without a refused setting; Test translation reports the refusal instead. */
+    private val dropRefusedEffort: Boolean = true,
 ) : AiTranslationModel {
-    override val scope: String = "${provider.key}/$model"
+    override val scope: String = aiTranslationScope(provider, model, chosenEffort)
 
     private val pacedIds = keyIds.map { "${provider.key}/$it" }
 
     /** Cleared once the model refuses the thinking setting, so later requests do not fail first. */
-    @Volatile private var effort = aiTranslationEffort(provider)
+    @Volatile private var effort = aiEffortWire(provider, model, chosenEffort)
 
     override suspend fun ask(
         system: String,
@@ -215,7 +233,9 @@ private class KeyedAiTranslationModel(
             } catch (error: AiChatException) {
                 when {
                     text.started -> throw error
-                    effort != null && error.kind in setOf(AiErrorKind.UNSUPPORTED_THINKING, AiErrorKind.BAD_REQUEST) -> effort = null
+                    dropRefusedEffort && effort != null && error.kind in setOf(AiErrorKind.UNSUPPORTED_THINKING, AiErrorKind.BAD_REQUEST) ->
+                        effort =
+                            null
                     error.kind == AiErrorKind.SERVER && waits.hasNext() -> delay(waits.next())
                     else -> throw error
                 }

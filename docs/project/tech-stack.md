@@ -125,6 +125,15 @@ Paths below are relative to
   summary of the current settings. `ui/AiAssistantUi.kt` puts the button at the top right (the
   translation icon returns when the assistant is off) and `ui/AiAssistantPanel.kt` is the
   right-side panel with the app's problems first. See the [spec](../specs/2026-10-08-ai-assistant-panel.md).
+- ChatGPT Subscription (`chatgpt/`, owner request 2026-10-29, [spec](../specs/2026-10-29-chatgpt-subscription-translation.md)):
+  an optional second way to run the AI subtitle translation with the user's own ChatGPT plan through OpenAI's
+  official Sign in with ChatGPT plan-usage preview, with no API key. `ChatGptOAuth.kt` (PKCE, callback parsing,
+  RS256 ID-token checks), `ChatGptLoopback.kt` (one-shot `127.0.0.1` listener for the documented loopback redirect),
+  `ChatGptSignIn.kt`, `ChatGptSession.kt` (Keystore-sealed credentials, single-flight rotating refresh, disconnect),
+  `ChatGptHttpApi.kt` and `ChatGptResponses.kt` (models and `POST /v1/responses`, SSE, error mapping) and
+  `ChatGptTranslationModel.kt`, an `AiTranslationModel` that serves Subtitle 1 and Subtitle 2. Credentials live in the
+  `chatgpt_subscription` preferences, excluded from backups. Off unless chosen; a missing or failing session falls back
+  to Google or the device and never to a keyed service.
 - `data/JapaneseGrammar.kt` finds Japanese grammar points from Kuromoji morphemes: a data
   catalogue of N5 to N1 patterns (`JapaneseGrammarCatalogue.kt`, matched by `GrammarPattern.kt`)
   plus hand-written rules for context-dependent points. Every catalogue point needs an example

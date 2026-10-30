@@ -66,10 +66,19 @@ internal class ChatGptChatBackend(
     suspend fun respond(
         body: String,
         onText: (String) -> Unit,
+    ): ChatGptResult = respondTracked(body, onText) { }
+
+    /** Like [respond], and runs [onSent] once the request is about to leave the phone: the token is in hand and the permission was checked. */
+    suspend fun respondTracked(
+        body: String,
+        onText: (String) -> Unit,
+        onSent: () -> Unit,
     ): ChatGptResult =
         // A refused request (for example one that carried tools) is told to the caller, not remembered for everyone: the chat
         // asks again without tools, and subtitle translation must not stop for a minute because of it.
         chatGptCall(session, gate, retryDelaysMs, wait, remember = { it.kind != ChatGptErrorKind.BAD_REQUEST }) { access, started ->
+            // The session gave a token, so the plan-usage permission was checked; only now does the request leave the phone.
+            onSent()
             api.respond(access, body) {
                 started()
                 onText(it)

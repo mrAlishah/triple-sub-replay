@@ -219,6 +219,8 @@ internal data class AiAssistantUiState(
     val chatGpt: ChatGptUiState = ChatGptUiState(),
     /** The reply so far while ChatGPT streams it; empty otherwise. Never stored: only a completed reply becomes a message. */
     val draft: String = "",
+    /** Where the last question that got no answer (failed, stopped, cut short) was sent and how it ended; cleared by the next one. */
+    val lastAttempt: AiResponseSource? = null,
 ) {
     /** ChatGPT Subscription is the chat service and its account can answer: connected, plan usage allowed, a model set. */
     val chatGptChatReady: Boolean get() = chatGpt.status == ChatGptStatus.READY && chatGpt.model.isNotBlank()
@@ -443,6 +445,8 @@ internal class AiAssistantController(
 
     /** Off by default: on, the assistant may also change its own settings, keys, saved words and reset settings. */
     fun setFullAccess(enabled: Boolean) = updateSettings { it.copy(fullAccess = enabled) }
+
+    fun setShowResponseSource(enabled: Boolean) = updateSettings { it.copy(showResponseSource = enabled) }
 
     fun setThinking(thinking: AiThinking) = updateSettings { it.copy(thinking = thinking, thinkings = it.thinkings + (it.provider to thinking)) }
 
@@ -802,21 +806,33 @@ internal class AiAssistantController(
             systemPrompt + aiMemoryPrompt(current.memory.instructions, memories, memoryUse) +
                 (if (settings.fullAccess) aiFullAccessPrompt(current) else "")
         val searches = poster?.let { Searches(settings, route, it) }
+        val selectedId = if (settings.chatGptService) CHATGPT_ACCESS_ID else settings.provider.key
+        val wantedModel = if (settings.chatGptService) current.chatGpt.model else settings.modelFor(settings.provider)
+        // What the transports say about each request this answer needed; the source is built from it, not from the setting.
+        val trace = AiRunTrace()
         val run =
             AiAnswerRun(appActions, history, tools, memories, newId, settings.fullAccess, searches, webSearch) { messages, offered ->
-                request(settings, messages, AI_CHAT_TIMEOUT_MS, settings.thinkingFor(settings.provider).effort, offered, webSearch = this.webSearch)
+                try {
+                    request(settings, messages, AI_CHAT_TIMEOUT_MS, settings.thinkingFor(settings.provider).effort, offered, webSearch = this.webSearch)
+                        .also(trace::answered)
+                } catch (error: AiChatException) {
+                    trace.failed(error)
+                    throw error
+                }
             }
-        _state.update { it.copy(sending = true, failure = null, stopped = false) }
+        _state.update { it.copy(sending = true, failure = null, stopped = false, lastAttempt = null) }
         sendJob =
             scope.launch {
                 try {
                     run.run(prompt)
-                    addAnswer(run, chatId)
+                    addAnswer(run, chatId, trace.source(AiResponseStatus.COMPLETED, selectedId, wantedModel))
                 } catch (error: AiChatException) {
+                    val status = if (error.kind == AiErrorKind.BAD_REPLY) AiResponseStatus.INCOMPLETE else AiResponseStatus.FAILED
+                    val attempt = trace.source(status, selectedId, wantedModel)
                     // Actions that already ran still show, with their Undo.
-                    if (run.records.isNotEmpty()) addAnswer(run, chatId)
+                    if (run.records.isNotEmpty()) addAnswer(run, chatId, attempt)
                     val failure = AiFailure(error.kind, error.detail)
-                    _state.update { it.copy(sending = false, failure = failure) }
+                    _state.update { it.copy(sending = false, failure = failure, lastAttempt = attempt) }
                     // Once no key works any more, the chat goes back to the check card, which says why,
                     // unless a key was added or removed while the question was on its way.
                     val latest = _state.value
@@ -826,11 +842,12 @@ internal class AiAssistantController(
                         _state.update { it.copy(connectionTest = AiConnectionTest.Failed(failure)) }
                     }
                 } catch (cancelled: CancellationException) {
+                    val attempt = trace.source(AiResponseStatus.CANCELLED, selectedId, wantedModel)
                     if (run.records.isNotEmpty()) {
-                        addAnswer(run, chatId)
+                        addAnswer(run, chatId, attempt)
                         persistChats()
                     }
-                    _state.update { it.copy(sending = false) }
+                    _state.update { it.copy(sending = false, lastAttempt = attempt) }
                     throw cancelled
                 } finally {
                     _state.update { it.copy(draft = "") }
@@ -845,6 +862,7 @@ internal class AiAssistantController(
     private fun addAnswer(
         run: AiAnswerRun,
         chatId: String?,
+        source: AiResponseSource,
     ) {
         undos += run.undos
         waitingActions += run.waiting
@@ -852,7 +870,7 @@ internal class AiAssistantController(
         _state.update { current ->
             val chat = current.chat?.takeIf { it.id == chatId } ?: return@update current.copy(sending = false)
             val answer =
-                AiChatMessage(newId(), AiRole.ASSISTANT, run.text, now, actions = run.records.toList(), sources = run.sources.toList())
+                AiChatMessage(newId(), AiRole.ASSISTANT, run.text, now, actions = run.records.toList(), sources = run.sources.toList(), source = source)
             current.copy(chat = chat.copy(updatedMs = now, messages = chat.messages + answer), sending = false)
         }
     }
@@ -936,7 +954,7 @@ internal class AiAssistantController(
     ): AiReply {
         val current = _state.value
         if (!current.chatGptChatReady) throw AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
-        val request = AiChatRequest("", current.chatGpt.model, "", messages, timeoutMs, null, tools, AiWireFormat.CHATGPT_RESPONSES, false)
+        val request = AiChatRequest("", current.chatGpt.model, "", messages, timeoutMs, null, tools, AiWireFormat.CHATGPT_RESPONSES, false, CHATGPT_ACCESS_ID)
         _state.update { it.copy(draft = "") }
         return withContext(io) {
             aiCall { transport.stream(request) { piece -> _state.update { it.copy(draft = it.draft + piece) } } }
@@ -974,6 +992,7 @@ internal class AiAssistantController(
                     tools,
                     provider.format,
                     webSearch,
+                    provider.key,
                 ),
                 waitWhenRateLimited = last,
             )
@@ -1230,4 +1249,42 @@ internal class AiAssistantController(
         sendJob = null
         _state.update { it.copy(sending = false, draft = "") }
     }
+}
+
+/** What the transports reported for the requests of one answer. */
+private class AiRunTrace {
+    private var execution: AiExecution? = null
+    private var reportedModel: String? = null
+    private var requests = 0
+
+    fun answered(reply: AiReply) {
+        requests++
+        reply.execution?.let { execution = it }
+        reply.model.takeIf { it.isNotBlank() }?.let { reportedModel = it }
+    }
+
+    /** A failure counts as a request only when the transport says one was sent. */
+    fun failed(error: AiChatException) {
+        error.execution?.let {
+            execution = it
+            requests++
+        }
+    }
+
+    fun source(
+        status: AiResponseStatus,
+        selectedProviderId: String,
+        wantedModel: String,
+    ): AiResponseSource =
+        AiResponseSource(
+            providerId = execution?.providerId.orEmpty(),
+            auth = execution?.auth,
+            api = execution?.api,
+            requestedModel = execution?.requestedModel ?: wantedModel,
+            reportedModel = reportedModel,
+            status = status,
+            selectedProviderId = selectedProviderId,
+            requests = requests,
+            planUsageVerified = execution?.planUsageVerified,
+        )
 }

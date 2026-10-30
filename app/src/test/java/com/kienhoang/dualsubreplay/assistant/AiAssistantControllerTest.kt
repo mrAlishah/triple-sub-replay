@@ -63,25 +63,35 @@ private class FakeTransport : AiChatTransport {
     var pieces = emptyList<String>()
     var holdStream: CompletableDeferred<Unit>? = null
 
+    /** What the real transport would stamp on every reply and failure: who actually ran the request. */
+    var execution: AiExecution? = null
+
+    /** The model the "server" names in its reply, when it names one. */
+    var reportedModel = ""
+
+    private fun stamped(reply: AiReply) = reply.copy(model = reply.model.ifEmpty { reportedModel }, execution = reply.execution ?: execution)
+
+    private fun stamped(error: AiChatException) = error.also { if (it.execution == null) it.execution = execution }
+
     override suspend fun stream(
         request: AiChatRequest,
         onText: (String) -> Unit,
     ): AiReply {
         if (pieces.isEmpty()) return super.stream(request, onText)
         requests += request
-        failure?.let { throw it }
+        failure?.let { throw stamped(it) }
         pieces.forEach(onText)
         holdStream?.await()
-        return AiReply(pieces.joinToString(""))
+        return stamped(AiReply(pieces.joinToString("")))
     }
 
     override suspend fun complete(request: AiChatRequest): AiReply {
         requests += request
-        failForKey[request.apiKey]?.let { throw it }
-        replies.removeFirstOrNull()?.let { return it }
-        failOnce.removeFirstOrNull()?.let { throw it }
-        failure?.let { throw it }
-        return AiReply(pending?.await() ?: reply)
+        failForKey[request.apiKey]?.let { throw stamped(it) }
+        replies.removeFirstOrNull()?.let { return stamped(it) }
+        failOnce.removeFirstOrNull()?.let { throw stamped(it) }
+        failure?.let { throw stamped(it) }
+        return stamped(AiReply(pending?.await() ?: reply))
     }
 }
 
@@ -338,6 +348,150 @@ class AiAssistantControllerTest {
         settings.value = settings.value.copy(chatGptService = true)
         controller().attachChatGpt(gptReady) { refreshes++ }
         assertEquals("a restart with ChatGPT already chosen loads it", 2, refreshes)
+    }
+
+    private val chatGptRun = AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", planUsageVerified = true)
+    private val geminiRun = AiExecution(AiProvider.GEMINI.key, AiAuthMethod.API_KEY, AiApiFamily.OPENAI_CHAT, AiProvider.GEMINI.defaultModel)
+
+    private fun chatGptController(): AiAssistantController {
+        val controller = controller()
+        controller.attachChatGpt(gptReady)
+        controller.selectChatGptService()
+        return controller
+    }
+
+    @Test
+    fun aChatGptAnswerCarriesTheSourceTheTransportReported() {
+        transport.execution = chatGptRun
+        transport.reportedModel = "gpt-x-2026-10-01"
+        val controller = chatGptController()
+        controller.send("Hello", "guide")
+        val source = controller.state.value.messages.last().source!!
+        assertEquals(CHATGPT_ACCESS_ID, source.providerId)
+        assertEquals(AiAuthMethod.OAUTH, source.auth)
+        assertEquals(AiApiFamily.CHATGPT_RESPONSES, source.api)
+        assertEquals("gpt-x", source.requestedModel)
+        assertEquals("gpt-x-2026-10-01", source.reportedModel)
+        assertEquals(AiResponseStatus.COMPLETED, source.status)
+        assertEquals(CHATGPT_ACCESS_ID, source.selectedProviderId)
+        assertEquals(true, source.planUsageVerified)
+        assertFalse(source.fallback)
+        assertTrue(source.successful)
+        assertEquals(1, source.requests)
+    }
+
+    @Test
+    fun aGeminiAnswerSaysGeminiApiKeyAndNoReportedModelWhenTheServerNamedNone() {
+        transport.execution = geminiRun
+        checkedGeminiKey()
+        val controller = controller()
+        controller.send("Hello", "guide")
+        val source = controller.state.value.messages.last().source!!
+        assertEquals(AiProvider.GEMINI.key, source.providerId)
+        assertEquals(AiAuthMethod.API_KEY, source.auth)
+        assertNull(source.reportedModel)
+        assertNull(source.planUsageVerified)
+    }
+
+    @Test
+    fun switchingTheChatServiceChangesNewAnswersAndKeepsTheOldOnesProvenance() {
+        checkedGeminiKey()
+        transport.execution = chatGptRun
+        val controller = chatGptController()
+        controller.send("First", "guide")
+        controller.selectProvider(AiProvider.GEMINI)
+        transport.execution = geminiRun
+        controller.send("Second", "guide")
+        val answers = controller.state.value.messages.filter { it.role == AiRole.ASSISTANT }
+        assertEquals(listOf(CHATGPT_ACCESS_ID, AiProvider.GEMINI.key), answers.map { it.source?.providerId })
+        assertEquals(listOf(CHATGPT_ACCESS_ID, AiProvider.GEMINI.key), answers.map { it.source?.selectedProviderId })
+    }
+
+    @Test
+    fun aFailedQuestionStoresNoAnswerAndItsAttemptIsNeverMarkedCompleted() {
+        transport.execution = chatGptRun
+        transport.failure = AiChatException(AiErrorKind.PLAN_USAGE_LIMIT)
+        val controller = chatGptController()
+        controller.send("Hello", "guide")
+        val state = controller.state.value
+        assertTrue(state.messages.none { it.role == AiRole.ASSISTANT })
+        val attempt = state.lastAttempt!!
+        assertEquals(AiResponseStatus.FAILED, attempt.status)
+        assertEquals(CHATGPT_ACCESS_ID, attempt.providerId)
+        assertFalse(attempt.successful)
+    }
+
+    @Test
+    fun aQuestionThatNeverLeftThePhoneSaysNoRequestWasSentAndNamesNoProvider() {
+        transport.failure = AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
+        val controller = chatGptController()
+        controller.send("Hello", "guide")
+        val attempt = controller.state.value.lastAttempt!!
+        assertEquals("", attempt.providerId)
+        assertFalse(attempt.network)
+        assertEquals(CHATGPT_ACCESS_ID, attempt.selectedProviderId)
+        assertFalse("not a fallback: nothing answered", attempt.fallback)
+    }
+
+    @Test
+    fun anIncompleteReplyIsIncompleteAndAStopIsCancelledNeitherIsCompleted() {
+        transport.execution = chatGptRun
+        transport.failure = AiChatException(AiErrorKind.BAD_REPLY)
+        val controller = chatGptController()
+        controller.send("Hello", "guide")
+        assertEquals(AiResponseStatus.INCOMPLETE, controller.state.value.lastAttempt?.status)
+
+        transport.failure = null
+        transport.pieces = listOf("Hal", "lo")
+        transport.holdStream = CompletableDeferred()
+        controller.send("Again", "guide")
+        controller.stop()
+        val attempt = controller.state.value.lastAttempt!!
+        assertEquals(AiResponseStatus.CANCELLED, attempt.status)
+        assertFalse(attempt.successful)
+        assertTrue(controller.state.value.messages.none { it.role == AiRole.ASSISTANT && it.source?.status == AiResponseStatus.COMPLETED })
+    }
+
+    @Test
+    fun anAnswerBuiltFromSeveralRequestsCountsThemAndKeepsTheLastReportedModel() {
+        checkedGeminiKey()
+        transport.execution = geminiRun
+        transport.reportedModel = "gemini-2"
+        val controller = controller().also { it.appActions = RecordingApp() }
+        transport.replies += AiReply("", listOf(toolCall(AI_SETTING_TOOL, """{"setting":"text_size","value":"150"}""")))
+        transport.reply = "Bigger now."
+        controller.send("Bigger subtitles", "guide")
+        val source = controller.state.value.messages.last().source!!
+        assertEquals(2, source.requests)
+        assertEquals("gemini-2", source.reportedModel)
+        assertEquals(AiResponseStatus.COMPLETED, source.status)
+    }
+
+    @Test
+    fun aNewQuestionClearsTheLastAttemptAndTheSettingIsSavedAndOffByDefault() {
+        assertFalse(settings.value.showResponseSource)
+        val controller = controller()
+        controller.setShowResponseSource(true)
+        assertTrue(settings.value.showResponseSource)
+        transport.execution = chatGptRun
+        transport.failure = AiChatException(AiErrorKind.SERVER)
+        val chat = chatGptController()
+        chat.send("Hello", "guide")
+        assertEquals(AiResponseStatus.FAILED, chat.state.value.lastAttempt?.status)
+        transport.failure = null
+        chat.send("Again", "guide")
+        assertNull(chat.state.value.lastAttempt)
+    }
+
+    @Test
+    fun theStoredHistoryCarriesTheSourceAndNoKeyOrToken() {
+        checkedGeminiKey()
+        transport.execution = geminiRun
+        val controller = controller()
+        controller.send("Hello", "guide")
+        val saved = encodeAiChats(history.chats)
+        assertEquals(AiProvider.GEMINI.key, decodeAiChats(saved).single().messages.last().source?.providerId)
+        assertFalse(geminiKey in saved)
     }
 
     @Test

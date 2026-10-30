@@ -51,6 +51,8 @@ internal data class AiReply(
     val webQueries: List<String> = emptyList(),
     /** Claude stopped a long web search (`pause_turn`); sending [rawContent] back lets it go on. */
     val paused: Boolean = false,
+    /** Who ran the request, stamped by the transport; null when the transport did not say. */
+    val execution: AiExecution? = null,
 )
 
 /** The calls in a reply's `message.tool_calls`; calls without a name are skipped. */

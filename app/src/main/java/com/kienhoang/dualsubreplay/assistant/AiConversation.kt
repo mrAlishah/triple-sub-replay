@@ -55,6 +55,8 @@ internal data class AiChatMessage(
     val actions: List<AiActionRecord> = emptyList(),
     /** The pages an answer's web searches came from, listed under it. */
     val sources: List<AiWebSource> = emptyList(),
+    /** Which provider really produced an answer, from the transport that ran it; null for older messages. */
+    val source: AiResponseSource? = null,
 )
 
 internal data class AiChat(

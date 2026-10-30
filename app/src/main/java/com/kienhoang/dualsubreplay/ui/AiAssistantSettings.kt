@@ -371,6 +371,13 @@ internal fun AiAssistantSettingsSection(
             showChatGpt = hasChatGpt,
         )
         SettingsHint(stringResource(R.string.ai_chat_gear_hint))
+        SettingsSwitchRow(
+            title = stringResource(R.string.ai_show_response_source_title),
+            description = stringResource(R.string.ai_show_response_source_description),
+            checked = aiState.settings.showResponseSource,
+            onCheckedChange = controller::setShowResponseSource,
+            testTag = "ai_show_response_source",
+        )
     }
     Spacer(Modifier.height(12.dp))
     // Without a key, the connection section starts open: adding one is the next step.

@@ -59,6 +59,7 @@ private fun encodeMessage(message: AiChatMessage): JSONObject =
                 )
             }
             if (message.actions.isNotEmpty()) put("actions", JSONArray().apply { message.actions.forEach { put(encodeAction(it)) } })
+            message.source?.let { put("source", encodeAiResponseSource(it)) }
             if (message.sources.isNotEmpty()) {
                 put(
                     "sources",
@@ -111,6 +112,7 @@ private fun decodeMessage(json: JSONObject?): AiChatMessage? {
         attachments = decodeAttachmentNames(json.optJSONArray("attachments")),
         actions = decodeActions(json.optJSONArray("actions")),
         sources = decodeSources(json.optJSONArray("sources")),
+        source = decodeAiResponseSource(json.optJSONObject("source")),
     )
 }
 

@@ -22,6 +22,9 @@ internal const val AI_YOUTUBE_SEARCH_PREFERENCE = "ai_youtube_search"
 internal const val AI_WEB_SEARCH_PREFERENCE = "ai_web_search"
 internal const val AI_SCREEN_PREFERENCE = "ai_screen"
 
+/** Settings → AI assistant → Show AI response source (debug). */
+internal const val AI_SHOW_RESPONSE_SOURCE_PREFERENCE = "ai_show_response_source"
+
 /** Absent for a keyed service; [AI_SERVICE_ACCESS_CHATGPT] when ChatGPT Subscription is chosen under AI Service. */
 internal const val AI_SERVICE_ACCESS_PREFERENCE = "ai_assistant_service_access"
 internal const val AI_SERVICE_ACCESS_CHATGPT = "chatgpt"
@@ -116,6 +119,8 @@ internal data class AiAssistantSettings(
      * translation model saved before that keeps being used (see [aiTranslationModelChoice]).
      */
     val unifiedModels: Set<AiProvider> = emptySet(),
+    /** Off by default: show under each answer which provider really produced it (a debug aid, like the translation source). */
+    val showResponseSource: Boolean = false,
 ) {
     /** People who answered the intro before the current note see it once at the top of the chat. */
     val showsNews: Boolean get() = enabled && introSeen && newsSeen < AI_NEWS_VERSION
@@ -147,6 +152,7 @@ internal fun readAiAssistantSettings(preferences: SharedPreferences): AiAssistan
         webSearch = storedAiWebSearchMode(preferences.getString(AI_WEB_SEARCH_PREFERENCE, null)),
         screenLook = preferences.getBoolean(AI_SCREEN_PREFERENCE, true),
         chatGptService = preferences.getString(AI_SERVICE_ACCESS_PREFERENCE, null) == AI_SERVICE_ACCESS_CHATGPT,
+        showResponseSource = preferences.getBoolean(AI_SHOW_RESPONSE_SOURCE_PREFERENCE, false),
         thinkings =
             AiProvider.entries
                 .mapNotNull { provider ->
@@ -178,6 +184,7 @@ internal fun writeAiAssistantSettings(
         putBoolean(AI_YOUTUBE_SEARCH_PREFERENCE, settings.youtubeSearch)
         putString(AI_WEB_SEARCH_PREFERENCE, settings.webSearch.key)
         putBoolean(AI_SCREEN_PREFERENCE, settings.screenLook)
+        putBoolean(AI_SHOW_RESPONSE_SOURCE_PREFERENCE, settings.showResponseSource)
         if (settings.chatGptService) putString(AI_SERVICE_ACCESS_PREFERENCE, AI_SERVICE_ACCESS_CHATGPT) else remove(AI_SERVICE_ACCESS_PREFERENCE)
         AiProvider.entries.forEach { provider ->
             val level = settings.thinkings[provider]

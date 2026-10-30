@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -62,7 +61,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -73,7 +71,6 @@ import com.kienhoang.dualsubreplay.assistant.AiAssistantUiState
 import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.assistant.aiConnectionTargetFor
 import com.kienhoang.dualsubreplay.assistant.aiTranslationModelConflict
-import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
 import com.kienhoang.dualsubreplay.assistant.AiConnectionTest
 import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.assistant.AiSavedKey
@@ -82,8 +79,6 @@ import com.kienhoang.dualsubreplay.assistant.ChatHistoryRetention
 import com.kienhoang.dualsubreplay.assistant.MAX_AI_KEYS_PER_SERVICE
 import com.kienhoang.dualsubreplay.assistant.aiCheckedSetup
 import com.kienhoang.dualsubreplay.assistant.chatCompletionsUrl
-import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -110,35 +105,6 @@ internal fun AiConnectCard(
                 AiServicePicker(aiState.settings.provider, includeCustom = false, onSelect = controller::selectProvider)
                 AiSetupSteps(aiState, controller)
             }
-            TextButton(onClick = onOpenSettings, modifier = Modifier.testTag("ai_open_settings")) {
-                Text(stringResource(R.string.ai_open_settings))
-            }
-        }
-    }
-}
-
-/**
- * Shown in place of the chat while ChatGPT Subscription is the Chat AI Service but its account cannot answer: what to do, and the
- * account's real status. It never asks for a key and never uses another service.
- */
-@Composable
-internal fun AiChatGptStateCard(
-    status: ChatGptStatus,
-    onOpenSettings: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().testTag("ai_chat_chatgpt_card"),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-    ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.ai_chat_chatgpt_connect), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                stringResource(status.labelRes),
-                color = if (status.isProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.testTag("ai_chat_chatgpt_status"),
-            )
             TextButton(onClick = onOpenSettings, modifier = Modifier.testTag("ai_open_settings")) {
                 Text(stringResource(R.string.ai_open_settings))
             }
@@ -348,37 +314,7 @@ internal fun AiAssistantSettingsSection(
     }
     // Which service chat uses is chosen in the chat's own settings (its gear), not in Settings → AI Connection. There only the
     // services that are set up are offered, and the one chat uses now is always among them.
-    if (chatOnly) {
-        val gptState by (host.chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
-        SettingsSubheading(stringResource(R.string.ai_chat_service))
-        AiServiceMenu(
-            aiState,
-            chatTarget,
-            offered = { service ->
-                service == chatTarget ||
-                    when (service) {
-                        AiConnectionTarget.ChatGpt -> gptState.status == ChatGptStatus.READY
-                        is AiConnectionTarget.Key -> aiState.keys[service.provider].orEmpty().isNotEmpty()
-                    }
-            },
-            onSelect = {
-                when (it) {
-                    AiConnectionTarget.ChatGpt -> controller.selectChatGptService()
-                    is AiConnectionTarget.Key -> controller.selectProvider(it.provider)
-                }
-            },
-            tag = "ai_chat_service",
-            showChatGpt = hasChatGpt,
-        )
-        SettingsHint(stringResource(R.string.ai_chat_gear_hint))
-        SettingsSwitchRow(
-            title = stringResource(R.string.ai_show_response_source_title),
-            description = stringResource(R.string.ai_show_response_source_description),
-            checked = aiState.settings.showResponseSource,
-            onCheckedChange = controller::setShowResponseSource,
-            testTag = "ai_show_response_source",
-        )
-    }
+    if (chatOnly) AiChatServiceSettings(aiState, controller, host.chatGpt, chatTarget)
     Spacer(Modifier.height(12.dp))
     // Without a key, the connection section starts open: adding one is the next step.
     var open by rememberSaveable {
@@ -420,48 +356,6 @@ internal fun AiAssistantSettingsSection(
         }
     }
 }
-
-/** The Model and Thinking card's one line for the service shown: its model, and its thinking level where it has one. */
-@Composable
-private fun aiModelSummary(
-    target: AiConnectionTarget,
-    aiState: AiAssistantUiState,
-    chatGpt: ChatGptActions?,
-): String =
-    when (target) {
-        AiConnectionTarget.ChatGpt -> {
-            val state by (chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
-            state.model.ifEmpty { stringResource(R.string.ai_settings_model) }
-        }
-        is AiConnectionTarget.Key ->
-            aiState.settings.modelFor(target.provider).ifEmpty { stringResource(R.string.ai_settings_model) } + " · " +
-                stringResource(R.string.ai_effort_button, stringResource(aiState.settings.thinkingFor(target.provider).labelRes))
-    }
-
-@StringRes
-internal fun aiConnectionLabel(target: AiConnectionTarget): Int =
-    when (target) {
-        AiConnectionTarget.ChatGpt -> R.string.ai_service_chatgpt
-        is AiConnectionTarget.Key -> target.provider.labelRes
-    }
-
-/** The Connection card's one line: the saved keys of a keyed service, or the ChatGPT sign-in state. */
-@Composable
-private fun aiConnectionSummary(
-    target: AiConnectionTarget,
-    aiState: AiAssistantUiState,
-    chatGpt: ChatGptActions?,
-): String =
-    when (target) {
-        AiConnectionTarget.ChatGpt -> {
-            val state by (chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
-            stringResource(state.status.labelRes)
-        }
-        is AiConnectionTarget.Key ->
-            aiState.keys[target.provider].orEmpty().size.let { count ->
-                if (count == 0) stringResource(R.string.ai_settings_keys_none) else pluralStringResource(R.plurals.ai_settings_keys_count, count, count)
-            }
-    }
 
 /** One line under each section's title: how many keys, the model, memory, history and access as they are now. */
 @Composable
@@ -505,7 +399,7 @@ private fun aiSectionSummary(
  * ChatGPT Subscription row says about itself in this list.
  */
 @Composable
-private fun AiServiceMenu(
+internal fun AiServiceMenu(
     aiState: AiAssistantUiState,
     selected: AiConnectionTarget,
     onSelect: (AiConnectionTarget) -> Unit,
@@ -824,45 +718,6 @@ private fun AiKeyedModelSettings(
         }
     }
     SettingsHint(stringResource(thinking.noteRes))
-}
-
-/** ChatGPT Subscription: its authorized model catalog above the model box. It has no adjustable thinking level. */
-@Composable
-private fun AiChatGptModelSettings(chatGpt: ChatGptActions) {
-    val state by chatGpt.state.collectAsStateWithLifecycle()
-    val pickerState =
-        when (state.status) {
-            ChatGptStatus.READY -> AiPickerState.READY
-            ChatGptStatus.CHECKING, ChatGptStatus.CONNECTING -> AiPickerState.LOADING
-            ChatGptStatus.TEMPORARY_FAILURE -> AiPickerState.FAILED
-            else -> AiPickerState.NEEDS_CONNECTION
-        }
-    AiModelPicker(
-        typed = state.model,
-        models = state.models.map { AiModelChoice(it.slug, it.displayName) },
-        state = pickerState,
-        connectMessage = R.string.ai_config_models_connect_chatgpt,
-        onPick = chatGpt.selectModel,
-        onRefresh = chatGpt.refresh,
-    )
-    Spacer(Modifier.height(8.dp))
-    // Saved when the user is done typing, not on every key, so a half-typed id never reloads the video.
-    var text by remember(state.model) { mutableStateOf(state.model) }
-    val commit = {
-        val id = text.trim()
-        if (id.isEmpty()) text = state.model else if (id != state.model) chatGpt.selectModel(id)
-    }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { text = it },
-        modifier = Modifier.fillMaxWidth().testTag("ai_model").onFocusChanged { if (!it.isFocused) commit() },
-        label = { Text(stringResource(R.string.ai_settings_model)) },
-        singleLine = true,
-        isError = text.isBlank(),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { commit() }),
-    )
-    SettingsHint(stringResource(R.string.ai_config_effort_fixed_chatgpt))
 }
 
 /** Full access: off by default, with what it allows and what still waits for a tap. */

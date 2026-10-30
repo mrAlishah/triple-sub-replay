@@ -1,6 +1,8 @@
 package com.kienhoang.dualsubreplay.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,12 +15,15 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -44,6 +49,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.translation.MAX_AI_BATCH_SENTENCES
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +63,8 @@ internal class RefreshActions(
     val estimate: suspend (RefreshScope) -> Int,
     val start: (Set<SubtitleSlot>, RefreshScope) -> Unit,
     val cancel: () -> Unit,
+    /** Re-translates only the one [SubtitleSegment] for the given lines; default does nothing (tests). */
+    val startRow: (SubtitleSegment, Set<SubtitleSlot>) -> Unit = { _, _ -> },
 )
 
 private enum class SlotChoice(
@@ -333,5 +341,45 @@ internal fun PanelHeaderActions(
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = icon,
         )
+    }
+}
+
+/**
+ * The small triangle above a segment's Play button: its menu re-translates only this segment with the AI, for the lines the card
+ * shows that the current run translates with the AI. It never seeks or plays; the Play button alone does.
+ */
+@Composable
+internal fun SegmentRetranslateMenu(
+    segment: SubtitleSegment,
+    showSecond: Boolean,
+    showThird: Boolean,
+) {
+    val actions = LocalTranslationSourceInfo.current.refresh ?: return
+    val available by actions.available.collectAsState()
+    val slots = buildSet { if (showSecond) add(SubtitleSlot.SECOND); if (showThird) add(SubtitleSlot.THIRD) }.intersect(available)
+    var open by remember { mutableStateOf(false) }
+    val name = stringResource(R.string.retranslate_title)
+    Box {
+        Box(
+            Modifier
+                .size(width = 26.dp, height = 18.dp)
+                .clickable(role = Role.Button, onClick = { open = !open })
+                .semantics { contentDescription = name }
+                .testTag("segment_retranslate_menu"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(name) },
+                enabled = slots.isNotEmpty(),
+                onClick = {
+                    open = false
+                    actions.startRow(segment, slots)
+                },
+                modifier = Modifier.testTag("segment_retranslate_item"),
+            )
+        }
     }
 }

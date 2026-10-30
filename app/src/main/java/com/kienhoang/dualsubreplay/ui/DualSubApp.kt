@@ -451,9 +451,7 @@ private fun DualSubExperience(
                             onSettings = { showQuickSettings = true },
                             onRetry = onRetry,
                             onWordClick = onWordClick,
-                            onReplay = { segment ->
-                                webController.replayFrom(segment.startMs / 1_000f)
-                            },
+                            onReplay = { segment -> webController.replayOrPause(state, segment) },
                         )
                     }
                 }
@@ -467,9 +465,7 @@ private fun DualSubExperience(
                             onSettings = { showQuickSettings = true },
                             onRetry = onRetry,
                             onWordClick = onWordClick,
-                            onReplay = { segment ->
-                                webController.replayFrom(segment.startMs / 1_000f)
-                            },
+                            onReplay = { segment -> webController.replayOrPause(state, segment) },
                         )
                     }
                     if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -945,6 +941,7 @@ internal fun SubtitleTimeline(
                 val active = index == state.currentIndex
                 CompactSubtitleCard(
                     segment = segment,
+                    playing = !state.playbackPaused,
                     showOriginal = showOriginal,
                     showTranslation = showTranslation,
                     translationPosition = state.translationPosition,

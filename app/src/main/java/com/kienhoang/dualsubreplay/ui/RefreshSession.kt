@@ -82,6 +82,15 @@ internal class RefreshSession(
     /** How many sentences [scope] would send for each line, for the warning before an entire-video refresh. */
     suspend fun sentenceCount(scope: RefreshScope): Int = context?.let { aiSentences(it.texts(scope)).size } ?: 0
 
+    /** Re-translates only [segment] for [slots]: the same forced path, with this one row's texts instead of the playing sentence's. */
+    fun startRow(
+        segment: SubtitleSegment,
+        slots: Set<SubtitleSlot>,
+    ) {
+        val current = context ?: return
+        refresher.start(current.forRow(segment), slots, RefreshScope.SENTENCE)
+    }
+
     /** The texts a scope covers, in the form the AI is asked for: the playing sentence, the rows now in the window, or every row. */
     private suspend fun texts(
         store: SubtitleStore,
@@ -107,4 +116,10 @@ internal class RefreshSession(
                         translationTexts(rows)
                     }.also { videoTexts = store to it }
         }
+}
+
+/** The same run and lines, but the texts of this one segment whatever scope is asked: what "Re-translate with AI" on a card sends. */
+internal fun RefreshContext.forRow(segment: SubtitleSegment): RefreshContext {
+    val texts = rowTranslationTexts(segment)
+    return RefreshContext(targets, { texts }, isCurrent)
 }

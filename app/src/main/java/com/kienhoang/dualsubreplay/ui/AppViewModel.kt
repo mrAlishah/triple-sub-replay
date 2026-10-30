@@ -1993,6 +1993,12 @@ class AppViewModel internal constructor(
 
     internal fun cancelRefresh() = refresher.cancel()
 
+    /** Starts "Re-translate with AI" for one clicked segment and [slots]. */
+    internal fun refreshSegment(
+        segment: SubtitleSegment,
+        slots: Set<SubtitleSlot>,
+    ) = refreshSession.startRow(segment, slots)
+
     /** How many sentences [scope] would send for each line, for the warning before an entire-video refresh. */
     internal suspend fun refreshSentenceCount(scope: RefreshScope): Int = refreshSession.sentenceCount(scope)
 

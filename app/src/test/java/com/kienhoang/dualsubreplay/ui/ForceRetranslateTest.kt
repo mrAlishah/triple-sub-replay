@@ -228,6 +228,28 @@ class ForceRetranslateTest {
             assertEquals("other:Satz 0.", env.translator.cachedTranslation(other, "de", "en", "Satz 0."))
         }
 
+    // A card's menu: only that segment, only the lines chosen, a stored answer does not stop it, other segments keep theirs.
+    @Test
+    fun aSingleSegmentRefreshAsksOnlyForThatSegmentAndTheChosenLine() =
+        runBlocking {
+            val env = Env()
+            val second = Ai(scope = "chatgpt/second/abc")
+            val third = Ai(scope = "chatgpt/third/abc")
+            env.translator.translateAll(second, "de", "en", rows.map { it.originalText })
+            val before = second.calls.get()
+            second.version = "v2"
+            val refresher = TranslationRefresher(env.translator, env.diagnostics, scope)
+            val context = context(env, second, third).forRow(rows[4])
+            assertEquals(true, refresher.start(context, setOf(SubtitleSlot.SECOND), RefreshScope.SENTENCE))
+            refresher.state.value.untilIdle(refresher)
+            assertEquals("one more request", before + 1, second.calls.get())
+            assertEquals("the other line was not asked", 0, third.calls.get())
+            assertEquals("v2:Satz 4.", env.translator.cachedTranslation(second, "de", "en", "Satz 4."))
+            assertEquals("v1:Satz 3.", env.translator.cachedTranslation(second, "de", "en", "Satz 3."))
+            assertEquals("v1:Satz 5.", env.translator.cachedTranslation(second, "de", "en", "Satz 5."))
+            assertEquals(false, second.users.last().contains("Satz 3."))
+        }
+
     // Rapid taps and a request already running: one forced request, never two at once.
     @Test
     fun repeatedTapsStartOneRequestAndNeverRunTwoAtOnce() =

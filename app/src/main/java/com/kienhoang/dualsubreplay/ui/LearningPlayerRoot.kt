@@ -605,6 +605,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                     viewModel::refreshSentenceCount,
                     viewModel::refreshTranslation,
                     viewModel::cancelRefresh,
+                    viewModel::refreshSegment,
                 ),
             )
         }

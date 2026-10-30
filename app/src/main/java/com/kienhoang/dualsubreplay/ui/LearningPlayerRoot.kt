@@ -606,7 +606,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             )
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
-    remember(aiViewModel, viewModel) { aiViewModel.attachChatGpt(viewModel.chatGpt) }
+    LaunchedEffect(aiViewModel, viewModel) { aiViewModel.attachChatGpt(viewModel.chatGpt) }
     val aiAssistant = remember(aiViewModel) { AiAssistantHost(
             aiViewModel.controller,
             chatGpt = viewModel.chatGpt.actions(),

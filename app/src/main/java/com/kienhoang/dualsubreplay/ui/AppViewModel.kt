@@ -55,8 +55,6 @@ import com.kienhoang.dualsubreplay.data.savedWordFrom
 import com.kienhoang.dualsubreplay.data.storedDailyGoalMinutes
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 import com.kienhoang.dualsubreplay.playback.WebVideoBridge
-import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE
-import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AiSubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.AiTranslationModel
 import com.kienhoang.dualsubreplay.translation.DEFAULT_TRANSLATION_ENGINE
@@ -84,7 +82,8 @@ import com.kienhoang.dualsubreplay.translation.googleSlowDetail
 import com.kienhoang.dualsubreplay.translation.googleWaitMs
 import com.kienhoang.dualsubreplay.translation.onWifi
 import com.kienhoang.dualsubreplay.translation.storedGoogleWait
-import com.kienhoang.dualsubreplay.translation.storedTranslationEngine
+import com.kienhoang.dualsubreplay.translation.saveTranslationMode
+import com.kienhoang.dualsubreplay.translation.storedTranslationMode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -657,7 +656,10 @@ class AppViewModel internal constructor(
                     storedFeatureEnabled(
                         preferences.getBoolean(TAP_TO_LEARN_PREFERENCE, true),
                     ),
-                translationEngine = storedTranslationEngine(preferences.getString(TRANSLATION_ENGINE_PREFERENCE, null)),
+                // The mode is its three saved values; all three come back, or AI translation would reset to Google at every start.
+                translationEngine = preferences.storedTranslationMode().engine,
+                aiTranslation = preferences.storedTranslationMode().ai,
+                aiTranslationOnly = preferences.storedTranslationMode().aiOnly,
                 googleWait = storedGoogleWait(preferences.getString(GOOGLE_WAIT_PREFERENCE, null)),
                 tripleSubtitlesEnabled = preferences.getBoolean(TRIPLE_SUBTITLES_PREFERENCE, false),
                 thirdLanguage = storedThirdLanguage(preferences.getString(THIRD_LANGUAGE_PREFERENCE, null)),
@@ -1438,12 +1440,7 @@ class AppViewModel internal constructor(
      */
     fun setSubtitleTranslator(translator: SubtitleTranslator) {
         val before = _state.value.onlineTranslationSettings().translator
-        preferences
-            .edit()
-            .putString(TRANSLATION_ENGINE_PREFERENCE, translator.engine.storageValue)
-            .putBoolean(AI_TRANSLATION_PREFERENCE, translator.usesAi)
-            .putBoolean(AI_TRANSLATION_ONLY_PREFERENCE, translator == SubtitleTranslator.AI_ONLY)
-            .apply()
+        preferences.saveTranslationMode(translator)
         // Choosing an engine tries Google first again, even on mobile data.
         googleFailedOnMobile = false
         val changed = before != translator || _state.value.onDeviceFallback

@@ -834,7 +834,7 @@ internal class AiAssistantController(
                     throw cancelled
                 } finally {
                     _state.update { it.copy(draft = "") }
-                if (run.toolsRefused) noToolSetups += setup
+                    if (run.toolsRefused) noToolSetups += setup
                     if (run.webSearchRefused) noWebSearchSetups += setup
                 }
                 persistChats()

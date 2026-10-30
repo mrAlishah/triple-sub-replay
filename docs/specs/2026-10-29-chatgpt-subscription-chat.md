@@ -107,4 +107,12 @@ phone and a real ChatGPT plan: **UNVERIFIED** until then, as is the namespace to
 
 ## Implementation record
 
-(Not started.)
+Implemented as designed in commit `c48676f`; later fixes in the following commit. Beyond the plan: a chat request the service refuses is
+not remembered in the shared gate (so the retry without tools works and translation is not paused); the account is loaded when ChatGPT is
+chosen for chat and at start-up when it already was; the Chat AI Service row is only in the chat's gear.
+
+**Verified (JVM unit tests, passed before the last small edits):** request body rules, input items, tools namespace, SSE parsing, shared
+session / gate / retry / cancel behavior, controller routing, draft and Stop, error mapping, router isolation.
+**Not verified:** any run against the live ChatGPT service (streaming, follow-ups, tool calls and their namespace shape, image / PDF
+input, model behavior); lint after the last two fixes; `formatCheck`; any device or UI run of the final code. Tool calls across turns are
+not replayed (only the text of earlier turns), by design.

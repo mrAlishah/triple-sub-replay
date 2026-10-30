@@ -39,7 +39,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -1322,31 +1321,3 @@ internal fun captionTrackLabel(
     generated: Boolean,
     markGenerated: (String) -> String,
 ): String = if (generated && !name.contains("auto-generated", ignoreCase = true)) markGenerated(name) else name
-
-/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 36 dp buttons. */
-@Composable
-private fun PanelHeaderActions(
-    onSettings: () -> Unit,
-    onHide: () -> Unit,
-    compact: Boolean,
-) {
-    val button = if (compact) Modifier.size(36.dp) else Modifier
-    val icon = if (compact) Modifier.size(20.dp) else Modifier
-    RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
-    IconButton(onClick = onSettings, modifier = button) {
-        Icon(
-            Icons.Default.Settings,
-            contentDescription = stringResource(R.string.player_subtitle_settings),
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = icon,
-        )
-    }
-    IconButton(onClick = onHide, modifier = button) {
-        Icon(
-            Icons.Default.Close,
-            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = icon,
-        )
-    }
-}

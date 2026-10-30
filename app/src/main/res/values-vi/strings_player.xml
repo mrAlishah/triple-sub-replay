@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">Phát và tạm dừng video từ tai nghe, màn hình khóa và thông báo này.</string>
     <string name="playback_play">Phát</string>
     <string name="playback_pause">Tạm dừng</string>
+    <string name="player_set_video_title">Đặt tiêu đề video</string>
+    <string name="player_edit_video_title">Sửa tiêu đề video</string>
+    <string name="player_video_title_dialog">Tiêu đề video</string>
+    <string name="player_video_title_save">Lưu</string>
+    <string name="player_video_title_cancel">Hủy</string>
 </resources>

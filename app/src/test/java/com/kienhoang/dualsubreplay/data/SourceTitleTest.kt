@@ -134,13 +134,6 @@ class SourceTitleTest {
     }
 
     @Test
-    fun aCorrectedTitleAppliesToEveryWordOfTheSameVideoOrJustTheOneWithoutAVideo() {
-        val words = listOf(word("1", "aaaaaaaaaaa"), word("2", "aaaaaaaaaaa"), word("3", "bbbbbbbbbbb"), word("4", null))
-        assertEquals(listOf("1", "2"), wordsSharingSource(words, words[0]))
-        assertEquals(listOf("4"), wordsSharingSource(words, words[3]))
-    }
-
-    @Test
     fun jsonBackupKeepsTitlesAndAnOlderBackupStillImports() {
         val titled = word("1", title = "Tab and \"quote\" line – 日本")
         assertEquals(listOf(titled), parseTransfer(exportBackup(listOf(titled))).backup)

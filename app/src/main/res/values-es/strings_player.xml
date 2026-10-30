@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">Reproduce y pausa el video desde los auriculares, la pantalla de bloqueo y esta notificación.</string>
     <string name="playback_play">Reproducir</string>
     <string name="playback_pause">Pausar</string>
+    <string name="player_set_video_title">Poner título del vídeo</string>
+    <string name="player_edit_video_title">Editar título del vídeo</string>
+    <string name="player_video_title_dialog">Título del vídeo</string>
+    <string name="player_video_title_save">Guardar</string>
+    <string name="player_video_title_cancel">Cancelar</string>
 </resources>

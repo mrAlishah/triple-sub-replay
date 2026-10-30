@@ -22,6 +22,28 @@ class VocabularyRepositoryTest {
             dueAt = 0, intervalMs = 0,
         )
 
+    @Test fun retitleVideoChangesOnlyThatVideosWordsAndKeepsTheirOtherFields() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val name = "vocabulary-test-${UUID.randomUUID()}.db"
+        val repository = VocabularyRepository(context, name)
+        try {
+            repository.save(makeWord("a1").copy(dueAt = 5, intervalMs = 7, personalNotes = "note"))
+            repository.save(makeWord("a2"))
+            repository.save(makeWord("b1").copy(videoId = "bbbbbbbbbbb", sourceTitle = "Other"))
+            assertEquals(2, repository.retitleVideo("dQw4w9WgXcQ", "New title"))
+            val byId = repository.words.value.associateBy { it.id }
+            assertEquals("New title", byId.getValue("a1").sourceTitle)
+            assertEquals("New title", byId.getValue("a2").sourceTitle)
+            assertEquals("Other", byId.getValue("b1").sourceTitle)
+            assertEquals(5L, byId.getValue("a1").dueAt)
+            assertEquals(7L, byId.getValue("a1").intervalMs)
+            assertEquals("note", byId.getValue("a1").personalNotes)
+            assertEquals(0, repository.retitleVideo("dQw4w9WgXcQ", "New title"))
+        } finally {
+            repository.close(); context.deleteDatabase(name)
+        }
+    }
+
     @Test fun duplicateSaveAndReopenPreserveReviewsAndOrder() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val name = "vocabulary-test-${UUID.randomUUID()}.db"

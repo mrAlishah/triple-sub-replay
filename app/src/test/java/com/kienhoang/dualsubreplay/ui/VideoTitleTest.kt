@@ -14,4 +14,12 @@ class VideoTitleTest {
         assertEquals("Previous video", state.titleOf("aaaaaaaaaaa"))
         assertNull(DualSubUiState().titleOf("aaaaaaaaaaa"))
     }
+
+    @Test
+    fun aTypedTitleBeatsTheReportedOneAndOnlyForItsOwnVideo() {
+        val typed = state.copy(manualVideoTitles = mapOf("aaaaaaaaaaa" to "Typed", "bbbbbbbbbbb" to "Typed B"))
+        assertEquals("Typed", typed.titleOf("aaaaaaaaaaa"))
+        assertEquals("Typed B", typed.titleOf("bbbbbbbbbbb"))
+        assertNull(typed.titleOf("ccccccccccc"))
+    }
 }

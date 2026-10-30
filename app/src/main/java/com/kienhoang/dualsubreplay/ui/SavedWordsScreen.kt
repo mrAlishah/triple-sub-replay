@@ -90,6 +90,7 @@ internal fun SavedWordsScreen(
     val sourceWords = words.filter { matchesSource(it, activeSource) }
     val due = dueWordsForSource(words, activeSource, now).sortedBy { it.dueAt }
     val locale = currentInterfaceLocale()
+    val titleEditor = LocalVideoTitleEditor.current
     val searchLabel = stringResource(R.string.practice_search_label)
     val pronounceLabel = stringResource(R.string.practice_pronounce)
     val showMeaningLabel = stringResource(R.string.practice_show_meaning)
@@ -231,8 +232,9 @@ internal fun SavedWordsScreen(
                             selected.sentenceTranslations.forEach { (language, text) -> PracticeSelectableText(text, language) }
                             if (!practice) {
                                 val title = normalizeSourceTitle(editedSourceTitle)
-                                SourceTitleEditor(editedSourceTitle, { editedSourceTitle = it }, title != selected.sourceTitle, !busy) {
-                                    action { repository.retitleSource(words, selected, title) }
+                                val changed = title != selected.sourceTitle && (title != null || selected.videoId == null)
+                                SourceTitleEditor(editedSourceTitle, { editedSourceTitle = it }, changed, !busy) {
+                                    action { repository.saveSourceTitle(selected, title, titleEditor) }
                                 }
                             }
                             PersonalNotesEditor(editedNotes, { editedNotes = it }, editedNotes != selected.personalNotes, !busy) {

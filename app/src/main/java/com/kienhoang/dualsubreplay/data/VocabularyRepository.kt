@@ -153,6 +153,31 @@ internal class VocabularyRepository internal constructor(
             }
         }
 
+    /** Gives every word of [videoId] the source [title] in one transaction; other videos' words and all other fields stay. */
+    suspend fun retitleVideo(
+        videoId: String,
+        title: String?,
+    ): Int =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                val db = database.writableDatabase
+                var changed = 0
+                db.beginTransaction()
+                try {
+                    readAll().filter { it.videoId == videoId && it.sourceTitle != title }.forEach { word ->
+                        val values = ContentValues().apply { put("payload", encodeWord(word.copy(sourceTitle = title)).toString()) }
+                        check(db.update("words", values, "id = ?", arrayOf(word.id)) > 0) { "Could not update word" }
+                        changed++
+                    }
+                    db.setTransactionSuccessful()
+                } finally {
+                    db.endTransaction()
+                }
+                publish()
+                changed
+            }
+        }
+
     suspend fun remove(id: String) =
         withContext(Dispatchers.IO) {
             mutex.withLock {

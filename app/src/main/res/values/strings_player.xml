@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">Play and pause the video from earphones, the lock screen and this notification.</string>
     <string name="playback_play">Play</string>
     <string name="playback_pause">Pause</string>
+    <string name="player_set_video_title">Set video title</string>
+    <string name="player_edit_video_title">Edit video title</string>
+    <string name="player_video_title_dialog">Video title</string>
+    <string name="player_video_title_save">Save</string>
+    <string name="player_video_title_cancel">Cancel</string>
 </resources>

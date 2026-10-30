@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">イヤホン、ロック画面、この通知から動画を再生・一時停止します。</string>
     <string name="playback_play">再生</string>
     <string name="playback_pause">一時停止</string>
+    <string name="player_set_video_title">動画のタイトルを設定</string>
+    <string name="player_edit_video_title">動画のタイトルを編集</string>
+    <string name="player_video_title_dialog">動画のタイトル</string>
+    <string name="player_video_title_save">保存</string>
+    <string name="player_video_title_cancel">キャンセル</string>
 </resources>

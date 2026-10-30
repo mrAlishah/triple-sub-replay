@@ -40,10 +40,13 @@ import com.kienhoang.dualsubreplay.data.SoundCues
 import com.kienhoang.dualsubreplay.data.SubtitleMerger
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
+import com.kienhoang.dualsubreplay.data.ManualVideoTitles
 import com.kienhoang.dualsubreplay.data.VocabularyRepository
 import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.YouTubeCaptionProvider
 import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
+import com.kienhoang.dualsubreplay.data.normalizeSourceTitle
+import com.kienhoang.dualsubreplay.data.validClipRange
 import com.kienhoang.dualsubreplay.data.immersionLanguage
 import com.kienhoang.dualsubreplay.data.initialDailyGoalPromptCompleted
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
@@ -125,6 +128,8 @@ data class DualSubUiState(
     val activeVideoId: String? = null,
     /** The title the YouTube page reported, with the video of the address it came from; never trusted for another video. */
     val videoTitle: VideoTitle? = null,
+    /** Titles the user typed, by video id; they win over [videoTitle]. */
+    val manualVideoTitles: Map<String, String> = emptyMap(),
     val subtitlePanelVisible: Boolean = true,
     val sourcePreference: String = "auto",
     val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
@@ -750,7 +755,22 @@ class AppViewModel internal constructor(
         }
     }
 
+    private val manualTitles = ManualVideoTitles(application.getSharedPreferences("video_titles", 0))
+
+    /** Saves the title the user typed for [videoId] and gives it to the words already saved from that video. */
+    fun setVideoTitle(
+        videoId: String,
+        title: String,
+    ) {
+        val clean = normalizeSourceTitle(title)
+        if (clean == null || !validClipRange(videoId, 0, 1)) return
+        manualTitles.set(videoId, clean)
+        _state.update { it.copy(manualVideoTitles = it.manualVideoTitles + (videoId to clean)) }
+        viewModelScope.launch { runCatching { vocabulary.retitleVideo(videoId, clean) } }
+    }
+
     init {
+        _state.update { it.copy(manualVideoTitles = manualTitles.all()) }
         preferences.edit().remove(KARAOKE_TIMING_MODE_PREFERENCE).apply()
         preferences.registerOnSharedPreferenceChangeListener(visibilityListener)
         readPageTokenMode()
@@ -758,6 +778,8 @@ class AppViewModel internal constructor(
         viewModelScope.launch {
             try {
                 vocabulary.refresh()
+                // Typed titles win: a save that failed earlier, or an import, is made consistent again here.
+                manualTitles.all().forEach { (videoId, title) -> vocabulary.retitleVideo(videoId, title) }
                 retireLegacyDownloadJobs(application)
             } catch (
                 cancel: CancellationException,

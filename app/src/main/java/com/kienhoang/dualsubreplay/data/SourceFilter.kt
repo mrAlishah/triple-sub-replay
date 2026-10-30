@@ -89,17 +89,19 @@ internal fun dueWordsForSource(
     now: Long,
 ): List<SavedWord> = words.filter { it.dueAt <= now && matchesSource(it, selected) }
 
-/** The ids a corrected title applies to: every word of the same video, or just [word] when it has none. */
-internal fun wordsSharingSource(
-    words: List<SavedWord>,
-    word: SavedWord,
-): List<String> = word.videoId?.takeIf { it.isNotBlank() }?.let { id -> words.filter { it.videoId == id }.map { it.id } } ?: listOf(word.id)
-
-/** Saves [title] on [word] and on every other word of its video, so one source never shows two titles. */
-internal suspend fun VocabularyRepository.retitleSource(
-    words: List<SavedWord>,
+/**
+ * Saves a title corrected in Practice. A word with a video goes through [editor] (the same store the player header
+ * uses, which also retitles the video's other words); a word without one only changes itself.
+ */
+internal suspend fun VocabularyRepository.saveSourceTitle(
     word: SavedWord,
     title: String?,
+    editor: ((String, String) -> Unit)?,
 ) {
-    wordsSharingSource(words, word).forEach { id -> update(id) { it.copy(sourceTitle = title) } }
+    val videoId = word.videoId
+    if (videoId == null) {
+        update(word.id) { it.copy(sourceTitle = title) }
+    } else if (title != null) {
+        editor?.invoke(videoId, title) ?: retitleVideo(videoId, title)
+    }
 }

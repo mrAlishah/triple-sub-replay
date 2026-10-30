@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">Putar dan jeda video dari earphone, layar kunci, dan notifikasi ini.</string>
     <string name="playback_play">Putar</string>
     <string name="playback_pause">Jeda</string>
+    <string name="player_set_video_title">Atur judul video</string>
+    <string name="player_edit_video_title">Ubah judul video</string>
+    <string name="player_video_title_dialog">Judul video</string>
+    <string name="player_video_title_save">Simpan</string>
+    <string name="player_video_title_cancel">Batal</string>
 </resources>

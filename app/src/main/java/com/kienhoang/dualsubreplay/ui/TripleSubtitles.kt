@@ -212,8 +212,12 @@ data class VideoTitle(
     val title: String,
 )
 
-/** The title of [videoId] when the page reported it for that same video; null for any other video (never a stale one). */
-internal fun DualSubUiState.titleOf(videoId: String?): String? = videoTitle?.takeIf { videoId != null && it.videoId == videoId }?.title
+/**
+ * The title of [videoId]: the one the user typed, else the one the page reported for that same video; null otherwise
+ * (never a title of another video).
+ */
+internal fun DualSubUiState.titleOf(videoId: String?): String? =
+    videoId?.let { manualVideoTitles[it] ?: videoTitle?.takeIf { title -> title.videoId == it }?.title }
 
 internal fun DualSubUiState.thirdSentenceFor(selection: LearningWordSelection): Map<String, String> {
     val source = learningSourceLanguage(resolvedSourceLanguage, sourcePreference)

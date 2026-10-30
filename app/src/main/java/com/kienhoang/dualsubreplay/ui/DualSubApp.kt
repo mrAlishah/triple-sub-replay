@@ -55,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -126,60 +127,63 @@ fun DualSubApp(
         } else if (!state.dailyGoalPromptCompleted) {
             DailyGoalSetupScreen(onFinish = viewModel::completeDailyGoalPrompt)
         } else {
-            DualSubExperience(
-                state = state,
-                webController = webController,
-                onVocabulary = { viewModel.selectLearningWord(null); webController.pause(); showVocabulary = true },
-                onProgress = {
-                    viewModel.selectLearningWord(null)
-                    webController.pause()
-                    showProgress = true
-                },
-                onAutoPronounceChange = viewModel::setAutoPronounce,
-                playerMode = playerMode,
-                effectivePlayerMode = effectivePlayerMode,
-                onPlayerModeChange = onPlayerModeChange,
-                externalSettingsRequestId = externalSettingsRequestId,
-                fullscreenLearningOverlay = fullscreenLearningOverlay,
-                onNavigationVisibilityChange = onNavigationVisibilityChange,
-                onPageChanged = viewModel::onYouTubePageChanged,
-                onPlaybackSecond = studyRunner.afterSecond(viewModel::onWebPlaybackSecond),
-                onPlaybackPaused = studyRunner.afterPaused(viewModel::onWebPlaybackPaused),
-                onShowSubtitles = viewModel::showSubtitlePanel,
-                onHideSubtitles = viewModel::hideSubtitlePanel,
-                onRetry = viewModel::retryCaptions,
-                onSourceChange = viewModel::setSourcePreference,
-                onTargetChange = viewModel::setTargetLanguage,
-                onFontScaleChange = viewModel::setFontScale,
-                onPortraitPanelOffsetFractionChange = viewModel::setPortraitPanelOffsetFraction,
-                onResetPortraitPanelPosition = viewModel::resetPortraitPanelPosition,
-                onLandscapeSplitChange = viewModel::setLandscapeSplitEnabled,
-                onOriginalColorChange = viewModel::setOriginalSubtitleColor,
-                onTranslatedColorChange = viewModel::setTranslatedSubtitleColor,
-                onHighlightColorChange = viewModel::setHighlightColor,
-                onWordHighlightChange = viewModel::setWordHighlightEnabled,
-                onCustomColorsChange = viewModel::setCustomColorsEnabled,
-                onCaptionFormatChange = viewModel::setCaptionFormat,
-                onTranslationPositionChange = viewModel::setTranslationPosition,
-                lockOverlayToVideo = state.lockOverlayToVideo,
-                onLockOverlayToVideoChange = viewModel::setLockOverlayToVideo,
-                preloadModelsEnabled = state.preloadModelsEnabled,
-                onPreloadModelsChange = viewModel::setPreloadModelsEnabled,
-                naturalSubtitlesEnabled = state.naturalSubtitlesEnabled,
-                onNaturalSubtitlesChange = viewModel::setNaturalSubtitlesEnabled,
-                onHideSoundCuesChange = viewModel::setHideSoundCues,
-                wordLearningEnabled = state.wordLearningEnabled,
-                onWordLearningChange = viewModel::setWordLearningEnabled,
-                wordLearningTarget = state.wordLearningTarget,
-                onWordLearningTargetChange = viewModel::setWordLearningTarget,
-                wordLearningActiveOnly = state.wordLearningActiveOnly,
-                onWordLearningActiveOnlyChange = viewModel::setWordLearningActiveOnly,
-                tapToLearnEnabled = state.tapToLearnEnabled,
-                onTapToLearnChange = viewModel::setTapToLearnEnabled,
-                onWordClick = viewModel::selectLearningWord,
-                onResetSettings = viewModel::resetAllSettings,
-                tabActions = remember(viewModel) { browserTabActions(viewModel) },
-            )
+            val titleEditor: (String, String) -> Unit = remember(viewModel) { viewModel::setVideoTitle }
+            CompositionLocalProvider(LocalVideoTitleEditor provides titleEditor) {
+                DualSubExperience(
+                    state = state,
+                    webController = webController,
+                    onVocabulary = { viewModel.selectLearningWord(null); webController.pause(); showVocabulary = true },
+                    onProgress = {
+                        viewModel.selectLearningWord(null)
+                        webController.pause()
+                        showProgress = true
+                    },
+                    onAutoPronounceChange = viewModel::setAutoPronounce,
+                    playerMode = playerMode,
+                    effectivePlayerMode = effectivePlayerMode,
+                    onPlayerModeChange = onPlayerModeChange,
+                    externalSettingsRequestId = externalSettingsRequestId,
+                    fullscreenLearningOverlay = fullscreenLearningOverlay,
+                    onNavigationVisibilityChange = onNavigationVisibilityChange,
+                    onPageChanged = viewModel::onYouTubePageChanged,
+                    onPlaybackSecond = studyRunner.afterSecond(viewModel::onWebPlaybackSecond),
+                    onPlaybackPaused = studyRunner.afterPaused(viewModel::onWebPlaybackPaused),
+                    onShowSubtitles = viewModel::showSubtitlePanel,
+                    onHideSubtitles = viewModel::hideSubtitlePanel,
+                    onRetry = viewModel::retryCaptions,
+                    onSourceChange = viewModel::setSourcePreference,
+                    onTargetChange = viewModel::setTargetLanguage,
+                    onFontScaleChange = viewModel::setFontScale,
+                    onPortraitPanelOffsetFractionChange = viewModel::setPortraitPanelOffsetFraction,
+                    onResetPortraitPanelPosition = viewModel::resetPortraitPanelPosition,
+                    onLandscapeSplitChange = viewModel::setLandscapeSplitEnabled,
+                    onOriginalColorChange = viewModel::setOriginalSubtitleColor,
+                    onTranslatedColorChange = viewModel::setTranslatedSubtitleColor,
+                    onHighlightColorChange = viewModel::setHighlightColor,
+                    onWordHighlightChange = viewModel::setWordHighlightEnabled,
+                    onCustomColorsChange = viewModel::setCustomColorsEnabled,
+                    onCaptionFormatChange = viewModel::setCaptionFormat,
+                    onTranslationPositionChange = viewModel::setTranslationPosition,
+                    lockOverlayToVideo = state.lockOverlayToVideo,
+                    onLockOverlayToVideoChange = viewModel::setLockOverlayToVideo,
+                    preloadModelsEnabled = state.preloadModelsEnabled,
+                    onPreloadModelsChange = viewModel::setPreloadModelsEnabled,
+                    naturalSubtitlesEnabled = state.naturalSubtitlesEnabled,
+                    onNaturalSubtitlesChange = viewModel::setNaturalSubtitlesEnabled,
+                    onHideSoundCuesChange = viewModel::setHideSoundCues,
+                    wordLearningEnabled = state.wordLearningEnabled,
+                    onWordLearningChange = viewModel::setWordLearningEnabled,
+                    wordLearningTarget = state.wordLearningTarget,
+                    onWordLearningTargetChange = viewModel::setWordLearningTarget,
+                    wordLearningActiveOnly = state.wordLearningActiveOnly,
+                    onWordLearningActiveOnlyChange = viewModel::setWordLearningActiveOnly,
+                    tapToLearnEnabled = state.tapToLearnEnabled,
+                    onTapToLearnChange = viewModel::setTapToLearnEnabled,
+                    onWordClick = viewModel::selectLearningWord,
+                    onResetSettings = viewModel::resetAllSettings,
+                    tabActions = remember(viewModel) { browserTabActions(viewModel) },
+                )
+            }
         }
         state.selectedLearningWord?.let { selection ->
             SelectedWordDialog(selection, state, savedWords, viewModel, webController, pronouncer)
@@ -639,13 +643,15 @@ private fun SubtitlePanel(
                     )
                     Spacer(Modifier.size(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(
-                            text = sourceDescription(state),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        // The source/target language line is replaced by the video title; kept for later reuse.
+                        // Text(
+                        //     text = sourceDescription(state),
+                        //     style = MaterialTheme.typography.labelLarge,
+                        //     color = MaterialTheme.colorScheme.onBackground,
+                        //     maxLines = 1,
+                        //     overflow = TextOverflow.Ellipsis,
+                        // )
+                        SourceTitleLine(state, MaterialTheme.typography.labelLarge)
                         Text(
                             text = state.statusMessage ?: stringResource(R.string.player_tap_paragraph_to_replay),
                             style = MaterialTheme.typography.labelSmall,
@@ -810,13 +816,15 @@ private fun SideSubtitlePanel(
                     )
                     Spacer(Modifier.size(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(
-                            text = sourceDescription(state),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        // The source/target language line is replaced by the video title; kept for later reuse.
+                        // Text(
+                        //     text = sourceDescription(state),
+                        //     style = MaterialTheme.typography.labelMedium,
+                        //     color = MaterialTheme.colorScheme.onBackground,
+                        //     maxLines = 1,
+                        //     overflow = TextOverflow.Ellipsis,
+                        // )
+                        SourceTitleLine(state, MaterialTheme.typography.labelMedium)
                         Text(
                             text = state.statusMessage ?: stringResource(R.string.player_tap_paragraph_to_replay),
                             style = MaterialTheme.typography.labelSmall,
@@ -1226,6 +1234,7 @@ internal fun localizedLanguageLabel(
     interfaceLocale: Locale,
 ): String = if (label == TranslationLanguages.find(code)?.name) languageDisplayName(code, interfaceLocale) else label
 
+@Suppress("unused")
 @Composable
 private fun sourceDescription(state: DualSubUiState): String {
     val resources = LocalResources.current

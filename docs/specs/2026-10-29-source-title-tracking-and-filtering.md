@@ -73,6 +73,16 @@ As described above. Files: `data/SavedWord.kt`, `data/SourceFilter.kt` (new), `d
 
 Deviations: the JSON backup and the TSV normalize whitespace inside a title (tabs and line breaks become one space), because titles are single-line.
 
+## Follow-up: editable title in the subtitle header (owner request 2026-10-30)
+
+Manual testing showed `sourceTitle` stayed empty, so automatic detection cannot be the only source.
+
+- The subtitle panel header (normal and side panel) shows the video title where the source/target language line was, with a pencil that opens an edit dialog (Save / Cancel; Save is off for a blank title). Without a title it shows "Set video title". The old `Text(sourceDescription(state))` blocks are commented out in place and `sourceDescription()` is kept.
+- Priority per `videoId`: the title the user typed, then the title the page reported for that same video, then unknown. Typed titles live in the `video_titles` preferences file (video id -> title), so they exist before any word is saved and survive restarts. `DualSubUiState.titleOf(videoId)` applies the priority for the header and for saving.
+- Saving a title also gives it to every saved word with that exact `videoId` in one transaction (`VocabularyRepository.retitleVideo`); other fields and other videos are untouched. Practice, Anki, JSON and TSV read the same `sourceTitle`.
+
+Remaining limits: automatic detection depends on WebView reporting the page title and was not re-verified on a device; a title edited only in Practice's detail view updates that video's words but not the header title; typed titles are not part of the JSON backup (the words' `sourceTitle` is).
+
 ## Validation result
 
 Filled in at hand-off with the real command results.

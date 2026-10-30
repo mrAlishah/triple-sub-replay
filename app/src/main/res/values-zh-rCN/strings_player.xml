@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">通过耳机、锁定屏幕和此通知播放或暂停视频。</string>
     <string name="playback_play">播放</string>
     <string name="playback_pause">暂停</string>
+    <string name="player_set_video_title">设置视频标题</string>
+    <string name="player_edit_video_title">编辑视频标题</string>
+    <string name="player_video_title_dialog">视频标题</string>
+    <string name="player_video_title_save">保存</string>
+    <string name="player_video_title_cancel">取消</string>
 </resources>

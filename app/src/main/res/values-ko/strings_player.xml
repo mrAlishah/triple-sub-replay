@@ -37,4 +37,9 @@
     <string name="playback_notification_channel_description">이어폰, 잠금 화면, 이 알림에서 동영상을 재생하고 일시중지해요.</string>
     <string name="playback_play">재생</string>
     <string name="playback_pause">일시중지</string>
+    <string name="player_set_video_title">동영상 제목 설정</string>
+    <string name="player_edit_video_title">동영상 제목 편집</string>
+    <string name="player_video_title_dialog">동영상 제목</string>
+    <string name="player_video_title_save">저장</string>
+    <string name="player_video_title_cancel">취소</string>
 </resources>

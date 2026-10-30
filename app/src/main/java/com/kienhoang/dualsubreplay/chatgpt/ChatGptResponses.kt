@@ -117,6 +117,8 @@ internal data class ChatGptFunctionCall(
 internal data class ChatGptResult(
     val text: String,
     val calls: List<ChatGptFunctionCall> = emptyList(),
+    /** The model the server named in `response.completed`; null when it named none. */
+    val responseModel: String? = null,
 )
 
 private fun functionCallFrom(item: JSONObject?): ChatGptFunctionCall? {
@@ -167,7 +169,8 @@ internal fun readChatGptResponse(
                         functionCallFrom(output.optJSONObject(index))?.let { calls.putIfAbsent(it.callId, it) }
                     }
                 }
-                return ChatGptResult(text.toString(), calls.values.toList())
+                val named = event.optJSONObject("response")?.optString("model")?.takeIf { it.isNotEmpty() }
+                return ChatGptResult(text.toString(), calls.values.toList(), named)
             }
             "response.incomplete" -> throw ChatGptException(ChatGptErrorKind.BAD_REPLY, messageFor(ChatGptErrorKind.BAD_REPLY))
             "response.failed" -> throw chatGptErrorFor(

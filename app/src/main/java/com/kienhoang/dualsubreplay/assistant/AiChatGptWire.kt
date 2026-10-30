@@ -102,8 +102,11 @@ internal fun chatGptChatBody(request: AiChatRequest): String =
         .put("stream", true)
         .toString()
 
-/** A completed ChatGPT reply as the chat's [AiReply]; each call keeps the item it will be replayed as. */
-internal fun ChatGptResult.toAiReply(model: String): AiReply =
+/**
+ * A completed ChatGPT reply as the chat's [AiReply]; each call keeps the item it will be replayed as. The reply's model is the one
+ * the server named, or empty: the requested model is in [execution], never passed off as the server's.
+ */
+internal fun ChatGptResult.toAiReply(execution: AiExecution): AiReply =
     AiReply(
         text = text,
         toolCalls =
@@ -117,7 +120,8 @@ internal fun ChatGptResult.toAiReply(model: String): AiReply =
                         .also { json -> call.namespace?.let { json.put("namespace", it) } }
                 AiToolCall(call.callId, call.name, call.arguments, item.toString())
             },
-        model = model,
+        model = responseModel.orEmpty(),
+        execution = execution,
     )
 
 /** A ChatGPT failure in the chat's words; a refused request that carried tools reads as refused tools so text chat can go on. */
@@ -136,7 +140,11 @@ internal fun ChatGptException.toAiChatException(hadTools: Boolean): AiChatExcept
     return AiChatException(kind, message, this)
 }
 
-/** Chat requests in the Responses format, through the same session, refresh lock and gate as the translation. */
+/**
+ * Chat requests in the Responses format, through the same session, refresh lock and gate as the translation. It stamps what it did:
+ * a ChatGPT OAuth request with the permission checked. A failure before the request was sent (signed out, no plan-usage permission,
+ * a blocking gate) carries no execution, because nothing reached OpenAI.
+ */
 internal class ChatGptChatTransport(
     private val backend: ChatGptChatBackend,
 ) : AiChatTransport {
@@ -145,12 +153,15 @@ internal class ChatGptChatTransport(
     override suspend fun stream(
         request: AiChatRequest,
         onText: (String) -> Unit,
-    ): AiReply =
-        try {
-            backend.respond(chatGptChatBody(request), onText).toAiReply(request.model)
+    ): AiReply {
+        var sent = false
+        val execution = AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, request.model, planUsageVerified = true)
+        return try {
+            backend.respondTracked(chatGptChatBody(request), onText) { sent = true }.toAiReply(execution)
         } catch (error: ChatGptException) {
-            throw error.toAiChatException(hadTools = request.tools.isNotEmpty())
+            throw error.toAiChatException(hadTools = request.tools.isNotEmpty()).also { if (sent) it.execution = execution }
         }
+    }
 }
 
 /**
@@ -162,17 +173,32 @@ internal class AiTransportRouter(
 ) : AiChatTransport {
     @Volatile var chatGpt: AiChatTransport? = null
 
-    private fun pick(request: AiChatRequest): AiChatTransport =
-        if (request.format == AiWireFormat.CHATGPT_RESPONSES) {
-            chatGpt ?: throw AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
-        } else {
-            keyed
-        }
+    private fun chatGptTransport(): AiChatTransport = chatGpt ?: throw AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
 
-    override suspend fun complete(request: AiChatRequest): AiReply = pick(request).complete(request)
+    /** Runs a keyed request and stamps who ran it on the reply or the failure; a bad address never left the phone, so it is not stamped. */
+    private suspend fun runKeyed(
+        request: AiChatRequest,
+        call: suspend () -> AiReply,
+    ): AiReply {
+        val execution = AiExecution(request.providerId, AiAuthMethod.API_KEY, aiApiFamily(request.format), request.model)
+        return try {
+            call().let { reply -> if (reply.execution == null) reply.copy(execution = execution) else reply }
+        } catch (error: AiChatException) {
+            if (error.execution == null && error.kind != AiErrorKind.BAD_ADDRESS) error.execution = execution
+            throw error
+        }
+    }
+
+    override suspend fun complete(request: AiChatRequest): AiReply =
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) chatGptTransport().complete(request) else runKeyed(request) { keyed.complete(request) }
 
     override suspend fun stream(
         request: AiChatRequest,
         onText: (String) -> Unit,
-    ): AiReply = pick(request).stream(request, onText)
+    ): AiReply =
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) {
+            chatGptTransport().stream(request, onText)
+        } else {
+            runKeyed(request) { keyed.stream(request, onText) }
+        }
 }

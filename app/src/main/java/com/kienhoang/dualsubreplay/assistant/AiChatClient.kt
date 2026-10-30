@@ -87,6 +87,9 @@ internal class AiChatException(
 ) : IOException(detail ?: kind.name, cause),
     com.kienhoang.dualsubreplay.translation.DiagnosticReason {
     override val reason: String get() = kind.name
+
+    /** Who ran the request that failed, set by the transport; null when no request was sent. */
+    var execution: AiExecution? = null
 }
 
 internal enum class AiRole(
@@ -126,6 +129,8 @@ internal data class AiChatRequest(
     val format: AiWireFormat = AiWireFormat.OPENAI_CHAT,
     /** The service's own web search goes with the request: Claude's `web_search` or OpenRouter's server tool. */
     val webSearch: Boolean = false,
+    /** The provider whose key and address this request was built from, for the transport to report; empty in tests. */
+    val providerId: String = "",
 )
 
 /** Sends one chat request and returns the reply, or throws [AiChatException]. */

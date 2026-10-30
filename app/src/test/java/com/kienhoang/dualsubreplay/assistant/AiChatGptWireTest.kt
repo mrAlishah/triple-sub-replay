@@ -145,9 +145,11 @@ class AiChatGptWireTest {
 
     @Test
     fun theReplyKeepsTheCallAsAReplayableItem() {
-        val reply = ChatGptResult("Hold on", listOf(ChatGptFunctionCall("c9", "pause", "{}", "triplesub"))).toAiReply("gpt-x")
+        val run = AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", true)
+        val reply = ChatGptResult("Hold on", listOf(ChatGptFunctionCall("c9", "pause", "{}", "triplesub")), "gpt-x-1").toAiReply(run)
         assertEquals("Hold on", reply.text)
-        assertEquals("gpt-x", reply.model)
+        assertEquals("the server's model, not the requested one", "gpt-x-1", reply.model)
+        assertEquals(run, reply.execution)
         val call = reply.toolCalls.single()
         assertEquals("c9", call.id)
         assertEquals("pause", call.name)

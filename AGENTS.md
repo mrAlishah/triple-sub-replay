@@ -30,6 +30,10 @@ Android app (`:app`, package `com.kienhoang.dualsubreplay`) with a separate test
 - Managed-device tests require the API 36 AOSP x86_64 system image. On headless hosts add `-Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect` (CI also passes `--no-parallel --max-workers=2`).
 - Debug APK output: `app/build/outputs/apk/debug/app-debug.apk`.
 
+## Fork maintenance
+
+Before any upstream sync or fork refactor, read [fork-customizations.md](docs/development/fork-customizations.md) (what must be preserved) and [upstream-integration.md](docs/development/upstream-integration.md) (how to decide).
+
 ## Development workflow
 
 1. Before significant work, read [mission](docs/project/mission.md), [technical context](docs/project/tech-stack.md), [ROADMAP.md](ROADMAP.md), relevant specs, and relevant source/tests. Stable intent belongs in the repository, not only chat history.

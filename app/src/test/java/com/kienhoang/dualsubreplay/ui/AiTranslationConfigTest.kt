@@ -43,9 +43,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Map-backed preferences: the holder and the ChatGPT subscription only read and write strings. */
-private class FakePrefs : SharedPreferences {
+/** Map-backed preferences for strings and booleans (the translation mode), shared by the tests of this package. */
+internal class FakePrefs : SharedPreferences {
     val map = mutableMapOf<String, String>()
+    val booleans = mutableMapOf<String, Boolean>()
 
     override fun getString(
         key: String,
@@ -55,21 +56,31 @@ private class FakePrefs : SharedPreferences {
     override fun edit(): SharedPreferences.Editor =
         object : SharedPreferences.Editor {
             private val pending = mutableMapOf<String, String?>()
+            private val pendingBooleans = mutableMapOf<String, Boolean?>()
 
             override fun putString(
                 key: String,
                 value: String?,
             ) = apply { pending[key] = value }
 
-            override fun remove(key: String) = apply { pending[key] = null }
+            override fun remove(key: String) =
+                apply {
+                    pending[key] = null
+                    pendingBooleans[key] = null
+                }
 
             override fun apply() {
                 pending.forEach { (key, value) -> if (value == null) map.remove(key) else map[key] = value }
+                pendingBooleans.forEach { (key, value) -> if (value == null) booleans.remove(key) else booleans[key] = value }
             }
 
             override fun commit(): Boolean = true.also { apply() }
 
-            override fun clear() = apply { map.clear() }
+            override fun clear() =
+                apply {
+                    map.clear()
+                    booleans.clear()
+                }
 
             override fun putStringSet(
                 key: String,
@@ -94,7 +105,7 @@ private class FakePrefs : SharedPreferences {
             override fun putBoolean(
                 key: String,
                 value: Boolean,
-            ) = this
+            ) = apply { pendingBooleans[key] = value }
         }
 
     override fun getAll(): MutableMap<String, *> = map.toMutableMap()
@@ -122,9 +133,9 @@ private class FakePrefs : SharedPreferences {
     override fun getBoolean(
         key: String,
         defValue: Boolean,
-    ) = defValue
+    ) = booleans[key] ?: defValue
 
-    override fun contains(key: String) = key in map
+    override fun contains(key: String) = key in map || key in booleans
 
     override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
 

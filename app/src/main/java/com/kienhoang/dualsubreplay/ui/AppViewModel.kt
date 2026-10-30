@@ -208,11 +208,19 @@ data class DualSubUiState(
     val subtitleOrder: List<SubtitleSlot> = DEFAULT_SUBTITLE_ORDER,
     val slotFontScale: SlotFontScale = SlotFontScale(),
     val slotAlignment: SlotAlignment = SlotAlignment(),
+    /** Why the AI translator's last request failed while [aiTranslation] is on; Google's lines show meanwhile. */
+    val aiTranslationProblem: String? = null,
 )
 
 /** [state] translating with Google again, without the fallback and its reasons. */
 private fun withGoogleAgain(state: DualSubUiState): DualSubUiState =
-    state.copy(onDeviceFallback = false, youTubeTranslationFallback = false, onlineTranslationFailureDetail = null, translationError = null)
+    state.copy(
+        onDeviceFallback = false,
+        youTubeTranslationFallback = false,
+        onlineTranslationFailureDetail = null,
+        translationError = null,
+        aiTranslationProblem = null,
+    )
 
 /** The engine actually translating right now: Google, unless this video fell back to on-device. */
 internal fun DualSubUiState.translatesWithGoogle(): Boolean = translationEngine == TranslationEngine.GOOGLE_WEB && !onDeviceFallback
@@ -1499,6 +1507,7 @@ class AppViewModel internal constructor(
     /** The problem details' "Try Google again", and the periodic check once Google answers again. */
     fun tryGoogleTranslationAgain() {
         googleFailedOnMobile = false
+        aiTranslator.tryAgain()
         _state.update(::withGoogleAgain)
     }
 
@@ -2216,6 +2225,13 @@ class AppViewModel internal constructor(
         ) -> Unit,
     ) = coroutineScope {
         val (source, target) = languages
+        if (ai != null) {
+            launch {
+                aiTranslator.problem.collect { problem ->
+                    _state.update { if (isCurrentLoad(it, videoId, generation)) it.copy(aiTranslationProblem = problem) else it }
+                }
+            }
+        }
         launch {
             prefetchInBackground(store, playbackRequests) { texts ->
                 ai?.let { model -> aiNextBatch(model, languages, texts) } ?: googleTranslator.translateNextBatch(source, target, texts)

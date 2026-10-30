@@ -204,4 +204,5 @@ val RESETTABLE_SETTING_KEYS =
     ) +
         com.kienhoang.dualsubreplay.assistant
             .aiTranslationChoiceKeys() + STUDY_SETTING_KEYS + WORD_CARD_SECTION_KEYS + AD_SKIP_SETTING_KEYS +
-        TRIPLE_SETTING_KEYS + YOUTUBE_TABS_SETTING_KEYS
+        TRIPLE_SETTING_KEYS + YOUTUBE_TABS_SETTING_KEYS +
+        TV_LAYOUT_SETTING_KEYS

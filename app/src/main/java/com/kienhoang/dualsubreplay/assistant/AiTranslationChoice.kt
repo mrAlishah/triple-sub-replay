@@ -109,7 +109,7 @@ internal fun aiTranslationEffort(
     return when (provider) {
         // Pro models and Gemini 3 cannot turn thinking off (also behind an alias such as gemini-pro-latest), so nothing is forced on them.
         AiProvider.GEMINI -> if ("-pro" in id || "gemini-3" in id) null else "none"
-        AiProvider.OPENAI -> "minimal"
+        AiProvider.OPENAI -> openAiNoThinkingEffort(modelId)
         else -> null
     }
 }

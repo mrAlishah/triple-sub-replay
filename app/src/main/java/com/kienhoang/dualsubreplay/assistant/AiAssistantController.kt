@@ -813,8 +813,7 @@ internal class AiAssistantController(
         val run =
             AiAnswerRun(appActions, history, tools, memories, newId, settings.fullAccess, searches, webSearch) { messages, offered ->
                 try {
-                    request(settings, messages, AI_CHAT_TIMEOUT_MS, settings.thinkingFor(settings.provider).effort, offered, webSearch = this.webSearch)
-                        .also(trace::answered)
+                    answer(settings, messages, offered, webSearch = this.webSearch).also(trace::answered)
                 } catch (error: AiChatException) {
                     trace.failed(error)
                     throw error
@@ -958,6 +957,26 @@ internal class AiAssistantController(
         _state.update { it.copy(draft = "") }
         return withContext(io) {
             aiCall { transport.stream(request) { piece -> _state.update { it.copy(draft = it.draft + piece) } } }
+        }
+    }
+
+    /**
+     * Asks one round of an answer. When the service refuses the thinking level the app chose for Auto
+     * ([aiAssistantEffort]), it is asked again without one, as Auto always was.
+     */
+    private suspend fun answer(
+        settings: AiAssistantSettings,
+        messages: List<AiWireMessage>,
+        tools: List<AiTool>,
+        webSearch: Boolean,
+    ): AiReply {
+        val effort = aiAssistantEffort(settings, withTools = tools.isNotEmpty())
+        return try {
+            request(settings, messages, AI_CHAT_TIMEOUT_MS, effort, tools, webSearch = webSearch)
+        } catch (error: AiChatException) {
+            val chosen = settings.thinkingFor(settings.provider).effort
+            if (error.kind != AiErrorKind.UNSUPPORTED_THINKING || effort == chosen) throw error
+            request(settings, messages, AI_CHAT_TIMEOUT_MS, chosen, tools, webSearch = webSearch)
         }
     }
 

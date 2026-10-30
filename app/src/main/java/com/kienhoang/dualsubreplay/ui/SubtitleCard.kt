@@ -74,6 +74,8 @@ internal fun CompactSubtitleCard(
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
     thirdText: String? = null,
     thirdOrigin: TranslationOrigin? = null,
+    /** Goes before the row's click, for a focus requester (TV layout). */
+    focusModifier: Modifier = Modifier,
 ) {
     if (!showOriginal && !showTranslation && thirdText == null) return
     val slotControls = LocalTripleSubtitleControls.current
@@ -84,6 +86,8 @@ internal fun CompactSubtitleCard(
             Modifier
                 .fillMaxWidth()
                 .semantics { stateDescription = rowState }
+                .then(focusModifier)
+                .tvFocusRing()
                 .clickable(enabled = replayEnabled, onClick = onReplay),
         border = activeCardBorder(active),
         colors = activeCardColors(active),

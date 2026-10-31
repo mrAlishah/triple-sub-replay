@@ -15,8 +15,8 @@ import com.kienhoang.dualsubreplay.assistant.AiKeyStore
 import com.kienhoang.dualsubreplay.assistant.AiModelInfo
 import com.kienhoang.dualsubreplay.assistant.AiModelLister
 import com.kienhoang.dualsubreplay.assistant.AiProvider
-import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.assistant.AiReply
+import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.assistant.AiTranslationChoices
 import com.kienhoang.dualsubreplay.assistant.FakeCipher
 import com.kienhoang.dualsubreplay.assistant.MapStorage

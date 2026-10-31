@@ -64,9 +64,25 @@ class AiChatGptWireTest {
 
     @Test
     fun systemTextTravelsAsInstructionsNeverAsASystemItem() {
-        val json = body(request(listOf(AiWireMessage(AiRole.SYSTEM, "Guide one."), AiWireMessage(AiRole.SYSTEM, "Guide two."), AiWireMessage(AiRole.USER, "Hi"))))
+        val json =
+            body(
+                request(
+                    listOf(
+                        AiWireMessage(AiRole.SYSTEM, "Guide one."),
+                        AiWireMessage(AiRole.SYSTEM, "Guide two."),
+                        AiWireMessage(AiRole.USER, "Hi"),
+                    ),
+                ),
+            )
         assertEquals("Guide one.\n\nGuide two.", json.getString("instructions"))
-        val roles = (0 until json.getJSONArray("input").length()).mapNotNull { json.getJSONArray("input").getJSONObject(it).optString("role") }
+        val roles =
+            (
+                0 until
+                    json
+                        .getJSONArray(
+                            "input",
+                        ).length()
+            ).mapNotNull { json.getJSONArray("input").getJSONObject(it).optString("role") }
         assertFalse("system" in roles)
         assertEquals(listOf("user"), roles)
     }
@@ -89,14 +105,24 @@ class AiChatGptWireTest {
         assertEquals("user", input.getJSONObject(0).getString("role"))
         assertEquals("assistant", input.getJSONObject(1).getString("role"))
         assertEquals("It means yet.", input.getJSONObject(1).getString("content"))
-        assertEquals("Three examples?", input.getJSONObject(2).getJSONArray("content").getJSONObject(0).getString("text"))
+        assertEquals(
+            "Three examples?",
+            input
+                .getJSONObject(2)
+                .getJSONArray("content")
+                .getJSONObject(0)
+                .getString("text"),
+        )
     }
 
     @Test
     fun picturesAndPdfsAreInRequestInputsNotUploads() {
         val picture = AiAttachment("shot.png", AiAttachmentKind.PICTURE, "data:image/png;base64,AAAA")
         val pdf = AiAttachment("doc.pdf", AiAttachmentKind.PDF, "data:application/pdf;base64,BBBB")
-        val content = body(request(listOf(AiWireMessage(AiRole.USER, "Look", listOf(picture, pdf))))).getJSONArray("input").getJSONObject(0).getJSONArray("content")
+        val content =
+            body(
+                request(listOf(AiWireMessage(AiRole.USER, "Look", listOf(picture, pdf)))),
+            ).getJSONArray("input").getJSONObject(0).getJSONArray("content")
         assertEquals("input_text", content.getJSONObject(0).getString("type"))
         assertEquals("input_image", content.getJSONObject(1).getString("type"))
         assertEquals("data:image/png;base64,AAAA", content.getJSONObject(1).getString("image_url"))
@@ -122,7 +148,13 @@ class AiChatGptWireTest {
 
     @Test
     fun aToolRoundIsReplayedAsTypedItemsWithTheSameCallId() {
-        val call = AiToolCall("call_1", "set_speed", """{"speed":1.5}""", """{"type":"function_call","call_id":"call_1","name":"set_speed","namespace":"triplesub","arguments":"{\"speed\":1.5}"}""")
+        val call =
+            AiToolCall(
+                "call_1",
+                "set_speed",
+                """{"speed":1.5}""",
+                """{"type":"function_call","call_id":"call_1","name":"set_speed","namespace":"triplesub","arguments":"{\"speed\":1.5}"}""",
+            )
         val input =
             body(
                 request(
@@ -182,7 +214,13 @@ class AiChatGptWireTest {
         runBlocking {
             val keyed = mutableListOf<AiWireFormat>()
             val chatGpt = mutableListOf<AiWireFormat>()
-            val router = AiTransportRouter(AiChatTransport { keyed += it.format; AiReply("keyed") })
+            val router =
+                AiTransportRouter(
+                    AiChatTransport {
+                        keyed += it.format
+                        AiReply("keyed")
+                    },
+                )
             val keyedRequest = AiChatRequest("u", "m", "k", listOf(AiWireMessage(AiRole.USER, "x")))
             assertEquals("keyed", router.complete(keyedRequest).text)
             // Before ChatGPT is attached a ChatGPT request fails closed instead of reaching a keyed service.
@@ -193,7 +231,11 @@ class AiChatGptWireTest {
             } catch (failure: AiChatException) {
                 assertEquals(AiErrorKind.PLAN_SIGN_IN_REQUIRED, failure.kind)
             }
-            router.chatGpt = AiChatTransport { chatGpt += it.format; AiReply("gpt") }
+            router.chatGpt =
+                AiChatTransport {
+                    chatGpt += it.format
+                    AiReply("gpt")
+                }
             assertEquals("gpt", router.complete(chatRequest).text)
             assertEquals("keyed", router.complete(keyedRequest).text)
             assertEquals(listOf(AiWireFormat.OPENAI_CHAT, AiWireFormat.OPENAI_CHAT), keyed)

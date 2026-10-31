@@ -433,8 +433,15 @@ class AiAssistantPanelUiTest {
         composeRule.onNodeWithTag("ai_assistant_button").performClick()
         composeRule.onNodeWithTag("ai_settings_button").performClick()
         composeRule.onNodeWithTag("ai_chat_service_menu").assertIsDisplayed().assertTextContains("Google Gemini")
-        listOf("ai_service_menu", "ai_section_keys", "ai_section_model", "ai_key_field", "ai_model", "ai_settings_thinking_high", "chatgpt_continue")
-            .forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
+        listOf(
+            "ai_service_menu",
+            "ai_section_keys",
+            "ai_section_model",
+            "ai_key_field",
+            "ai_model",
+            "ai_settings_thinking_high",
+            "chatgpt_continue",
+        ).forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
         listOf("ai_section_search", "ai_section_memory", "ai_section_history", "ai_section_permissions")
             .forEach { composeRule.onNodeWithTag(it).performScrollTo().assertIsDisplayed() }
         composeRule.onNodeWithText("managed in Settings → AI Connection", substring = true).performScrollTo().assertIsDisplayed()
@@ -500,7 +507,6 @@ class AiAssistantPanelUiTest {
         name: String,
         arguments: String,
     ) = AiToolCall("call_$name", name, arguments, """{"id":"call_$name","type":"function","function":{"name":"$name"}}""")
-
 
     @Test
     fun aSettingChangeShowsAChipWithUndo() {

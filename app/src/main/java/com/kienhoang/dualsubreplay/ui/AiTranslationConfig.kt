@@ -333,7 +333,14 @@ internal class AiTranslationConfig(
         val listed = entry?.takeIf { it.state == AiModelsState.LOADED }?.infos.orEmpty()
         val listedIds = listed.map { it.id }
         // The model the user set is sent as it is, never swapped; only a default the service no longer offers gives way to a listed one.
-        val model = if (explicit || listedIds.isEmpty() || wanted in listedIds) wanted else default.takeIf { it in listedIds } ?: listedIds.first()
+        val model =
+            if (explicit || listedIds.isEmpty() ||
+                wanted in listedIds
+            ) {
+                wanted
+            } else {
+                default.takeIf { it in listedIds } ?: listedIds.first()
+            }
         val choicesList =
             if (listed.isNotEmpty()) {
                 listed.map { AiModelChoice(it.id, it.name ?: it.id) }

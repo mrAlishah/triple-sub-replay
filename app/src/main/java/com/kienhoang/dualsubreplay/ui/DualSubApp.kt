@@ -305,6 +305,13 @@ private fun DualSubExperience(
     // The assistant panel beside the app may pause, replay and change the speed of the page video.
     BindAiPlayerControls(webController)
     var showSettings by remember { mutableStateOf(false) }
+    // Kept while the app runs, so the settings page reopens where it was (owner request 2026-10-31).
+    val settingsPageMemory = remember { SettingsPageMemory() }
+    var settingsJumpSection by remember { mutableStateOf<MoreSettingsSection?>(null) }
+    val openLayoutSettings = {
+        settingsJumpSection = MoreSettingsSection.LAYOUT
+        showSettings = true
+    }
     // Gear icons on the player open a small languages popup; the sidebar opens the full page.
     var showQuickSettings by remember { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
@@ -449,6 +456,7 @@ private fun DualSubExperience(
                                     .testTag("subtitle_timeline"),
                             onHide = onHideSubtitles,
                             onSettings = { showQuickSettings = true },
+                            onLongPressSettings = openLayoutSettings,
                             onRetry = onRetry,
                             onWordClick = onWordClick,
                             onReplay = { segment -> webController.replayOrPause(state, segment) },
@@ -463,6 +471,7 @@ private fun DualSubExperience(
                             modifier = panelModifier.testTag("subtitle_timeline"),
                             onHide = onHideSubtitles,
                             onSettings = { showQuickSettings = true },
+                            onLongPressSettings = openLayoutSettings,
                             onRetry = onRetry,
                             onWordClick = onWordClick,
                             onReplay = { segment -> webController.replayOrPause(state, segment) },
@@ -566,9 +575,15 @@ private fun DualSubExperience(
             onCaptionFormatChange = onCaptionFormatChange,
             onResetSettings = {
                 showSettings = false
+                settingsJumpSection = null
                 onResetSettings()
             },
-            onDismiss = { showSettings = false },
+            pageMemory = settingsPageMemory,
+            jumpToSection = settingsJumpSection,
+            onDismiss = {
+                showSettings = false
+                settingsJumpSection = null
+            },
         )
     }
 }
@@ -582,6 +597,7 @@ private fun SubtitlePanel(
     onRetry: () -> Unit,
     onWordClick: (WordTap) -> Unit = {},
     onReplay: (SubtitleSegment) -> Unit,
+    onLongPressSettings: () -> Unit = onSettings,
 ) {
     var panelOffsetY by remember { mutableFloatStateOf(0f) }
     var panelHeightPx by remember { mutableFloatStateOf(0f) }
@@ -672,7 +688,7 @@ private fun SubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    PanelHeaderActions(onSettings, onHide, compact = false)
+                    PanelHeaderActions(onSettings, onLongPressSettings, onHide, compact = false)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -773,6 +789,7 @@ private fun SideSubtitlePanel(
     onRetry: () -> Unit,
     onWordClick: (WordTap) -> Unit = {},
     onReplay: (SubtitleSegment) -> Unit,
+    onLongPressSettings: () -> Unit = onSettings,
 ) {
     var panelOffsetX by remember { mutableFloatStateOf(0f) }
     var panelWidthPx by remember { mutableFloatStateOf(0f) }
@@ -845,7 +862,7 @@ private fun SideSubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    PanelHeaderActions(onSettings, onHide, compact = true)
+                    PanelHeaderActions(onSettings, onLongPressSettings, onHide, compact = true)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -1235,9 +1252,10 @@ internal fun LanguagePickerDialog(
         )
     }
 
+    // A TV remote reaches the Back button more easily than a corner X.
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { if (tvLayout) Text(title) else DialogTitle(title, onClose = onDismiss) },
         text = {
             Column {
                 OutlinedTextField(
@@ -1263,7 +1281,7 @@ internal fun LanguagePickerDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.player_back)) } },
+        confirmButton = { if (tvLayout) TextButton(onClick = onDismiss) { Text(stringResource(R.string.player_back)) } },
     )
 }
 

@@ -155,7 +155,8 @@ internal class ChatGptChatTransport(
         onText: (String) -> Unit,
     ): AiReply {
         var sent = false
-        val execution = AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, request.model, planUsageVerified = true)
+        val execution =
+            AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, request.model, planUsageVerified = true)
         return try {
             backend.respondTracked(chatGptChatBody(request), onText) { sent = true }.toAiReply(execution)
         } catch (error: ChatGptException) {
@@ -190,7 +191,13 @@ internal class AiTransportRouter(
     }
 
     override suspend fun complete(request: AiChatRequest): AiReply =
-        if (request.format == AiWireFormat.CHATGPT_RESPONSES) chatGptTransport().complete(request) else runKeyed(request) { keyed.complete(request) }
+        if (request.format ==
+            AiWireFormat.CHATGPT_RESPONSES
+        ) {
+            chatGptTransport().complete(request)
+        } else {
+            runKeyed(request) { keyed.complete(request) }
+        }
 
     override suspend fun stream(
         request: AiChatRequest,

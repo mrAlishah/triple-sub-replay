@@ -18,7 +18,6 @@
     <string name="updates_install">Pasang</string>
     <string name="updates_installing">Memasang… Aplikasi tertutup selama pembaruan.</string>
     <string name="updates_try_again">Coba lagi</string>
-    <string name="updates_close">Tutup</string>
     <string name="updates_open_github">Buka GitHub</string>
     <string name="updates_unsupported">Salinan aplikasi ini dibuat di komputer, jadi tidak bisa memperbarui dirinya sendiri. Dapatkan versi terbaru di GitHub.</string>
     <string name="updates_problem_offline">Tidak dapat menghubungi GitHub. Periksa koneksi Anda, lalu coba lagi.</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Buka rilis %1$s di GitHub</string>
+    <string name="updates_reminders_title">Beri tahu saya tentang versi baru</string>
+    <string name="updates_reminders_description">Sekali sehari saat Anda membuka aplikasi, aplikasi membaca file kecil di GitHub untuk mengetahui versi baru dan perbaikan sementara untuk perubahan YouTube atau Google. Tidak ada yang dikirim tentang Anda atau video Anda. Jika nonaktif, aplikasi hanya bertanya ke GitHub saat Anda mengetuk Periksa pembaruan.</string>
+    <string name="updates_banner">Versi %1$s tersedia.</string>
+    <string name="updates_skip_version">Lewati versi ini</string>
+    <string name="updates_security_title">Pembaruan keamanan</string>
+    <string name="updates_security_message">Versi %1$s memperbaiki masalah keamanan pada versi yang Anda miliki (%2$s). Perbarui sekarang? Kata tersimpan dan setelan Anda tetap ada.</string>
+    <string name="updates_reminders_off_hint">Selama nonaktif, Anda tidak akan diberi tahu tentang versi baru atau pembaruan keamanan.</string>
+    <string name="updates_security_details">Apa yang diperbaiki</string>
 </resources>

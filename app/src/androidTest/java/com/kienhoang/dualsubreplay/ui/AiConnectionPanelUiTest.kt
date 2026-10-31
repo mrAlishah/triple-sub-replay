@@ -34,10 +34,10 @@ import com.kienhoang.dualsubreplay.assistant.AiModelInfo
 import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.assistant.AiReply
 import com.kienhoang.dualsubreplay.assistant.AiSettingsStorage
+import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.assistant.InMemoryAiMemoryStorage
 import com.kienhoang.dualsubreplay.assistant.SecretCipher
 import com.kienhoang.dualsubreplay.assistant.SecretStorage
-import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptModel
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
@@ -209,7 +209,12 @@ class AiConnectionPanelUiTest {
         chooseService("ai_service_chatgpt")
         composeRule.onNodeWithTag("chatgpt_progress").assertExists()
         composeRule.onNodeWithTag("chatgpt_cancel").performScrollTo().performClick()
-        listOf(ChatGptStatus.NOT_ELIGIBLE, ChatGptStatus.USAGE_LIMIT, ChatGptStatus.SIGN_IN_REQUIRED, ChatGptStatus.TEMPORARY_FAILURE).forEach {
+        listOf(
+            ChatGptStatus.NOT_ELIGIBLE,
+            ChatGptStatus.USAGE_LIMIT,
+            ChatGptStatus.SIGN_IN_REQUIRED,
+            ChatGptStatus.TEMPORARY_FAILURE,
+        ).forEach {
             gptFlow.value = ChatGptUiState(useSubscription = true, status = it)
             composeRule.waitForIdle()
             composeRule.onNodeWithTag("chatgpt_status").assertExists()

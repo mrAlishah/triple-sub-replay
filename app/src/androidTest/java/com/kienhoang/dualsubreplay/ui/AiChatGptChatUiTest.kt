@@ -153,7 +153,12 @@ class AiChatGptChatUiTest {
         transport.hold.complete(Unit)
         composeRule.waitUntil(5_000) { noDraft() }
         composeRule.onNodeWithText("Hallo").assertIsDisplayed()
-        assertEquals(AiRole.ASSISTANT, controller.state.value.messages.last().role)
+        assertEquals(
+            AiRole.ASSISTANT,
+            controller.state.value.messages
+                .last()
+                .role,
+        )
         assertEquals("", controller.state.value.draft)
     }
 
@@ -164,7 +169,12 @@ class AiChatGptChatUiTest {
         composeRule.onNodeWithTag("ai_draft").assertIsDisplayed()
         composeRule.onNodeWithTag("ai_stop_button").performClick()
         composeRule.waitUntil(5_000) { noDraft() }
-        assertEquals(AiRole.USER, controller.state.value.messages.last().role)
+        assertEquals(
+            AiRole.USER,
+            controller.state.value.messages
+                .last()
+                .role,
+        )
         assertTrue(controller.state.value.stopped)
     }
 

@@ -111,7 +111,19 @@ class AiResponseSourceTest {
     private val gate = ChatGptGate { 1_000_000L }
 
     private fun signIn(scopes: Set<String> = setOf("openid", CHATGPT_PLAN_SCOPE)) {
-        store.save(ChatGptCredentials("oaiapp_1", "sub-1", "me@example.com", "id-1", "access-SECRET", "refresh-SECRET", 1_000_000L + 3_600_000, scopes, null))
+        store.save(
+            ChatGptCredentials(
+                "oaiapp_1",
+                "sub-1",
+                "me@example.com",
+                "id-1",
+                "access-SECRET",
+                "refresh-SECRET",
+                1_000_000L + 3_600_000,
+                scopes,
+                null,
+            ),
+        )
     }
 
     private fun chatGptTransport() = ChatGptChatTransport(ChatGptChatBackend(session, api, gate, listOf(1L)) { })
@@ -124,7 +136,10 @@ class AiResponseSourceTest {
             signIn()
             api.answer = { ChatGptResult("Hallo", responseModel = "gpt-x-2026-10-01") }
             val reply = chatGptTransport().complete(chatGptRequest("gpt-x"))
-            assertEquals(AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", planUsageVerified = true), reply.execution)
+            assertEquals(
+                AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", planUsageVerified = true),
+                reply.execution,
+            )
             assertEquals("the server's model, not the requested one", "gpt-x-2026-10-01", reply.model)
         }
 
@@ -176,7 +191,14 @@ class AiResponseSourceTest {
     @Test
     fun aKeyedFailureIsStampedToo() {
         val router = AiTransportRouter(AiChatTransport { throw AiChatException(AiErrorKind.NETWORK) })
-        val error = runCatching { runBlocking { router.complete(keyedRequest(AiProvider.OPENROUTER)) } }.exceptionOrNull() as AiChatException
+        val error =
+            runCatching {
+                runBlocking {
+                    router.complete(
+                        keyedRequest(AiProvider.OPENROUTER),
+                    )
+                }
+            }.exceptionOrNull() as AiChatException
         assertEquals(AiProvider.OPENROUTER.key, error.execution?.providerId)
         assertEquals(AiAuthMethod.API_KEY, error.execution?.auth)
     }
@@ -212,14 +234,19 @@ class AiResponseSourceTest {
         assertEquals(chatGptSource, reloaded.source)
         AiResponseStatus.entries.forEach { status ->
             val source = chatGptSource.copy(status = status)
-            val back = decodeAiChats(encodeAiChats(listOf(AiChat("c", 1L, 2L, listOf(message.copy(source = source)))))).single().messages.single().source
+            val back =
+                decodeAiChats(
+                    encodeAiChats(listOf(AiChat("c", 1L, 2L, listOf(message.copy(source = source))))),
+                ).single().messages.single().source
             assertEquals(status, back?.status)
         }
     }
 
     @Test
     fun aMessageSavedBeforeThisFeatureHasNoSourceAndStaysReadable() {
-        val old = """{"version":1,"chats":[{"id":"c","created":1,"updated":2,"messages":[{"id":"m","role":"assistant","text":"Old","time":3}]}]}"""
+        val old =
+            """{"version":1,"chats":[{"id":"c","created":1,"updated":2,"messages":[""" +
+                """{"id":"m","role":"assistant","text":"Old","time":3}]}]}"""
         val message = decodeAiChats(old).single().messages.single()
         assertEquals("Old", message.text)
         assertNull(message.source)
@@ -255,7 +282,11 @@ class AiResponseSourceTest {
     @Test
     fun onlyACompletedRealRequestCountsAsSuccessful() {
         assertTrue(chatGptSource.successful)
-        AiResponseStatus.entries.filter { it != AiResponseStatus.COMPLETED }.forEach { assertFalse(chatGptSource.copy(status = it).successful) }
+        AiResponseStatus.entries.filter { it != AiResponseStatus.COMPLETED }.forEach {
+            assertFalse(
+                chatGptSource.copy(status = it).successful,
+            )
+        }
         assertFalse("a completed status without a request is not a success", chatGptSource.copy(auth = null, api = null).successful)
         assertFalse(chatGptSource.copy(auth = null, api = null).network)
     }

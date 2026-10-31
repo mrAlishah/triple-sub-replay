@@ -64,9 +64,10 @@
     <string name="settings_model_download_hint">언어 모델은 필요할 때만 다운로드돼요.</string>
     <string name="settings_subtitle_languages">자막 언어</string>
     <string name="settings_dual_subtitle_settings">이중 자막 설정</string>
-    <string name="settings_dual_subtitle_settings_summary">글자 크기, 보기, 색상, 오버레이 등</string>
     <string name="settings_done">완료</string>
     <string name="settings_close_settings">설정 닫기</string>
+    <string name="settings_peek">영상 보기. 길게 누르면 잠시 보이고, 탭하면 계속 보입니다</string>
+    <string name="settings_peek_back">설정으로 돌아가기</string>
     <string name="settings_group_languages">언어</string>
     <string name="settings_group_reading">읽기</string>
     <string name="settings_text_size">글자 크기: %1$d%%</string>
@@ -168,4 +169,5 @@
     <string name="settings_group_languages_summary">자막 언어, 순서, 크기, 정렬</string>
     <string name="settings_group_reading_summary">글자 크기, 표시, 위치, 강조</string>
     <string name="settings_group_default_view_summary">영상과 자막의 기본 표시 방식</string>
+    <string name="settings_source_language_auto_short">자동</string>
 </resources>

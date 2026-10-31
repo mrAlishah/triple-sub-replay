@@ -1,8 +1,11 @@
 package com.kienhoang.dualsubreplay.ui
 
 import android.content.SharedPreferences
+import android.os.SystemClock
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,13 +47,18 @@ import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewDay
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -58,17 +67,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -85,6 +99,8 @@ import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -321,6 +337,7 @@ private fun SlotAccordion(
  * The subtitle panel's gear opens this small popup with only the languages, over the video.
  * "Dual-subtitle settings" leads to the full settings page.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun QuickLanguageSettingsDialog(
     sourcePreference: String,
@@ -347,12 +364,24 @@ internal fun QuickLanguageSettingsDialog(
             onTargetChange = onTargetChange,
         )
     if (pickerOpen) return
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.Language, contentDescription = null) },
-        title = { Text(stringResource(R.string.settings_subtitle_languages)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()).testTag("quick_language_settings")) {
+    // Owner requests 2026-10-30: no icon, the title on the left beside the X, no Done (changes apply at
+    // once), and no empty button row, so this is a plain dialog card rather than an AlertDialog.
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = AlertDialogDefaults.shape,
+            color = AlertDialogDefaults.containerColor,
+            tonalElevation = AlertDialogDefaults.TonalElevation,
+        ) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
+                    .testTag("quick_language_settings"),
+            ) {
+                ProvideTextStyle(MaterialTheme.typography.headlineSmall) {
+                    DialogTitle(stringResource(R.string.settings_subtitle_languages), onClose = onDismiss)
+                }
+                Spacer(Modifier.height(12.dp))
                 LanguagePickerButtons(
                     sourceLabel = sourceLanguageLabel(sourcePreference, sourceChoices, autoLabel, interfaceLocale),
                     targetLanguage = targetLanguage,
@@ -374,20 +403,21 @@ internal fun QuickLanguageSettingsDialog(
                 ) {
                     Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.settings_dual_subtitle_settings), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            stringResource(R.string.settings_dual_subtitle_settings_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                    Text(
+                        stringResource(R.string.settings_dual_subtitle_settings),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_done)) } },
-    )
+        }
+    }
 }
 
 @Composable
@@ -442,10 +472,25 @@ internal fun SubtitleSettingsDialog(
     onResetSettings: () -> Unit = {},
     autoPronounce: Boolean = true,
     onAutoPronounceChange: (Boolean) -> Unit = {},
+    pageMemory: SettingsPageMemory = remember { SettingsPageMemory() },
+    jumpToSection: MoreSettingsSection? = null,
     onDismiss: () -> Unit,
 ) {
     val languagePicker = remember { LanguagePickerState() }
-    var openSection by remember { mutableStateOf<MoreSettingsSection?>(null) }
+    val restoredPlace = remember { pageMemory.placeOnOpen(jumpToSection, SystemClock.elapsedRealtime()) }
+    var openSection by remember { mutableStateOf(restoredPlace.openSection) }
+    // Above the language picker's early return, so picking a language keeps the scroll position too.
+    val scrollState = rememberScrollState(restoredPlace.scrollOffset)
+    val sectionTops = remember { mutableStateMapOf<MoreSettingsSection, Int>() }
+    DisposableEffect(pageMemory) {
+        onDispose { pageMemory.remember(SettingsPagePlace(openSection, scrollState.value), SystemClock.elapsedRealtime()) }
+    }
+    LaunchedEffect(jumpToSection) {
+        val section = jumpToSection ?: return@LaunchedEffect
+        scrollState.scrollTo(snapshotFlow { sectionTops[section] }.filterNotNull().first())
+    }
+    val peek = rememberSettingsPeekState()
+    val pageAlpha by animateFloatAsState(peek.pageAlpha, tween(SETTINGS_PEEK_FADE_MILLIS), label = "settings_page_alpha")
     val aiAssistant = LocalAiAssistant.current
     var showResetConfirmation by remember { mutableStateOf(false) }
     var aiConnectionTarget by remember { mutableStateOf<AiConnectionTarget?>(null) }
@@ -477,31 +522,34 @@ internal fun SubtitleSettingsDialog(
         icon: ImageVector,
         content: @Composable ColumnScope.() -> Unit,
     ) {
-        ExpandableSettingsSection(
-            section = section,
-            icon = icon,
-            expanded = openSection == section,
-            onToggle = { openSection = toggleMoreSettingsSection(openSection, section) },
-            content = content,
-        )
+        Box(Modifier.fillMaxWidth().onPlaced { sectionTops[section] = it.positionInParent().y.roundToInt() }) {
+            ExpandableSettingsSection(
+                section = section,
+                icon = icon,
+                expanded = openSection == section,
+                onToggle = { openSection = toggleMoreSettingsSection(openSection, section) },
+                content = content,
+            )
+        }
     }
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (peek.locked) peek.locked = false else onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        SeeThroughDialogWindow()
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = pageAlpha },
             color = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
         ) {
             Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-                SettingsTopBar(onDismiss)
+                SettingsTopBar(onDismiss, peek)
                 Column(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(scrollState)
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -524,13 +572,21 @@ internal fun SubtitleSettingsDialog(
                         onToggle = { readingOpen = !readingOpen },
                         testTag = "settings_group_reading",
                     ) {
-                        Text(stringResource(R.string.settings_text_size, (fontScale * 100).toInt()))
+                        val fontScaleLabel = stringResource(R.string.settings_text_size, (fontScale * 100).toInt())
+                        val fontScaleSteps = fontScaleSteps(LocalTvLayout.current)
+                        val fontScaleRange = MIN_FONT_SCALE..MAX_FONT_SCALE
+                        Text(fontScaleLabel)
                         Slider(
                             value = fontScale,
                             onValueChange = onFontScaleChange,
-                            modifier = Modifier.tvArrowsLeave(),
-                            valueRange = MIN_FONT_SCALE..MAX_FONT_SCALE,
-                            steps = fontScaleSteps(LocalTvLayout.current),
+                            modifier =
+                                Modifier
+                                    .tvArrowsLeave()
+                                    .peekWhileHeld(peek.fontScaleSlider, fontScaleLabel, fontScale, fontScaleRange, fontScaleSteps)
+                                    .testTag("font_scale_slider"),
+                            interactionSource = peek.fontScaleSlider.interaction,
+                            valueRange = fontScaleRange,
+                            steps = fontScaleSteps,
                         )
                         CaptionVisibilitySettings()
                         TranslationPositionSettings(
@@ -583,6 +639,7 @@ internal fun SubtitleSettingsDialog(
                             offsetFraction = portraitPanelOffsetFraction,
                             onOffsetFractionChange = onPortraitPanelOffsetFractionChange,
                             onReset = onResetPortraitPanelPosition,
+                            peekSlider = peek.panelPositionSlider,
                         )
                         SettingsSectionDivider()
                         CaptionFormatSettings(captionFormat, onCaptionFormatChange)
@@ -730,6 +787,8 @@ internal fun SubtitleSettingsDialog(
                 }
             }
         }
+        peek.heldSlider?.let { HeldSliderCard(it) }
+        if (peek.locked) SettingsPeekBackOverlay(onBack = { peek.locked = false })
 
         if (showLanguageDownloads && languageDownloads != null) {
             LanguageDownloadsDialog(languageDownloads, onDismiss = { showLanguageDownloads = false })
@@ -760,7 +819,10 @@ internal fun SubtitleSettingsDialog(
 }
 
 @Composable
-private fun SettingsTopBar(onDismiss: () -> Unit) {
+private fun SettingsTopBar(
+    onDismiss: () -> Unit,
+    peek: SettingsPeekState,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -775,6 +837,13 @@ private fun SettingsTopBar(onDismiss: () -> Unit) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        IconButton(
+            onClick = peek::onButtonClick,
+            modifier = Modifier.testTag("settings_peek"),
+            interactionSource = peek.buttonInteraction,
+        ) {
+            Icon(Icons.Default.Visibility, contentDescription = stringResource(R.string.settings_peek))
+        }
         TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_done)) }
     }
 }

@@ -18,7 +18,6 @@
     <string name="updates_install">安装</string>
     <string name="updates_installing">正在安装… 更新时应用会关闭。</string>
     <string name="updates_try_again">重试</string>
-    <string name="updates_close">关闭</string>
     <string name="updates_open_github">打开 GitHub</string>
     <string name="updates_unsupported">这个应用是在电脑上构建的，无法自行更新。请在 GitHub 获取最新版本。</string>
     <string name="updates_problem_offline">无法连接 GitHub。请检查网络后重试。</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">在 GitHub 上打开 %1$s 的发布页</string>
+    <string name="updates_reminders_title">有新版本时通知我</string>
+    <string name="updates_reminders_description">每天打开应用时读取一次 GitHub 上的一个小文件，了解新版本以及针对 YouTube 或 Google 变化的临时修复。不会发送任何关于你或你所看视频的信息。关闭后，只有点按“检查更新”时才会访问 GitHub。</string>
+    <string name="updates_banner">版本 %1$s 已推出。</string>
+    <string name="updates_skip_version">跳过此版本</string>
+    <string name="updates_security_title">安全更新</string>
+    <string name="updates_security_message">版本 %1$s 修复了你当前版本（%2$s）中的一个安全问题。现在更新吗？你保存的单词和设置都会保留。</string>
+    <string name="updates_reminders_off_hint">关闭期间，你不会收到新版本或安全更新的通知。</string>
+    <string name="updates_security_details">查看修复内容</string>
 </resources>

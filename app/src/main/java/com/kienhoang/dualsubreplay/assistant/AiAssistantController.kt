@@ -448,7 +448,14 @@ internal class AiAssistantController(
 
     fun setShowResponseSource(enabled: Boolean) = updateSettings { it.copy(showResponseSource = enabled) }
 
-    fun setThinking(thinking: AiThinking) = updateSettings { it.copy(thinking = thinking, thinkings = it.thinkings + (it.provider to thinking)) }
+    fun setThinking(thinking: AiThinking) =
+        updateSettings {
+            it.copy(
+                thinking = thinking,
+                thinkings =
+                    it.thinkings + (it.provider to thinking),
+            )
+        }
 
     /** The thinking level of one service, as Model and Thinking sets it for the service it shows; chat and translation both read it. */
     fun setThinking(
@@ -869,7 +876,15 @@ internal class AiAssistantController(
         _state.update { current ->
             val chat = current.chat?.takeIf { it.id == chatId } ?: return@update current.copy(sending = false)
             val answer =
-                AiChatMessage(newId(), AiRole.ASSISTANT, run.text, now, actions = run.records.toList(), sources = run.sources.toList(), source = source)
+                AiChatMessage(
+                    newId(),
+                    AiRole.ASSISTANT,
+                    run.text,
+                    now,
+                    actions = run.records.toList(),
+                    sources = run.sources.toList(),
+                    source = source,
+                )
             current.copy(chat = chat.copy(updatedMs = now, messages = chat.messages + answer), sending = false)
         }
     }
@@ -953,7 +968,19 @@ internal class AiAssistantController(
     ): AiReply {
         val current = _state.value
         if (!current.chatGptChatReady) throw AiChatException(AiErrorKind.PLAN_SIGN_IN_REQUIRED)
-        val request = AiChatRequest("", current.chatGpt.model, "", messages, timeoutMs, null, tools, AiWireFormat.CHATGPT_RESPONSES, false, CHATGPT_ACCESS_ID)
+        val request =
+            AiChatRequest(
+                "",
+                current.chatGpt.model,
+                "",
+                messages,
+                timeoutMs,
+                null,
+                tools,
+                AiWireFormat.CHATGPT_RESPONSES,
+                false,
+                CHATGPT_ACCESS_ID,
+            )
         _state.update { it.copy(draft = "") }
         return withContext(io) {
             aiCall { transport.stream(request) { piece -> _state.update { it.copy(draft = it.draft + piece) } } }

@@ -18,7 +18,6 @@
     <string name="updates_install">Instalar</string>
     <string name="updates_installing">Instalando… O app fecha enquanto atualiza.</string>
     <string name="updates_try_again">Tentar de novo</string>
-    <string name="updates_close">Fechar</string>
     <string name="updates_open_github">Abrir o GitHub</string>
     <string name="updates_unsupported">Esta cópia do app foi compilada em um computador, então não pode se atualizar sozinha. Baixe a versão mais recente no GitHub.</string>
     <string name="updates_problem_offline">Não foi possível acessar o GitHub. Verifique sua conexão e tente de novo.</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Abrir as versões de %1$s no GitHub</string>
+    <string name="updates_reminders_title">Avisar sobre novas versões</string>
+    <string name="updates_reminders_description">Uma vez por dia, ao abrir o app, ele lê um pequeno arquivo no GitHub para saber de novas versões e correções temporárias para mudanças do YouTube ou do Google. Nada sobre você ou seus vídeos é enviado. Desativado, o app só consulta o GitHub quando você toca em Verificar atualizações.</string>
+    <string name="updates_banner">A versão %1$s está disponível.</string>
+    <string name="updates_skip_version">Pular esta versão</string>
+    <string name="updates_security_title">Atualização de segurança</string>
+    <string name="updates_security_message">A versão %1$s corrige um problema de segurança na versão que você tem (%2$s). Atualizar agora? Suas palavras salvas e configurações continuam.</string>
+    <string name="updates_reminders_off_hint">Enquanto estiver desativado, você não será avisado sobre novas versões nem atualizações de segurança.</string>
+    <string name="updates_security_details">O que foi corrigido</string>
 </resources>

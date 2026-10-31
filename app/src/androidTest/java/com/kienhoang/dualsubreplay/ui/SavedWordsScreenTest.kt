@@ -5,11 +5,11 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kienhoang.dualsubreplay.data.*
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import java.util.UUID
 
 class SavedWordsScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -19,8 +19,19 @@ class SavedWordsScreenTest {
         val name = "vocabulary-ui-${UUID.randomUUID()}.db"
         val repository = VocabularyRepository(context, name)
         val visible = androidx.compose.runtime.mutableStateOf(true)
-        val word = savedWordFrom(LearningWordSelection(AnalyzedToken("learn", 0, 5, PartOfSpeech.VERB), "en", "vi",
-            "dQw4w9WgXcQ", SubtitleSegment(1, 1000, 3000, "Learn a word", "Học một từ"), false), "học", false)
+        val word =
+            savedWordFrom(
+                LearningWordSelection(
+                    AnalyzedToken("learn", 0, 5, PartOfSpeech.VERB),
+                    "en",
+                    "vi",
+                    "dQw4w9WgXcQ",
+                    SubtitleSegment(1, 1000, 3000, "Learn a word", "Học một từ"),
+                    false,
+                ),
+                "học",
+                false,
+            )
         runBlocking { repository.save(word) }
         try {
             compose.setContent { DualSubTheme { if (visible.value) SavedWordsScreen(repository, {}, {}, {}) } }
@@ -34,19 +45,32 @@ class SavedWordsScreenTest {
             compose.onNodeWithTag("play_offline_clip").assertDoesNotExist()
             saveUiEvidence("word-practice")
             compose.onNodeWithTag("review_good").performScrollTo().performClick()
-            compose.waitUntil(5000) { repository.words.value.single().intervalMs == 3 * DAY_MS }
+            compose.waitUntil(5000) {
+                repository.words.value
+                    .single()
+                    .intervalMs == 3 * DAY_MS
+            }
             compose.onNodeWithTag("practice_complete").assertIsDisplayed()
-            assertTrue(repository.words.value.single().dueAt > System.currentTimeMillis())
+            assertTrue(
+                repository.words.value
+                    .single()
+                    .dueAt > System.currentTimeMillis(),
+            )
         } finally {
             // Dispose the screen before closing the isolated test database.
             compose.runOnIdle { visible.value = false }
             compose.waitForIdle()
-            repository.close(); context.deleteDatabase(name)
+            repository.close()
+            context.deleteDatabase(name)
         }
     }
 
-    private fun saved(id: String, text: String, videoId: String?, title: String?) =
-        SavedWord(id, text, null, "de", "en", "meaning $text", "sentence", null, videoId, 1000, 3000, false, false, sourceTitle = title)
+    private fun saved(
+        id: String,
+        text: String,
+        videoId: String?,
+        title: String?,
+    ) = SavedWord(id, text, null, "de", "en", "meaning $text", "sentence", null, videoId, 1000, 3000, false, false, sourceTitle = title)
 
     @Test fun sourceFilterNarrowsTheListAndTheDueQueueAndTitlesCanBeCorrected() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -80,19 +104,39 @@ class SavedWordsScreenTest {
                 compose.onNodeWithTag("review_good").performScrollTo().performClick()
                 compose.waitForIdle()
             }
-            compose.waitUntil(5000) { repository.words.value.filter { it.videoId == "aaaaaaaaaaa" }.all { it.intervalMs == 3 * DAY_MS } }
+            compose.waitUntil(5000) {
+                repository.words.value
+                    .filter { it.videoId == "aaaaaaaaaaa" }
+                    .all { it.intervalMs == 3 * DAY_MS }
+            }
             compose.onNodeWithTag("practice_complete").assertIsDisplayed()
-            assertTrue(repository.words.value.filter { it.id in setOf("b1", "u1") }.all { it.intervalMs == 0L && it.dueAt == 0L })
+            assertTrue(
+                repository.words.value
+                    .filter { it.id in setOf("b1", "u1") }
+                    .all { it.intervalMs == 0L && it.dueAt == 0L },
+            )
             compose.onNodeWithText("Back to saved words").performClick()
             compose.onNodeWithTag("saved_word_a1").performClick()
             compose.onNodeWithTag("source_title_field").performTextReplacement("Renamed lesson")
             compose.onNodeWithTag("save_source_title").performScrollTo().performClick()
-            compose.waitUntil(5000) { repository.words.value.filter { it.videoId == "aaaaaaaaaaa" }.all { it.sourceTitle == "Renamed lesson" } }
-            assertEquals("Lesson", repository.words.value.first { it.id == "b1" }.sourceTitle)
+            compose.waitUntil(
+                5000,
+            ) {
+                repository.words.value
+                    .filter { it.videoId == "aaaaaaaaaaa" }
+                    .all { it.sourceTitle == "Renamed lesson" }
+            }
+            assertEquals(
+                "Lesson",
+                repository.words.value
+                    .first { it.id == "b1" }
+                    .sourceTitle,
+            )
         } finally {
             compose.runOnIdle { visible.value = false }
             compose.waitForIdle()
-            repository.close(); context.deleteDatabase(name)
+            repository.close()
+            context.deleteDatabase(name)
         }
     }
 }

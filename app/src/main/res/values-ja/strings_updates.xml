@@ -18,7 +18,6 @@
     <string name="updates_install">インストール</string>
     <string name="updates_installing">インストールしています… 更新中はアプリが閉じます。</string>
     <string name="updates_try_again">再試行</string>
-    <string name="updates_close">閉じる</string>
     <string name="updates_open_github">GitHub を開く</string>
     <string name="updates_unsupported">このアプリはパソコンでビルドされたため、自動で更新できません。最新バージョンは GitHub から入手してください。</string>
     <string name="updates_problem_offline">GitHub に接続できません。接続を確認して、もう一度お試しください。</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">GitHub で %1$s のリリースを開く</string>
+    <string name="updates_reminders_title">新しいバージョンを知らせる</string>
+    <string name="updates_reminders_description">1 日に 1 回、アプリを開いたときに GitHub 上の小さなファイルを読み、新しいバージョンや YouTube・Google の変更への一時的な修正を確認します。あなたや動画についての情報は送信しません。オフにすると、「アップデートを確認」をタップしたときだけ GitHub に問い合わせます。</string>
+    <string name="updates_banner">バージョン %1$s が利用できます。</string>
+    <string name="updates_skip_version">このバージョンをスキップ</string>
+    <string name="updates_security_title">セキュリティアップデート</string>
+    <string name="updates_security_message">バージョン %1$s は、お使いのバージョン（%2$s）のセキュリティ上の問題を修正します。今すぐアップデートしますか？保存した単語と設定はそのまま残ります。</string>
+    <string name="updates_reminders_off_hint">オフの間は、新しいバージョンやセキュリティアップデートのお知らせが届きません。</string>
+    <string name="updates_security_details">修正内容を見る</string>
 </resources>

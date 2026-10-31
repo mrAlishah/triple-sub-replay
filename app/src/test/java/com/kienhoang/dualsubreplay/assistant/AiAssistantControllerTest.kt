@@ -1,13 +1,13 @@
 package com.kienhoang.dualsubreplay.assistant
 
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
+import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.kienhoang.dualsubreplay.chatgpt.ChatGptStatus
-import com.kienhoang.dualsubreplay.chatgpt.ChatGptUiState
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -69,7 +69,8 @@ private class FakeTransport : AiChatTransport {
     /** The model the "server" names in its reply, when it names one. */
     var reportedModel = ""
 
-    private fun stamped(reply: AiReply) = reply.copy(model = reply.model.ifEmpty { reportedModel }, execution = reply.execution ?: execution)
+    private fun stamped(reply: AiReply) =
+        reply.copy(model = reply.model.ifEmpty { reportedModel }, execution = reply.execution ?: execution)
 
     private fun stamped(error: AiChatException) = error.also { if (it.execution == null) it.execution = execution }
 
@@ -311,7 +312,10 @@ class AiAssistantControllerTest {
         assertTrue(chosen.settings.chatGptService)
         assertFalse(chosen.ready)
         controller.send("What does に mean?", "guide")
-        assertTrue(controller.state.value.messages.isEmpty())
+        assertTrue(
+            controller.state.value.messages
+                .isEmpty(),
+        )
         // No hidden fallback: the checked Gemini key is not used, and nothing was deleted.
         assertTrue(transport.requests.isEmpty())
         assertEquals(1, chosen.keys[AiProvider.GEMINI].orEmpty().size)
@@ -333,7 +337,12 @@ class AiAssistantControllerTest {
         assertEquals("", request.apiKey)
         assertNull(request.reasoningEffort)
         assertFalse(request.webSearch)
-        assertEquals("OK", controller.state.value.messages.last().text)
+        assertEquals(
+            "OK",
+            controller.state.value.messages
+                .last()
+                .text,
+        )
         assertEquals("", controller.state.value.draft)
     }
 
@@ -350,8 +359,10 @@ class AiAssistantControllerTest {
         assertEquals("a restart with ChatGPT already chosen loads it", 2, refreshes)
     }
 
-    private val chatGptRun = AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", planUsageVerified = true)
-    private val geminiRun = AiExecution(AiProvider.GEMINI.key, AiAuthMethod.API_KEY, AiApiFamily.OPENAI_CHAT, AiProvider.GEMINI.defaultModel)
+    private val chatGptRun =
+        AiExecution(CHATGPT_ACCESS_ID, AiAuthMethod.OAUTH, AiApiFamily.CHATGPT_RESPONSES, "gpt-x", planUsageVerified = true)
+    private val geminiRun =
+        AiExecution(AiProvider.GEMINI.key, AiAuthMethod.API_KEY, AiApiFamily.OPENAI_CHAT, AiProvider.GEMINI.defaultModel)
 
     private fun chatGptController(): AiAssistantController {
         val controller = controller()
@@ -366,7 +377,10 @@ class AiAssistantControllerTest {
         transport.reportedModel = "gpt-x-2026-10-01"
         val controller = chatGptController()
         controller.send("Hello", "guide")
-        val source = controller.state.value.messages.last().source!!
+        val source =
+            controller.state.value.messages
+                .last()
+                .source!!
         assertEquals(CHATGPT_ACCESS_ID, source.providerId)
         assertEquals(AiAuthMethod.OAUTH, source.auth)
         assertEquals(AiApiFamily.CHATGPT_RESPONSES, source.api)
@@ -386,7 +400,10 @@ class AiAssistantControllerTest {
         checkedGeminiKey()
         val controller = controller()
         controller.send("Hello", "guide")
-        val source = controller.state.value.messages.last().source!!
+        val source =
+            controller.state.value.messages
+                .last()
+                .source!!
         assertEquals(AiProvider.GEMINI.key, source.providerId)
         assertEquals(AiAuthMethod.API_KEY, source.auth)
         assertNull(source.reportedModel)
@@ -402,7 +419,9 @@ class AiAssistantControllerTest {
         controller.selectProvider(AiProvider.GEMINI)
         transport.execution = geminiRun
         controller.send("Second", "guide")
-        val answers = controller.state.value.messages.filter { it.role == AiRole.ASSISTANT }
+        val answers =
+            controller.state.value.messages
+                .filter { it.role == AiRole.ASSISTANT }
         assertEquals(listOf(CHATGPT_ACCESS_ID, AiProvider.GEMINI.key), answers.map { it.source?.providerId })
         assertEquals(listOf(CHATGPT_ACCESS_ID, AiProvider.GEMINI.key), answers.map { it.source?.selectedProviderId })
     }
@@ -439,7 +458,11 @@ class AiAssistantControllerTest {
         transport.failure = AiChatException(AiErrorKind.BAD_REPLY)
         val controller = chatGptController()
         controller.send("Hello", "guide")
-        assertEquals(AiResponseStatus.INCOMPLETE, controller.state.value.lastAttempt?.status)
+        assertEquals(
+            AiResponseStatus.INCOMPLETE,
+            controller.state.value.lastAttempt
+                ?.status,
+        )
 
         transport.failure = null
         transport.pieces = listOf("Hal", "lo")
@@ -449,7 +472,10 @@ class AiAssistantControllerTest {
         val attempt = controller.state.value.lastAttempt!!
         assertEquals(AiResponseStatus.CANCELLED, attempt.status)
         assertFalse(attempt.successful)
-        assertTrue(controller.state.value.messages.none { it.role == AiRole.ASSISTANT && it.source?.status == AiResponseStatus.COMPLETED })
+        assertTrue(
+            controller.state.value.messages
+                .none { it.role == AiRole.ASSISTANT && it.source?.status == AiResponseStatus.COMPLETED },
+        )
     }
 
     @Test
@@ -461,7 +487,10 @@ class AiAssistantControllerTest {
         transport.replies += AiReply("", listOf(toolCall(AI_SETTING_TOOL, """{"setting":"text_size","value":"150"}""")))
         transport.reply = "Bigger now."
         controller.send("Bigger subtitles", "guide")
-        val source = controller.state.value.messages.last().source!!
+        val source =
+            controller.state.value.messages
+                .last()
+                .source!!
         assertEquals(2, source.requests)
         assertEquals("gemini-2", source.reportedModel)
         assertEquals(AiResponseStatus.COMPLETED, source.status)
@@ -477,7 +506,11 @@ class AiAssistantControllerTest {
         transport.failure = AiChatException(AiErrorKind.SERVER)
         val chat = chatGptController()
         chat.send("Hello", "guide")
-        assertEquals(AiResponseStatus.FAILED, chat.state.value.lastAttempt?.status)
+        assertEquals(
+            AiResponseStatus.FAILED,
+            chat.state.value.lastAttempt
+                ?.status,
+        )
         transport.failure = null
         chat.send("Again", "guide")
         assertNull(chat.state.value.lastAttempt)
@@ -490,7 +523,15 @@ class AiAssistantControllerTest {
         val controller = controller()
         controller.send("Hello", "guide")
         val saved = encodeAiChats(history.chats)
-        assertEquals(AiProvider.GEMINI.key, decodeAiChats(saved).single().messages.last().source?.providerId)
+        assertEquals(
+            AiProvider.GEMINI.key,
+            decodeAiChats(saved)
+                .single()
+                .messages
+                .last()
+                .source
+                ?.providerId,
+        )
         assertFalse(geminiKey in saved)
     }
 
@@ -521,7 +562,11 @@ class AiAssistantControllerTest {
         controller.selectChatGptService()
         controller.send("What does doch mean?", "guide")
         controller.send("Three examples?", "guide")
-        val contents = transport.requests.last().messages.map { it.content }
+        val contents =
+            transport.requests
+                .last()
+                .messages
+                .map { it.content }
         assertTrue(contents.indexOf("What does doch mean?") < contents.indexOf("Three examples?"))
         assertTrue("OK" in contents)
         controller.newChat()
@@ -558,9 +603,18 @@ class AiAssistantControllerTest {
         controller.send("Hi", "guide")
         assertTrue(controller.state.value.sending)
         assertEquals("Hallo", controller.state.value.draft)
-        assertEquals(listOf(AiRole.USER), controller.state.value.messages.map { it.role })
+        assertEquals(
+            listOf(AiRole.USER),
+            controller.state.value.messages
+                .map { it.role },
+        )
         transport.holdStream!!.complete(Unit)
-        assertEquals("Hallo", controller.state.value.messages.last().text)
+        assertEquals(
+            "Hallo",
+            controller.state.value.messages
+                .last()
+                .text,
+        )
         assertEquals("", controller.state.value.draft)
         assertFalse(controller.state.value.sending)
     }
@@ -577,7 +631,11 @@ class AiAssistantControllerTest {
         controller.stop()
         assertFalse(controller.state.value.sending)
         assertEquals("", controller.state.value.draft)
-        assertEquals(listOf(AiRole.USER), controller.state.value.messages.map { it.role })
+        assertEquals(
+            listOf(AiRole.USER),
+            controller.state.value.messages
+                .map { it.role },
+        )
     }
 
     @Test
@@ -590,7 +648,12 @@ class AiAssistantControllerTest {
         assertEquals(2, transport.requests.size)
         assertTrue(transport.requests[0].tools.isNotEmpty())
         assertTrue(transport.requests[1].tools.isEmpty())
-        assertEquals("OK", controller.state.value.messages.last().text)
+        assertEquals(
+            "OK",
+            controller.state.value.messages
+                .last()
+                .text,
+        )
     }
 
     @Test
@@ -602,7 +665,12 @@ class AiAssistantControllerTest {
         assertEquals(AiWebSearchRoute.NONE, controller.state.value.webSearchRoute)
         controller.send("Search this", "guide")
         assertFalse(transport.requests.single().webSearch)
-        assertTrue(transport.requests.single().tools.none { it.name == "web_search" })
+        assertTrue(
+            transport.requests
+                .single()
+                .tools
+                .none { it.name == "web_search" },
+        )
     }
 
     @Test

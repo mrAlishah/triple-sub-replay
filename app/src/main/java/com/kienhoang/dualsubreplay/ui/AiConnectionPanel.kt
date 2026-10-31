@@ -44,7 +44,11 @@ internal fun AiConnectionBody(
     when (target) {
         // The keys shown are the service's own; saving or testing one never changes the service chat uses.
         is AiConnectionTarget.Key ->
-            AiKeySettings(aiState.copy(settings = aiState.settings.copy(provider = target.provider)), controller, managing = target.provider)
+            AiKeySettings(
+                aiState.copy(settings = aiState.settings.copy(provider = target.provider)),
+                controller,
+                managing = target.provider,
+            )
         AiConnectionTarget.ChatGpt ->
             if (chatGpt != null) {
                 val state by chatGpt.state.collectAsState()
@@ -95,7 +99,9 @@ internal fun AiChatGptConnection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (status == ChatGptStatus.NOT_CONNECTED || status == ChatGptStatus.SIGN_IN_REQUIRED || status == ChatGptStatus.NO_PLAN_USAGE) {
+            if (status == ChatGptStatus.NOT_CONNECTED || status == ChatGptStatus.SIGN_IN_REQUIRED ||
+                status == ChatGptStatus.NO_PLAN_USAGE
+            ) {
                 Button(onClick = actions.signIn, modifier = Modifier.testTag("chatgpt_continue")) {
                     Text(stringResource(R.string.chatgpt_continue))
                 }

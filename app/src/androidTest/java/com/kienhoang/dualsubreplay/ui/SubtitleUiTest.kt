@@ -107,6 +107,10 @@ class SubtitleUiTest {
         composeRule.onNodeWithText("Subtitle languages").assertIsDisplayed()
         composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
         composeRule.onNodeWithText("Text size: 100%").assertDoesNotExist()
+        composeRule.onNodeWithText("Done").assertDoesNotExist()
+        // The dialog fades in after Compose is idle; the screenshot waits for it.
+        Thread.sleep(700)
+        saveUiEvidence("subtitle-languages-quick")
         composeRule.onNodeWithTag("slot_accordion_second").performClick()
         composeRule.onNodeWithTag("target_language_picker").performClick()
         composeRule.onNodeWithTag("language_search").performTextInput("English")
@@ -115,7 +119,7 @@ class SubtitleUiTest {
         composeRule.onNodeWithText("Subtitle languages").assertIsDisplayed()
         composeRule.onNodeWithTag("open_all_settings").performClick()
         composeRule.runOnIdle { assertTrue(openedAllSettings) }
-        composeRule.onNodeWithText("Done").performClick()
+        composeRule.onNodeWithTag(DIALOG_CLOSE_TAG).performClick()
         composeRule.runOnIdle { assertTrue(dismissed) }
     }
 

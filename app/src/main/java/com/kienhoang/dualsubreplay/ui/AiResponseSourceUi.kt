@@ -80,7 +80,10 @@ internal fun AiResponseSourceLine(
                     .testTag("ai_source_line"),
         )
         if (open) {
-            Column(Modifier.padding(start = 8.dp, bottom = 4.dp).testTag("ai_source_details"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(
+                Modifier.padding(start = 8.dp, bottom = 4.dp).testTag("ai_source_details"),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 Text(stringResource(R.string.ai_source_title), style = MaterialTheme.typography.labelLarge)
                 if (source == null) {
                     Fact(R.string.ai_source_not_recorded_detail)
@@ -115,7 +118,18 @@ private fun SourceFacts(source: AiResponseSource) {
     Fact(R.string.ai_source_fallback, stringResource(if (source.fallback) R.string.ai_source_yes else R.string.ai_source_no))
     Fact(R.string.ai_source_requests, source.requests.toString())
     if (source.providerId == CHATGPT_ACCESS_ID && source.network) {
-        Fact(R.string.ai_source_plan, stringResource(if (source.planUsageVerified == true) R.string.ai_source_plan_checked else R.string.ai_source_plan_unchecked))
+        Fact(
+            R.string.ai_source_plan,
+            stringResource(
+                if (source.planUsageVerified ==
+                    true
+                ) {
+                    R.string.ai_source_plan_checked
+                } else {
+                    R.string.ai_source_plan_unchecked
+                },
+            ),
+        )
     }
 }
 

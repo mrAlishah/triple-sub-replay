@@ -11,7 +11,7 @@ import org.json.JSONObject
  * among behaviour already in the app, so a fix for a YouTube or Google change can reach phones
  * without a new APK. It can never add code, scripts or addresses; at worst it turns things off.
  */
-internal const val REMOTE_SWITCHES_URL = "https://raw.githubusercontent.com/$UPDATE_REPOSITORY/main/remote-config/switches.json"
+internal const val REMOTE_SWITCHES_URL = "https://raw.githubusercontent.com/$UPSTREAM_REPOSITORY/main/remote-config/switches.json"
 internal const val REMOTE_SWITCHES_HOST = "raw.githubusercontent.com"
 internal const val MAX_REMOTE_SWITCHES_BYTES = 64 * 1024
 

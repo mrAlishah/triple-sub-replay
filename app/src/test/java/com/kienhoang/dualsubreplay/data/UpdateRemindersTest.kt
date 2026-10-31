@@ -18,7 +18,7 @@ class UpdateRemindersTest {
         schema: Int = 1,
         sha256: String = digest,
     ) = """{"schema":$schema,"version":"$version","version_code":$code,"minimum_safe_version_code":$minimumSafe,
-        |"apk":"DualSub-Replay.apk","sha256":"$sha256","size":34251919}
+        |"apk":"TripleSub-Replay.apk","sha256":"$sha256","size":34251919}
         """.trimMargin()
 
     private fun update(
@@ -32,8 +32,8 @@ class UpdateRemindersTest {
         val parsed = parseUpdateInfo(info(minimumSafe = 55))!!
         assertEquals(UpdateInfo("1.9.0", 60, 55, digest, 34251919), parsed)
         val update = updateFromInfo(parsed, installedVersionCode = 57)!!
-        assertEquals("https://github.com/hoangkien1703/dual-sub-replay/releases/download/v1.9.0/DualSub-Replay.apk", update.downloadUrl)
-        assertEquals("https://github.com/hoangkien1703/dual-sub-replay/releases/tag/v1.9.0", update.pageUrl)
+        assertEquals("https://github.com/mrAlishah/triple-sub-replay/releases/download/v1.9.0/TripleSub-Replay.apk", update.downloadUrl)
+        assertEquals("https://github.com/mrAlishah/triple-sub-replay/releases/tag/v1.9.0", update.pageUrl)
         assertEquals(digest, update.sha256)
         assertFalse(update.critical)
     }
@@ -58,7 +58,7 @@ class UpdateRemindersTest {
         assertNull(parseUpdateInfo(info(version = "1.9.0/../../evil")))
         assertNull(parseUpdateInfo(info(version = "1.9.0-preview")))
         assertNull(parseUpdateInfo(info(code = 0)))
-        assertNull(parseUpdateInfo(info().replace("DualSub-Replay.apk", "Other.apk")))
+        assertNull(parseUpdateInfo(info().replace("TripleSub-Replay.apk", "Other.apk")))
         assertEquals(0L, parseUpdateInfo(info(minimumSafe = -4))!!.minimumSafeVersionCode)
     }
 

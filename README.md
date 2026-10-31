@@ -25,6 +25,14 @@
 
 See the [illustrated user guide](docs/user-guide/README.md) for each workflow.
 
+## Animated feature tour (illustration)
+
+<p align="center">
+  <img src="docs/images/triplesub/feature-tour.gif" alt="Animated illustration of TripleSub Replay: triple subtitle lines, subtitle language settings, AI translation, AI Assistant, Practice, and single-segment AI refresh" width="720">
+</p>
+
+*Illustrative feature overview generated for documentation — **not a screen recording or pixel-exact app UI**. The segment-level AI refresh and some chat controls are development features and may not be in the latest published APK. Actual historical APK screenshots are below.*
+
 ## Real app screenshots
 
 These are **real screenshots previously published with fork APK releases**, not mock-ups. They depict the indicated historical versions, so current development menus may differ.

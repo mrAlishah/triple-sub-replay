@@ -316,15 +316,15 @@ private fun RefreshProgress(state: RefreshState) {
     }
 }
 
-/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 36 dp buttons. */
+/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 32 dp buttons, otherwise 36 dp. */
 @Composable
 internal fun PanelHeaderActions(
     onSettings: () -> Unit,
     onHide: () -> Unit,
     compact: Boolean,
 ) {
-    val button = if (compact) Modifier.size(36.dp) else Modifier
-    val icon = if (compact) Modifier.size(20.dp) else Modifier
+    val button = Modifier.size(if (compact) 32.dp else 36.dp)
+    val icon = Modifier.size(if (compact) 18.dp else 22.dp)
     RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
     IconButton(onClick = onSettings, modifier = button) {
         Icon(

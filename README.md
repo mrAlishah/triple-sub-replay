@@ -21,7 +21,7 @@
 - **Look up, save and practice words:** learn meanings in multiple languages, retain source-video context and review saved vocabulary.
 - **Use AI for language learning:** supported AI translation and assistant features depend on configured connections, credentials and build version.
 - **Send vocabulary to AnkiDroid and import/export your study data.**
-- **Open multiple YouTube tabs:** up to 10 tabs are described in the [v2.8.0 release](docs/releases/v2.8.0.md), with device-dependent multi-account support.
+- **Open multiple YouTube tabs:** up to 10 tabs with device-dependent multi-account support.
 
 See the [illustrated user guide](docs/user-guide/README.md) for each workflow.
 
@@ -42,8 +42,6 @@ These are **real screenshots previously published with fork APK releases**, not 
 <img src="https://github.com/user-attachments/assets/86f9fe80-12ff-49a3-8852-789e1e0bd7c2" alt="TripleSub Replay screenshot from the v2.8.0 release" width="250">
 <img src="https://github.com/user-attachments/assets/edc2dd34-fc85-45d4-a607-a30f3bafb85e" alt="TripleSub Replay screenshot from the v2.8.2 release" width="250">
 </p>
-
-See the [v2.8.0 gallery](docs/releases/v2.8.0.md) and [v2.8.2 gallery](docs/releases/v2.8.2.md) for more release-specific screenshots.
 
 ## Install or update
 
@@ -66,10 +64,7 @@ The fork's own update checker is intended to use fork releases. If an update can
 
 **[Follow the step-by-step guide](docs/user-guide/getting-started.md)**
 
-## Latest released changes vs development features
-
-The latest verified published release is **[v2.8.5](docs/releases/v2.8.5.md)** (October 29, 2026). It documents AI-powered subtitle translation, offline German grammar highlighting, subtitle merging improvements and fallback fixes.
-
+## development features
 The `mydevelop` branch may contain **newer, unreleased customizations** such as additional AI Connection workflows, ChatGPT Subscription chat integration, and a per-segment **Re-translate with AI** menu. Their presence in source or current screenshots does **not** guarantee they are in the latest released APK. Read [Unreleased](myCHANGELOG.md) and the [guide's build-status note](docs/user-guide/README.md) before relying on them.
 
 ## Documentation

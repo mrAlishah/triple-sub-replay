@@ -154,13 +154,8 @@
     <string name="settings_translator_ai_only_description">Waits for the AI instead of showing Google first. Google steps in only if the AI fails.</string>
     <string name="settings_translator_on_device">On this device only</string>
     <string name="settings_translator_on_device_description">Works offline and sends nothing online. Less accurate.</string>
-    <string name="settings_ai_translation_model_same">Same as AI assistant (%1$s)</string>
-    <string name="settings_ai_translation_model_description">Fast models answer sooner and have the largest free limits.</string>
-    <string name="settings_ai_translation_service_description">AI choices use the service and key from the AI assistant settings and send subtitle text there. A free Google Gemini key works best.</string>
-    <string name="settings_ai_translation_service_open">Open AI assistant settings</string>
     <string name="settings_google_wait_description">How long a line waits for Google before showing YouTube’s or your device’s translation. Automatic: 2 s on mobile data, 4 s on Wi-Fi.</string>
     <string name="settings_google_translate_title">Google Translate (online)</string>
-    <string name="settings_ai_translation_model_title">AI model for translation</string>
     <string name="settings_google_wait_title">Wait for Google</string>
     <string name="settings_google_wait_auto">Automatic</string>
     <string name="settings_google_wait_2">2 s</string>

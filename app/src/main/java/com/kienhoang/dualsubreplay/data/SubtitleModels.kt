@@ -1,5 +1,7 @@
 package com.kienhoang.dualsubreplay.data
 
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
+
 data class RawCaptionCue(
     val startMs: Long,
     val endMs: Long,
@@ -15,6 +17,8 @@ data class SubtitleSegment(
     val translatedText: String? = null,
     val words: List<SubtitleWord> = emptyList(),
     val sentence: SentenceSlice? = null,
+    /** Who produced [translatedText] (diagnostics only, in memory; never stored). Null when not recorded. */
+    val translationOrigin: TranslationOrigin? = null,
 )
 
 /**

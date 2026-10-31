@@ -51,6 +51,7 @@ import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiChat
 import com.kienhoang.dualsubreplay.assistant.AiChatMessage
 import com.kienhoang.dualsubreplay.assistant.AiFailure
+import com.kienhoang.dualsubreplay.assistant.AiResponseSource
 import com.kienhoang.dualsubreplay.assistant.AiRole
 import com.kienhoang.dualsubreplay.assistant.AiSpanStyle
 import com.kienhoang.dualsubreplay.assistant.AiWebSource
@@ -81,9 +82,7 @@ internal fun AppProblemCard(
                 Text(problem.title, style = MaterialTheme.typography.titleSmall)
             }
             problem.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-            problem.detail?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-            }
+            problem.detail?.let { ProblemDetailText(it) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 if (canAsk) {
                     TextButton(onClick = onAsk, modifier = Modifier.testTag("ai_problem_ask")) {
@@ -134,10 +133,12 @@ internal fun AiWelcome(
 internal fun AiMessageBubble(
     message: AiChatMessage,
     handlers: AiActionHandlers,
+    showSource: Boolean = false,
 ) {
     if (message.role == AiRole.USER || message.text.isNotEmpty()) AiMessageText(message)
     if (message.actions.isNotEmpty()) AiActionList(message.actions, handlers)
     if (message.sources.isNotEmpty()) AiSourceList(message.sources)
+    if (showSource && message.role == AiRole.ASSISTANT) AiResponseSourceLine(message.source, message.id)
 }
 
 /** "Sources", then each page's title and site; a tap opens the page in the browser. */
@@ -179,7 +180,7 @@ private fun AiSourceList(sources: List<AiWebSource>) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AiMessageText(message: AiChatMessage) {
+internal fun AiMessageText(message: AiChatMessage) {
     val user = message.role == AiRole.USER
     Box(Modifier.fillMaxWidth(), contentAlignment = if (user) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
@@ -242,9 +243,13 @@ internal fun AiThinkingRow() {
 
 /** The user stopped the last question; [onRetry] asks it again, null when it can't be asked now. */
 @Composable
-internal fun AiStoppedRow(onRetry: (() -> Unit)?) {
+internal fun AiStoppedRow(
+    onRetry: (() -> Unit)?,
+    attempt: AiResponseSource? = null,
+) {
     Column(Modifier.fillMaxWidth().testTag("ai_stopped")) {
         Text(stringResource(R.string.ai_stopped), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        attempt?.let { AiResponseSourceLine(it, "stopped") }
         if (onRetry != null) {
             OutlinedButton(onClick = onRetry, modifier = Modifier.padding(top = 4.dp).testTag("ai_retry")) {
                 Text(stringResource(R.string.ai_retry))
@@ -258,10 +263,12 @@ internal fun AiStoppedRow(onRetry: (() -> Unit)?) {
 internal fun AiFailureRow(
     failure: AiFailure,
     onRetry: (() -> Unit)?,
+    attempt: AiResponseSource? = null,
 ) {
     Column(Modifier.fillMaxWidth().testTag("ai_failure")) {
         Text(stringResource(failure.kind.messageRes()), color = MaterialTheme.colorScheme.error)
         failure.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+        attempt?.let { AiResponseSourceLine(it, "failure") }
         if (onRetry != null) {
             OutlinedButton(onClick = onRetry, modifier = Modifier.padding(top = 4.dp).testTag("ai_retry")) {
                 Text(stringResource(R.string.ai_retry))

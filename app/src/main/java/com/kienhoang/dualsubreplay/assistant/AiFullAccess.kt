@@ -276,7 +276,7 @@ internal fun aiFullAccessPrompt(state: AiAssistantUiState): String =
         append("\nAI assistant settings:")
         append("\n- ai_service: ").append(settings.provider.key)
         append("\n- ai_model: ").append(settings.modelFor(settings.provider).ifEmpty { "none" })
-        append("\n- ai_thinking: ").append(settings.thinking.key)
+        append("\n- ai_thinking: ").append(settings.thinkingFor(settings.provider).key)
         append("\n- ai_memory: ").append(if (settings.memoryEnabled) "on" else "off")
         append("\n- ai_chat_history: ").append(settings.historyRetention.key)
         append("\n- ai_youtube_search: ").append(if (settings.youtubeSearch) "on" else "off")

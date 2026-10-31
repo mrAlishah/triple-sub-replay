@@ -3,6 +3,9 @@ package com.kienhoang.dualsubreplay.ui
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
 import com.kienhoang.dualsubreplay.translation.GOOGLE_RECHECK_INTERVAL_MS
+import com.kienhoang.dualsubreplay.translation.Translated
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
+import com.kienhoang.dualsubreplay.translation.TranslationProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -12,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal data class CaptionPlaybackRequest(
     val timeMs: Long = 0,
@@ -46,42 +50,72 @@ internal fun onlyTranslationFailed(state: DualSubUiState): Boolean =
  */
 internal class TranslationUpgrades(
     val version: StateFlow<Long>,
+    /** Who wrote the AI's translation of a text, stored with the rows that take it (null: not recorded). */
+    val originOf: (String) -> TranslationOrigin? = { null },
+    /** Told when the AI's text equals what a row already shows from another source, so that row keeps its label. */
+    val onIdentical: (TranslationOrigin) -> Unit = {},
+    /** Told how many sentences the AI's text replaced on screen, for the diagnostics. */
+    val onUpgraded: (count: Int, origin: TranslationOrigin?) -> Unit = { _, _ -> },
+    /**
+     * Called when the window is otherwise settled: asks the AI again for what it still owes the window texts and returns how long to
+     * wait before looking again, or null when nothing is owed. Null here (AI only, no AI) means no waiting on the AI.
+     */
+    val ensure: (suspend (List<String>) -> Long?)? = null,
     val lookup: (String) -> String?,
 )
 
-/**
- * [rows] with every sentence (or lone row) that [lookup] has a translation for showing it, cut into
- * its rows as [translateRow] does: by the row prefixes' translations when all are there. A sentence
- * already showing that translation keeps its rows as they are.
- */
 internal fun withUpgrades(
     rows: List<SubtitleSegment>,
+    originOf: (String) -> TranslationOrigin? = { null },
+    onIdentical: (TranslationOrigin) -> Unit = {},
+    onUpgraded: (count: Int, origin: TranslationOrigin?) -> Unit = { _, _ -> },
     lookup: (String) -> String?,
 ): List<SubtitleSegment> {
     val sentences = HashSet<List<String>>()
-    return rows.indices.fold(rows) { current, index ->
-        val row = current[index]
-        val texts = rowTranslationTexts(row)
-        if (row.sentence != null && !sentences.add(texts)) return@fold current
-        val translated = lookup(texts.first())?.trim() ?: return@fold current
-        if (alreadyShows(current, row, translated)) return@fold current
-        val prefixes =
-            row.sentence?.let {
-                texts
-                    .drop(1)
-                    .map(lookup)
-                    .takeIf { found -> found.all { it != null } }
-                    ?.filterNotNull()
+    var upgraded = 0
+    var lastOrigin: TranslationOrigin? = null
+    val result =
+        rows.indices.fold(rows) { current, index ->
+            val row = current[index]
+            val texts = rowTranslationTexts(row)
+            if (row.sentence != null && !sentences.add(texts)) return@fold current
+            val translated = lookup(texts.first())?.trim() ?: return@fold current
+            val origin = originOf(texts.first())
+            // A text the AI wrote earlier is replaced by any different one (a fresh answer may only extend the old); another source's
+            // text that the AI's merely contains stays, with its own label.
+            if (alreadyShows(current, row, translated, exact = row.translationOrigin.isAi())) {
+                // The AI agrees with what is shown: the text stays, and so does the label of whoever wrote it.
+                if (origin != null && row.translationOrigin?.provider != origin.provider) onIdentical(origin)
+                return@fold current
             }
-        withTranslation(current, index, translated, prefixes)
-    }
+            val prefixes =
+                row.sentence?.let {
+                    texts
+                        .drop(1)
+                        .map(lookup)
+                        .takeIf { found -> found.all { it != null } }
+                        ?.filterNotNull()
+                }
+            upgraded++
+            lastOrigin = origin
+            withTranslation(current, index, translated, prefixes, origin)
+        }
+    if (upgraded > 0) onUpgraded(upgraded, lastOrigin)
+    return result
 }
 
-/** Whether every row of [row]'s sentence in [rows] is translated and together they read as part of [translated]. */
+private fun TranslationOrigin?.isAi(): Boolean =
+    this?.provider == TranslationProvider.CHATGPT || this?.provider == TranslationProvider.AI_PROVIDER
+
+/**
+ * Whether every row of [row]'s sentence in [rows] is translated and together they read as part of [translated]; with [exact],
+ * only when together they read as [translated] itself.
+ */
 private fun alreadyShows(
     rows: List<SubtitleSegment>,
     row: SubtitleSegment,
     translated: String,
+    exact: Boolean = false,
 ): Boolean {
     val sentence = row.sentence
     val parts =
@@ -92,7 +126,10 @@ private fun alreadyShows(
         }
     if (parts.any { it.translatedText == null }) return false
     val shown = parts.joinToString("") { it.translatedText.orEmpty() }.filterNot(Char::isWhitespace)
-    return shown.isNotEmpty() && shown in translated.filterNot(Char::isWhitespace)
+    val wanted = translated.filterNot(Char::isWhitespace)
+    // A sentence cut at the window's edge shows only some of its rows, so only containment can be asked of it.
+    val whole = sentence == null || parts.size == sentence.cuts.size + 1
+    return shown.isNotEmpty() && if (exact && whole) shown == wanted else shown in wanted
 }
 
 /**
@@ -115,6 +152,28 @@ internal suspend fun translatePlaybackWindow(
     prefetch: (suspend (List<String>) -> Unit)? = null,
     upgrades: TranslationUpgrades? = null,
     onWindow: (List<SubtitleSegment>, Boolean) -> Unit,
+) = translatePlaybackWindowTracked(
+    store,
+    requests,
+    { text -> Translated(translate(text), null) },
+    onTranslationFailure,
+    prefetch,
+    upgrades,
+    onWindow,
+)
+
+/**
+ * [translatePlaybackWindow] where each translation says who wrote it ([Translated.origin]); the rows keep that
+ * origin with the text, across window reads and upgrades, for the Show translation source setting.
+ */
+internal suspend fun translatePlaybackWindowTracked(
+    store: SubtitleStore,
+    requests: StateFlow<CaptionPlaybackRequest>,
+    translate: suspend (String) -> Translated,
+    onTranslationFailure: (Exception) -> Unit = {},
+    prefetch: (suspend (List<String>) -> Unit)? = null,
+    upgrades: TranslationUpgrades? = null,
+    onWindow: (List<SubtitleSegment>, Boolean) -> Unit,
 ) {
     var indices = IntRange.EMPTY
     var rows = emptyList<SubtitleSegment>()
@@ -132,7 +191,9 @@ internal suspend fun translatePlaybackWindow(
             val previous = rows.associateBy { it.id }
             rows =
                 withContext(Dispatchers.IO) { store.read(nextIndices) }.map { row ->
-                    row.copy(translatedText = previous[row.id]?.translatedText)
+                    previous[row.id].let { shown ->
+                        row.copy(translatedText = shown?.translatedText, translationOrigin = shown?.translationOrigin)
+                    }
                 }
             indices = nextIndices
             upgradedAt = null
@@ -141,7 +202,7 @@ internal suspend fun translatePlaybackWindow(
         if (requests.value != request) continue
         if (upgrades != null && upgrades.version.value != upgradedAt) {
             upgradedAt = upgrades.version.value
-            rows = withUpgrades(rows, upgrades.lookup)
+            rows = withUpgrades(rows, upgrades.originOf, upgrades.onIdentical, upgrades.onUpgraded, upgrades.lookup)
         }
         val next = nextWindowTranslation(rows, request).takeIf { failedAttempt != request.translationAttempt }
         onWindow(rows, next != null)
@@ -149,7 +210,10 @@ internal suspend fun translatePlaybackWindow(
             if (upgrades == null) {
                 requests.first { it != request }
             } else {
-                combine(requests, upgrades.version) { now, version -> now != request || version != upgradedAt }.first { it }
+                // Settled with Google's (or the device's) lines: the AI may still owe some, so it is asked again and looked at again later.
+                val lookAgainMs = upgrades.ensure?.invoke(translationTexts(rows))
+                val changed = combine(requests, upgrades.version) { now, version -> now != request || version != upgradedAt }
+                if (lookAgainMs == null) changed.first { it } else withTimeoutOrNull(lookAgainMs) { changed.first { it } }
             }
             continue
         }
@@ -175,21 +239,22 @@ internal suspend fun translatePlaybackWindow(
 private suspend fun translateRow(
     rows: List<SubtitleSegment>,
     index: Int,
-    translate: suspend (String) -> String,
+    translate: suspend (String) -> Translated,
 ): List<SubtitleSegment> {
     val sentence = rows[index].sentence
     val texts = rowTranslationTexts(rows[index])
-    val translated = translate(texts.first()).trim()
+    val whole = translate(texts.first())
+    val translated = whole.text.trim()
     // Translating each row's sentence prefix locates where that row ends in the full translation.
     val prefixes =
         try {
-            sentence?.let { texts.drop(1).map { prefix -> translate(prefix) } }
+            sentence?.let { texts.drop(1).map { prefix -> translate(prefix).text } }
         } catch (_: Exception) {
             currentCoroutineContext().ensureActive()
             null // Split the sentence's translation proportionally instead.
         }
     currentCoroutineContext().ensureActive()
-    return withTranslation(rows, index, translated, prefixes)
+    return withTranslation(rows, index, translated, prefixes, whole.origin)
 }
 
 /** What translating [row] sends: its whole sentence, then each row's sentence prefix (or just the row's text). */
@@ -279,23 +344,22 @@ internal suspend fun prefetchInBackground(
     }
 }
 
-/**
- * A short row is translated through its whole sentence, so every row of that sentence (including
- * identical repeats in the window) receives its own slice of the one context-aware translation.
- */
 internal fun withTranslation(
     rows: List<SubtitleSegment>,
     index: Int,
     translated: String,
     prefixTranslations: List<String>? = null,
+    origin: TranslationOrigin? = null,
 ): List<SubtitleSegment> {
     val sentence = rows[index].sentence
-    if (sentence == null) return rows.toMutableList().also { it[index] = it[index].copy(translatedText = translated) }
+    if (sentence == null) {
+        return rows.toMutableList().also { it[index] = it[index].copy(translatedText = translated, translationOrigin = origin) }
+    }
     val slices = translationSlices(translated, sentence.text.length, sentence.cuts, prefixTranslations)
     return rows.map { row ->
         val other = row.sentence
         if (other != null && other.text == sentence.text && other.cuts == sentence.cuts) {
-            row.copy(translatedText = slices.getOrElse(other.index) { "" })
+            row.copy(translatedText = slices.getOrElse(other.index) { "" }, translationOrigin = origin)
         } else {
             row
         }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatgpt_note">Memakai paket ChatGPT Anda sendiri lewat login OpenAI, tanpa kunci API. Teks subtitle dikirim ke OpenAI untuk diterjemahkan; percakapan ChatGPT Anda tidak dibaca. Kuota dan batas paket Anda berlaku, dan ketersediaan berbeda di setiap paket.</string>
+    <string name="chatgpt_continue">Lanjutkan dengan ChatGPT</string>
+    <string name="chatgpt_status_not_connected">Belum terhubung</string>
+    <string name="chatgpt_status_connecting">Menghubungkan… selesaikan login di browser Anda</string>
+    <string name="chatgpt_status_checking">Memeriksa akun Anda…</string>
+    <string name="chatgpt_status_ready">Terhubung · penggunaan paket diizinkan</string>
+    <string name="chatgpt_status_no_plan">Terhubung, tetapi penggunaan paket tidak diizinkan. Lanjutkan lagi dan izinkan.</string>
+    <string name="chatgpt_status_not_eligible">Penggunaan paket ChatGPT tidak tersedia untuk akun ini.</string>
+    <string name="chatgpt_status_sign_in">Masuk lagi untuk terus memakai paket ChatGPT Anda.</string>
+    <string name="chatgpt_status_limit">Batas penggunaan paket ChatGPT Anda tercapai. Lihat pengaturan ChatGPT → Penggunaan.</string>
+    <string name="chatgpt_status_temporary">ChatGPT sementara tidak tersedia. Coba lagi nanti.</string>
+    <string name="chatgpt_sign_in_failed">Login tidak selesai. Coba lagi.</string>
+    <string name="chatgpt_account">Akun: %1$s</string>
+    <string name="chatgpt_account_unknown">Akun ChatGPT terhubung</string>
+    <string name="chatgpt_refresh">Segarkan status</string>
+    <string name="chatgpt_disconnect">Putuskan</string>
+    <string name="chatgpt_test_failed">Terjemahan uji gagal.</string>
+    <string name="chatgpt_cancel">Batal</string>
+</resources>

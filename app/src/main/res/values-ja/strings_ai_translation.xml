@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">AIプロバイダー</string>
+    <string name="ai_config_model">AIモデル</string>
+    <string name="ai_config_effort">推論の強さ</string>
+    <string name="ai_config_model_replaced">「%1$s」は提供されなくなりました。%2$s を使用します。</string>
+    <string name="ai_config_models_loading">モデルを読み込み中…</string>
+    <string name="ai_config_models_failed">モデル一覧を読み込めませんでした。メニューを開いて「更新」をタップしてください。</string>
+    <string name="ai_config_models_empty">利用できるモデルが返されませんでした。</string>
+    <string name="ai_config_models_connect_chatgpt">ChatGPTに接続するとモデルが表示されます。</string>
+    <string name="ai_config_models_connect_key">キーを追加すると完全なモデル一覧を読み込めます。</string>
+    <string name="ai_config_models_refresh">モデル一覧を更新</string>
+    <string name="ai_config_effort_replaced">このモデルでは「%1$s」を使えないため、自動を使用します。</string>
+    <string name="ai_config_effort_fixed_chatgpt">ChatGPTサブスクリプションでは推論の強さを調整できません。</string>
+    <string name="ai_config_effort_fixed">このモデルには調整できる強さがありません。</string>
+    <string name="ai_config_effort_unknown_claude">モデル一覧を読み込むと、このモデルが対応するレベルが表示されます。</string>
+    <string name="ai_config_effort_auto_note">モデルが許す場合、字幕向けに思考を短く保ちます。</string>
+    <string name="ai_config_key_saved">APIキーを保存済み</string>
+    <string name="ai_config_key_missing">このプロバイダーのAPIキーがありません。追加するまでGoogleが翻訳します。</string>
+    <string name="ai_config_manage_keys">キーを管理</string>
+    <string name="ai_access_chatgpt_subscription">ChatGPTサブスクリプション</string>
+    <string name="ai_access_chatgpt_note">ChatGPTのプランを使用し、APIキーは不要です。</string>
+    <string name="ai_access_gemini_api">Gemini API(無料枠あり)</string>
+    <string name="ai_access_gemini_note">Gemini APIキーが必要です。無料枠は、Googleがそのキーとモデルに認める場合のみ適用されます。Gemini AI Pro/Ultraは別の製品で、ここでは使われません。料金はGoogleの課金設定によります。</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">AnthropicコンソールのClaude APIキーが必要です。利用料はAPI料金で請求されるか、お持ちのコンソールクレジットが使われます。Claude ProやMaxのサブスクリプションはここでは使われません。</string>
+    <string name="ai_translation_effort_auto">自動(推奨)</string>
+    <string name="ai_translation_effort_off">オフ</string>
+    <string name="ai_translation_effort_minimal">最小</string>
+    <string name="ai_translation_effort_low">低</string>
+    <string name="ai_translation_effort_medium">中</string>
+    <string name="ai_translation_effort_high">高</string>
+    <string name="ai_translation_effort_xhigh">非常に高</string>
+    <string name="ai_translation_effort_max">最大</string>
+    <string name="ai_translation_test">翻訳をテスト</string>
+    <string name="ai_translation_testing">翻訳中…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">テスト文:ドイツ語 → ペルシア語</string>
+    <string name="ai_translation_test_result">結果:%1$s</string>
+    <string name="ai_translation_test_origin">回答元:%1$s</string>
+    <string name="ai_translation_test_no_key">このプロバイダーのAPIキーが保存されていません。</string>
+    <string name="ai_translation_test_effort_refused">このモデルは選択した強さを受け付けませんでした。自動または別のレベルを選んでください。</string>
+</resources>

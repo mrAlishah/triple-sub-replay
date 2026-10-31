@@ -21,6 +21,16 @@ internal const val AI_FULL_ACCESS_PREFERENCE = "ai_full_access"
 internal const val AI_YOUTUBE_SEARCH_PREFERENCE = "ai_youtube_search"
 internal const val AI_WEB_SEARCH_PREFERENCE = "ai_web_search"
 internal const val AI_SCREEN_PREFERENCE = "ai_screen"
+
+/** Settings → AI assistant → Show AI response source (debug). */
+internal const val AI_SHOW_RESPONSE_SOURCE_PREFERENCE = "ai_show_response_source"
+
+/** Absent for a keyed service; [AI_SERVICE_ACCESS_CHATGPT] when ChatGPT Subscription is chosen under AI Service. */
+internal const val AI_SERVICE_ACCESS_PREFERENCE = "ai_assistant_service_access"
+internal const val AI_SERVICE_ACCESS_CHATGPT = "chatgpt"
+
+/** Comma-joined service keys whose Model box was edited in AI Assistant (see [AiAssistantSettings.unifiedModels]). */
+internal const val AI_UNIFIED_MODELS_PREFERENCE = "ai_models_unified"
 private const val AI_MODEL_PREFERENCE_PREFIX = "ai_model_"
 
 private const val DAY_MS = 24L * 60 * 60 * 1000
@@ -66,6 +76,25 @@ internal enum class AiThinking(
     HIGH("high", R.string.ai_effort_high, R.string.ai_effort_high_note, "high"),
 }
 
+/** The first GPT-5 models, which call no thinking "minimal"; later GPTs call it "none" and refuse "minimal". */
+private val FIRST_GPT5_MODEL = Regex("""gpt-5(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?""")
+
+/** The `reasoning_effort` that turns OpenAI's thinking off for [model]. */
+internal fun openAiNoThinkingEffort(model: String): String = if (FIRST_GPT5_MODEL.matches(model.trim().lowercase())) "minimal" else "none"
+
+/**
+ * The `reasoning_effort` an assistant request carries. Later GPTs such as gpt-6-luna answer with actions
+ * in Chat Completions only without thinking, so Auto turns it off when actions are offered.
+ */
+internal fun aiAssistantEffort(
+    settings: AiAssistantSettings,
+    withTools: Boolean,
+): String? {
+    val effort = settings.thinkingFor(settings.provider).effort
+    if (effort != null || !withTools || settings.provider != AiProvider.OPENAI) return effort
+    return openAiNoThinkingEffort(settings.modelFor(AiProvider.OPENAI)).takeIf { it == "none" }
+}
+
 internal fun storedAiThinking(raw: String?): AiThinking = AiThinking.entries.firstOrNull { it.key == raw } ?: AiThinking.AUTO
 
 internal fun storedChatHistoryRetention(raw: String?): ChatHistoryRetention =
@@ -97,11 +126,27 @@ internal data class AiAssistantSettings(
     val webSearch: AiWebSearchMode = AiWebSearchMode.OFF,
     /** On by default: the assistant may take a screenshot of the app when it needs to see it. */
     val screenLook: Boolean = true,
+    /**
+     * ChatGPT Subscription is chosen under AI Service. The chat cannot use it yet (it has no keyed transport), so it sends nothing
+     * while this is set; [provider] and its keys stay as they were and come back when a keyed service is chosen again.
+     */
+    val chatGptService: Boolean = false,
+    /** The thinking level set for one service; a service without an entry uses [thinking]. Chat and translation both read it. */
+    val thinkings: Map<AiProvider, AiThinking> = emptyMap(),
+    /**
+     * Services whose Model box the user edited here since subtitle translation got its model from the same box. Until then a
+     * translation model saved before that keeps being used (see [aiTranslationModelChoice]).
+     */
+    val unifiedModels: Set<AiProvider> = emptySet(),
+    /** Off by default: show under each answer which provider really produced it (a debug aid, like the translation source). */
+    val showResponseSource: Boolean = false,
 ) {
     /** People who answered the intro before the current note see it once at the top of the chat. */
     val showsNews: Boolean get() = enabled && introSeen && newsSeen < AI_NEWS_VERSION
 
     fun modelFor(provider: AiProvider): String = models[provider]?.trim()?.takeIf { it.isNotEmpty() } ?: provider.defaultModel
+
+    fun thinkingFor(provider: AiProvider): AiThinking = thinkings[provider] ?: thinking
 
     fun baseUrlFor(provider: AiProvider): String = if (provider == AiProvider.CUSTOM) customBaseUrl.trim() else provider.baseUrl
 }
@@ -125,6 +170,20 @@ internal fun readAiAssistantSettings(preferences: SharedPreferences): AiAssistan
         youtubeSearch = preferences.getBoolean(AI_YOUTUBE_SEARCH_PREFERENCE, true),
         webSearch = storedAiWebSearchMode(preferences.getString(AI_WEB_SEARCH_PREFERENCE, null)),
         screenLook = preferences.getBoolean(AI_SCREEN_PREFERENCE, true),
+        chatGptService = preferences.getString(AI_SERVICE_ACCESS_PREFERENCE, null) == AI_SERVICE_ACCESS_CHATGPT,
+        showResponseSource = preferences.getBoolean(AI_SHOW_RESPONSE_SOURCE_PREFERENCE, false),
+        thinkings =
+            AiProvider.entries
+                .mapNotNull { provider ->
+                    preferences.getString(AI_THINKING_PREFERENCE + "_" + provider.key, null)?.let { provider to storedAiThinking(it) }
+                }.toMap(),
+        unifiedModels =
+            preferences
+                .getString(AI_UNIFIED_MODELS_PREFERENCE, null)
+                .orEmpty()
+                .split(',')
+                .mapNotNull { key -> AiProvider.entries.firstOrNull { it.key == key } }
+                .toSet(),
     )
 
 internal fun writeAiAssistantSettings(
@@ -144,6 +203,17 @@ internal fun writeAiAssistantSettings(
         putBoolean(AI_YOUTUBE_SEARCH_PREFERENCE, settings.youtubeSearch)
         putString(AI_WEB_SEARCH_PREFERENCE, settings.webSearch.key)
         putBoolean(AI_SCREEN_PREFERENCE, settings.screenLook)
+        putBoolean(AI_SHOW_RESPONSE_SOURCE_PREFERENCE, settings.showResponseSource)
+        if (settings.chatGptService) putString(AI_SERVICE_ACCESS_PREFERENCE, AI_SERVICE_ACCESS_CHATGPT) else remove(AI_SERVICE_ACCESS_PREFERENCE)
+        AiProvider.entries.forEach { provider ->
+            val level = settings.thinkings[provider]
+            if (level == null) remove(AI_THINKING_PREFERENCE + "_" + provider.key) else putString(AI_THINKING_PREFERENCE + "_" + provider.key, level.key)
+        }
+        if (settings.unifiedModels.isEmpty()) {
+            remove(AI_UNIFIED_MODELS_PREFERENCE)
+        } else {
+            putString(AI_UNIFIED_MODELS_PREFERENCE, settings.unifiedModels.joinToString(",") { it.key })
+        }
         AiProvider.entries.forEach { provider ->
             val model = settings.models[provider]
             if (model == null) {

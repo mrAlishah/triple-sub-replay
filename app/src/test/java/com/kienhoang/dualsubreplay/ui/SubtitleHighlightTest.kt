@@ -206,6 +206,7 @@ class SubtitleWordHighlightTest {
                 PRELOAD_MODELS_ENABLED_PREFERENCE,
                 NATURAL_SUBTITLES_PREFERENCE,
                 HIDE_SOUND_CUES_PREFERENCE,
+                SHOW_TRANSLATION_SOURCE_PREFERENCE,
                 WORD_LEARNING_ENABLED_PREFERENCE,
                 WORD_LEARNING_TARGET_PREFERENCE,
                 TAP_TO_LEARN_PREFERENCE,
@@ -216,6 +217,8 @@ class SubtitleWordHighlightTest {
                 com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE,
                 com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE,
                 com.kienhoang.dualsubreplay.assistant.AI_TRANSLATION_MODEL_PREFERENCE,
+                com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_METHOD_PREFERENCE,
+                com.kienhoang.dualsubreplay.chatgpt.CHATGPT_MODEL_PREFERENCE,
                 "auto_pronounce",
                 PRONUNCIATION_VOLUME_PREFERENCE,
                 STUDY_PLAY_MODE_PREFERENCE,
@@ -254,8 +257,15 @@ class SubtitleWordHighlightTest {
                 RECENT_TARGET_LANGUAGES_PREFERENCE,
                 DIFFERENT_TAB_ACCOUNTS_PREFERENCE,
                 DRAWER_TABS_OPEN_PREFERENCE,
+                TV_LAYOUT_PREFERENCE,
             )
-        assertEquals(expected, RESETTABLE_SETTING_KEYS.toSet())
+        // The AI provider choice, and each provider's saved model and effort (see aiTranslationChoiceKeys).
+        assertEquals(
+            expected +
+                com.kienhoang.dualsubreplay.assistant
+                    .aiTranslationChoiceKeys(),
+            RESETTABLE_SETTING_KEYS.toSet(),
+        )
         assertEquals(RESETTABLE_SETTING_KEYS.size, RESETTABLE_SETTING_KEYS.distinct().size)
     }
 

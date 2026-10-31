@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">Traducir de nuevo con IA</string>
+    <string name="retranslate_subtitles">Qué subtítulos</string>
+    <string name="retranslate_both">Ambos</string>
+    <string name="retranslate_scope">Cuánto</string>
+    <string name="retranslate_scope_sentence">Frase actual</string>
+    <string name="retranslate_scope_window">Ventana de reproducción actual</string>
+    <string name="retranslate_scope_video">Todo el video</string>
+    <string name="retranslate_note">Vuelve a preguntar a la IA y puede usar más de tu plan de ChatGPT o de tu crédito de API. Los subtítulos en pantalla se mantienen hasta que lleguen los nuevos.</string>
+    <string name="retranslate_video_warning">Envía unas %1$d frases en unas %2$d solicitudes y puede gastar mucho de tu cupo o crédito.</string>
+    <string name="retranslate_video_confirm">Lo entiendo y quiero continuar</string>
+    <string name="retranslate_start">Traducir de nuevo</string>
+    <string name="retranslate_stop">Detener</string>
+    <string name="retranslate_progress">Traduciendo de nuevo… %1$d de %2$d</string>
+    <string name="retranslate_refreshing">Actualizando…</string>
+    <string name="retranslate_failed">No se pudo traducir de nuevo (%1$s). Las líneas sin actualizar se quedan como estaban.</string>
+    <string name="retranslate_failed_short">No se pudo actualizar</string>
+    <string name="retranslate_unavailable">Conecta primero un proveedor de IA: inicia sesión con ChatGPT o añade una clave de API en los ajustes de IA.</string>
+</resources>

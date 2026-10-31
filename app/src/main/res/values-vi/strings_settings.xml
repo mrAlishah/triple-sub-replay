@@ -154,13 +154,8 @@
     <string name="settings_translator_ai_only_description">Chờ bản dịch của AI thay vì hiện Google trước. Google chỉ dịch khi AI lỗi.</string>
     <string name="settings_translator_on_device">Chỉ trên thiết bị này</string>
     <string name="settings_translator_on_device_description">Hoạt động ngoại tuyến và không gửi gì lên mạng. Kém chính xác hơn.</string>
-    <string name="settings_ai_translation_model_same">Giống Trợ lý AI (%1$s)</string>
-    <string name="settings_ai_translation_model_description">Mô hình nhanh trả lời sớm hơn và có hạn mức miễn phí lớn nhất.</string>
-    <string name="settings_ai_translation_service_description">Các lựa chọn AI dùng dịch vụ và khóa trong cài đặt Trợ lý AI và gửi nội dung phụ đề tới đó. Khóa Google Gemini miễn phí là phù hợp nhất.</string>
-    <string name="settings_ai_translation_service_open">Mở cài đặt Trợ lý AI</string>
     <string name="settings_google_wait_description">Thời gian mỗi dòng chờ Google trước khi hiện bản dịch từ YouTube hoặc thiết bị. Tự động: 2 giây với dữ liệu di động, 4 giây với Wi-Fi.</string>
     <string name="settings_google_translate_title">Google Dịch (trực tuyến)</string>
-    <string name="settings_ai_translation_model_title">Mô hình AI để dịch</string>
     <string name="settings_google_wait_title">Chờ Google</string>
     <string name="settings_google_wait_auto">Tự động</string>
     <string name="settings_google_wait_2">2 giây</string>

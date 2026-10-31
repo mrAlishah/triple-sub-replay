@@ -63,7 +63,7 @@
     <string name="settings_original_language">Original language</string>
     <string name="settings_model_download_hint">A language model downloads only when it is needed.</string>
     <string name="settings_subtitle_languages">Subtitle languages</string>
-    <string name="settings_dual_subtitle_settings">Dual-subtitle settings</string>
+    <string name="settings_dual_subtitle_settings">Settings</string>
     <string name="settings_done">Done</string>
     <string name="settings_close_settings">Close settings</string>
     <string name="settings_peek">See the video. Hold to peek, or tap to keep it visible</string>

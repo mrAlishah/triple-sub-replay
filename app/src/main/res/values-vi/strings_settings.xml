@@ -63,7 +63,7 @@
     <string name="settings_original_language">Ngôn ngữ gốc</string>
     <string name="settings_model_download_hint">Mô hình ngôn ngữ chỉ được tải xuống khi cần.</string>
     <string name="settings_subtitle_languages">Ngôn ngữ phụ đề</string>
-    <string name="settings_dual_subtitle_settings">Cài đặt phụ đề kép</string>
+    <string name="settings_dual_subtitle_settings">Cài đặt</string>
     <string name="settings_done">Xong</string>
     <string name="settings_close_settings">Đóng cài đặt</string>
     <string name="settings_peek">Xem video. Giữ để xem nhanh, hoặc chạm để video hiện cho đến khi quay lại</string>

@@ -63,7 +63,7 @@
     <string name="settings_original_language">Bahasa asli</string>
     <string name="settings_model_download_hint">Model bahasa hanya diunduh saat dibutuhkan.</string>
     <string name="settings_subtitle_languages">Bahasa subtitel</string>
-    <string name="settings_dual_subtitle_settings">Setelan subtitel ganda</string>
+    <string name="settings_dual_subtitle_settings">Setelan</string>
     <string name="settings_done">Selesai</string>
     <string name="settings_close_settings">Tutup setelan</string>
     <string name="settings_peek">Lihat video. Tahan untuk mengintip, atau ketuk agar tetap terlihat</string>

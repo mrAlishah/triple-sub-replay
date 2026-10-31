@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">Chạm vào một đoạn để phát lại</string>
     <string name="player_subtitle_settings">Cài đặt phụ đề</string>
-    <string name="player_dual_subtitle_settings">Cài đặt phụ đề kép</string>
+    <string name="player_dual_subtitle_settings">Cài đặt</string>
     <string name="player_show_dual_subtitles">Hiện phụ đề kép</string>
     <string name="player_hide_dual_subtitles">Ẩn phụ đề kép</string>
     <string name="player_loading_captions">Đang tải phụ đề…</string>

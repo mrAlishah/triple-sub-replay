@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">段落をタップしてリプレイ</string>
     <string name="player_subtitle_settings">字幕の設定</string>
-    <string name="player_dual_subtitle_settings">2言語字幕の設定</string>
+    <string name="player_dual_subtitle_settings">設定</string>
     <string name="player_show_dual_subtitles">2言語字幕を表示</string>
     <string name="player_hide_dual_subtitles">2言語字幕を非表示</string>
     <string name="player_loading_captions">字幕を読み込んでいます…</string>

@@ -204,10 +204,23 @@ internal fun writeAiAssistantSettings(
         putString(AI_WEB_SEARCH_PREFERENCE, settings.webSearch.key)
         putBoolean(AI_SCREEN_PREFERENCE, settings.screenLook)
         putBoolean(AI_SHOW_RESPONSE_SOURCE_PREFERENCE, settings.showResponseSource)
-        if (settings.chatGptService) putString(AI_SERVICE_ACCESS_PREFERENCE, AI_SERVICE_ACCESS_CHATGPT) else remove(AI_SERVICE_ACCESS_PREFERENCE)
+        if (settings.chatGptService) {
+            putString(
+                AI_SERVICE_ACCESS_PREFERENCE,
+                AI_SERVICE_ACCESS_CHATGPT,
+            )
+        } else {
+            remove(AI_SERVICE_ACCESS_PREFERENCE)
+        }
         AiProvider.entries.forEach { provider ->
             val level = settings.thinkings[provider]
-            if (level == null) remove(AI_THINKING_PREFERENCE + "_" + provider.key) else putString(AI_THINKING_PREFERENCE + "_" + provider.key, level.key)
+            if (level ==
+                null
+            ) {
+                remove(AI_THINKING_PREFERENCE + "_" + provider.key)
+            } else {
+                putString(AI_THINKING_PREFERENCE + "_" + provider.key, level.key)
+            }
         }
         if (settings.unifiedModels.isEmpty()) {
             remove(AI_UNIFIED_MODELS_PREFERENCE)

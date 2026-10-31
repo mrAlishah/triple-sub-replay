@@ -18,7 +18,6 @@
     <string name="updates_install">Install</string>
     <string name="updates_installing">Installing… The app closes while it updates.</string>
     <string name="updates_try_again">Try again</string>
-    <string name="updates_close">Close</string>
     <string name="updates_open_github">Open GitHub</string>
     <string name="updates_unsupported">This copy of the app was built on a computer, so it can\'t update itself. Get the latest version on GitHub.</string>
     <string name="updates_problem_offline">Couldn\'t reach GitHub. Check your connection and try again.</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Open %1$s releases on GitHub</string>
+    <string name="updates_reminders_title">Tell me about new versions</string>
+    <string name="updates_reminders_description">Once a day when you open the app, reads a small file on GitHub to learn about new versions and temporary fixes for YouTube or Google changes. Nothing about you or your videos is sent. When off, the app asks GitHub only when you tap Check for updates.</string>
+    <string name="updates_banner">Version %1$s is available.</string>
+    <string name="updates_skip_version">Skip this version</string>
+    <string name="updates_security_title">Security update</string>
+    <string name="updates_security_message">Version %1$s fixes a security problem in the version you have (%2$s). Update now? Your saved words and settings stay.</string>
+    <string name="updates_reminders_off_hint">While this is off, you won\'t hear about new versions or security updates.</string>
+    <string name="updates_security_details">What was fixed</string>
 </resources>

@@ -18,7 +18,6 @@
     <string name="updates_install">Cài đặt</string>
     <string name="updates_installing">Đang cài… Ứng dụng sẽ đóng trong lúc cập nhật.</string>
     <string name="updates_try_again">Thử lại</string>
-    <string name="updates_close">Đóng</string>
     <string name="updates_open_github">Mở GitHub</string>
     <string name="updates_unsupported">Bản ứng dụng này được tạo trên máy tính nên không tự cập nhật được. Hãy tải phiên bản mới nhất trên GitHub.</string>
     <string name="updates_problem_offline">Không kết nối được GitHub. Hãy kiểm tra mạng rồi thử lại.</string>
@@ -35,4 +34,12 @@
     <string name="updates_link_upstream">DualSub Replay (Original)</string>
     <string name="updates_link_fork">TripleSub Replay (Forked)</string>
     <string name="updates_link_description">Mở các bản phát hành của %1$s trên GitHub</string>
+    <string name="updates_reminders_title">Báo cho tôi khi có phiên bản mới</string>
+    <string name="updates_reminders_description">Mỗi ngày một lần khi bạn mở ứng dụng, ứng dụng đọc một tệp nhỏ trên GitHub để biết có phiên bản mới và các bản sửa tạm thời khi YouTube hoặc Google thay đổi. Không gửi gì về bạn hay video của bạn. Khi tắt, ứng dụng chỉ hỏi GitHub khi bạn nhấn Kiểm tra cập nhật.</string>
+    <string name="updates_banner">Đã có phiên bản %1$s.</string>
+    <string name="updates_skip_version">Bỏ qua phiên bản này</string>
+    <string name="updates_security_title">Bản cập nhật bảo mật</string>
+    <string name="updates_security_message">Phiên bản %1$s sửa một lỗi bảo mật trong phiên bản bạn đang dùng (%2$s). Cập nhật ngay? Từ đã lưu và cài đặt của bạn vẫn được giữ.</string>
+    <string name="updates_reminders_off_hint">Khi tắt, bạn sẽ không được báo về phiên bản mới hay bản cập nhật bảo mật.</string>
+    <string name="updates_security_details">Đã sửa những gì</string>
 </resources>

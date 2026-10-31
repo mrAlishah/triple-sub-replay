@@ -56,8 +56,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiAppSnapshot
 import com.kienhoang.dualsubreplay.assistant.AiAssistantController
-import com.kienhoang.dualsubreplay.assistant.AiChatMessage
 import com.kienhoang.dualsubreplay.assistant.AiAssistantUiState
+import com.kienhoang.dualsubreplay.assistant.AiChatMessage
 import com.kienhoang.dualsubreplay.assistant.AiPanelPage
 import com.kienhoang.dualsubreplay.assistant.AiRole
 import com.kienhoang.dualsubreplay.assistant.ChatHistoryRetention
@@ -151,7 +151,10 @@ internal fun AiAssistantPanel(
                                 )
                             } else if (aiState.settings.chatGptService && !aiState.chatGptChatReady) {
                                 Column(Modifier.weight(1f).padding(16.dp)) {
-                                    AiChatGptStateCard(aiState.chatGpt.status, onOpenSettings = { controller.showPage(AiPanelPage.SETTINGS) })
+                                    AiChatGptStateCard(
+                                        aiState.chatGpt.status,
+                                        onOpenSettings = { controller.showPage(AiPanelPage.SETTINGS) },
+                                    )
                                 }
                             } else {
                                 AiChatContent(

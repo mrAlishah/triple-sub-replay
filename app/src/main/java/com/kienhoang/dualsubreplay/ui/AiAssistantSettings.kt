@@ -69,8 +69,6 @@ import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiAssistantController
 import com.kienhoang.dualsubreplay.assistant.AiAssistantUiState
 import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
-import com.kienhoang.dualsubreplay.assistant.aiConnectionTargetFor
-import com.kienhoang.dualsubreplay.assistant.aiTranslationModelConflict
 import com.kienhoang.dualsubreplay.assistant.AiConnectionTest
 import com.kienhoang.dualsubreplay.assistant.AiProvider
 import com.kienhoang.dualsubreplay.assistant.AiSavedKey
@@ -78,6 +76,8 @@ import com.kienhoang.dualsubreplay.assistant.AiThinking
 import com.kienhoang.dualsubreplay.assistant.ChatHistoryRetention
 import com.kienhoang.dualsubreplay.assistant.MAX_AI_KEYS_PER_SERVICE
 import com.kienhoang.dualsubreplay.assistant.aiCheckedSetup
+import com.kienhoang.dualsubreplay.assistant.aiConnectionTargetFor
+import com.kienhoang.dualsubreplay.assistant.aiTranslationModelConflict
 import com.kienhoang.dualsubreplay.assistant.chatCompletionsUrl
 import kotlinx.coroutines.launch
 
@@ -319,7 +319,9 @@ internal fun AiAssistantSettingsSection(
     // Without a key, the connection section starts open: adding one is the next step.
     var open by rememberSaveable {
         mutableStateOf(
-            if (!chatOnly && (connectionTarget != null || (target is AiConnectionTarget.Key && aiState.keys[target.provider].isNullOrEmpty()))) {
+            if (!chatOnly &&
+                (connectionTarget != null || (target is AiConnectionTarget.Key && aiState.keys[target.provider].isNullOrEmpty()))
+            ) {
                 AiSettingsSection.KEYS.key
             } else {
                 null
@@ -329,9 +331,19 @@ internal fun AiAssistantSettingsSection(
     val color = if (nested) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerHigh
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Keys, sign-in, model and thinking are managed in Settings → AI Connection only, never in the chat's own settings.
-        AiSettingsSection.entries.filter { !chatOnly || (it != AiSettingsSection.KEYS && it != AiSettingsSection.MODEL) }.forEach { section ->
+        val chatHidden = setOf(AiSettingsSection.KEYS, AiSettingsSection.MODEL)
+        AiSettingsSection.entries.filter { !chatOnly || it !in chatHidden }.forEach { section ->
             SettingsExpandableCard(
-                title = stringResource(if (section == AiSettingsSection.KEYS && target is AiConnectionTarget.ChatGpt) R.string.ai_connection_title else section.titleRes),
+                title =
+                    stringResource(
+                        if (section == AiSettingsSection.KEYS &&
+                            target is AiConnectionTarget.ChatGpt
+                        ) {
+                            R.string.ai_connection_title
+                        } else {
+                            section.titleRes
+                        },
+                    ),
                 summary =
                     when (section) {
                         AiSettingsSection.KEYS -> aiConnectionSummary(target, aiState, host.chatGpt)

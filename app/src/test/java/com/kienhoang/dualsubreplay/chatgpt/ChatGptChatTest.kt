@@ -55,7 +55,14 @@ private class ChatFakeApi : ChatGptApi {
     ): ChatGptTokens {
         refreshCalls.incrementAndGet()
         delay(20)
-        return ChatGptTokens("access-${refreshCalls.get() + 1}", "refresh-${refreshCalls.get() + 1}", null, 3600, "openid $CHATGPT_PLAN_SCOPE", null)
+        return ChatGptTokens(
+            "access-${refreshCalls.get() + 1}",
+            "refresh-${refreshCalls.get() + 1}",
+            null,
+            3600,
+            "openid $CHATGPT_PLAN_SCOPE",
+            null,
+        )
     }
 
     override suspend fun revoke(
@@ -136,7 +143,9 @@ class ChatGptChatTest {
 
     @Test
     fun functionCallsAreCollectedOnceWithTheirCallIdAndNamespace() {
-        val call = """{"type":"function_call","id":"fc_1","call_id":"call_9","name":"set_speed","namespace":"triplesub","arguments":"{\"speed\":1.5}"}"""
+        val call =
+            """{"type":"function_call","id":"fc_1","call_id":"call_9","name":"set_speed",""" +
+                """"namespace":"triplesub","arguments":"{\"speed\":1.5}"}"""
         val result =
             readChatGptResponse(
                 lines(
@@ -321,7 +330,17 @@ class ChatGptChatTest {
     fun anAccountWithoutPlanUsageIsNeverAskedForInference() =
         runBlocking {
             store.save(
-                ChatGptCredentials("oaiapp_1", "sub-1", "me@example.com", "id-1", "access-1", "refresh-1", now + 3_600_000, setOf("openid"), null),
+                ChatGptCredentials(
+                    "oaiapp_1",
+                    "sub-1",
+                    "me@example.com",
+                    "id-1",
+                    "access-1",
+                    "refresh-1",
+                    now + 3_600_000,
+                    setOf("openid"),
+                    null,
+                ),
             )
             try {
                 backend().respond("{}") { }

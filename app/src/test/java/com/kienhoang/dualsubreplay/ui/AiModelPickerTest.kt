@@ -6,7 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AiModelPickerTest {
-    private val models = listOf(AiModelChoice("gemini-flash-latest", "Gemini Flash"), AiModelChoice("gemini-pro-latest", "gemini-pro-latest"))
+    private val models =
+        listOf(AiModelChoice("gemini-flash-latest", "Gemini Flash"), AiModelChoice("gemini-pro-latest", "gemini-pro-latest"))
 
     @Test
     fun theItemIsDerivedFromTheTypedModel() {

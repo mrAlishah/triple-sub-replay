@@ -47,6 +47,7 @@ import com.kienhoang.dualsubreplay.data.UPDATE_RELEASES_PAGE_URL
 import com.kienhoang.dualsubreplay.data.UpdateChannel
 import com.kienhoang.dualsubreplay.update.APP_AUTO_UPDATE_PREFERENCE
 import com.kienhoang.dualsubreplay.update.AppUpdater
+import com.kienhoang.dualsubreplay.update.UPDATE_REMINDERS_PREFERENCE
 import com.kienhoang.dualsubreplay.update.UpdateProblem
 import com.kienhoang.dualsubreplay.update.UpdateState
 
@@ -114,17 +115,17 @@ internal fun AppUpdateDialogHost(
     if (channel == UpdateChannel.None) {
         AlertDialog(
             onDismissRequest = close,
-            title = { Text(stringResource(R.string.updates_check)) },
+            title = { DialogTitle(stringResource(R.string.updates_check), onClose = close) },
             text = { UpdateDialogBody(noBrowser, open) { UpdateMessage(stringResource(R.string.updates_unsupported)) } },
             confirmButton = { UpdateButton(R.string.updates_open_github, "update_open_github") { open(UPDATE_RELEASES_PAGE_URL) } },
-            dismissButton = { UpdateButton(R.string.updates_close, "update_close", close) },
         )
         return
     }
     val current = state
     AlertDialog(
         onDismissRequest = close,
-        title = { Text(stringResource(R.string.updates_check)) },
+        // The X hides the dialog like Not now; a download or a ready update carries on.
+        title = { DialogTitle(stringResource(R.string.updates_check), onClose = close) },
         text = { UpdateDialogBody(noBrowser, open) { UpdateDialogText(current) } },
         confirmButton = { UpdateConfirmButton(current, close) },
         dismissButton = {
@@ -192,7 +193,8 @@ private fun UpdateConfirmButton(
                     else -> AppUpdater.check(context)
                 }
             }
-        UpdateState.UpToDate -> UpdateButton(R.string.updates_close, "update_close", close)
+        // Up to date: only What's new is left beside the X.
+        UpdateState.UpToDate -> Unit
         // Hiding keeps a download or an install going.
         else -> UpdateButton(R.string.updates_hide, "update_hide", close)
     }
@@ -287,8 +289,21 @@ private fun Busy(
 internal fun AppUpdateSettingsSection() {
     val context = LocalContext.current
     val preferences = remember(context) { context.getSharedPreferences("dual_sub_preferences", 0) }
+    var reminders by remember { mutableStateOf(preferences.getBoolean(UPDATE_REMINDERS_PREFERENCE, true)) }
     var auto by remember { mutableStateOf(preferences.getBoolean(APP_AUTO_UPDATE_PREFERENCE, false)) }
     val channel = remember(context) { AppUpdater.channel(context) }
+    SettingsSwitchRow(
+        title = stringResource(R.string.updates_reminders_title),
+        description = stringResource(R.string.updates_reminders_description),
+        checked = reminders,
+        onCheckedChange = {
+            reminders = it
+            preferences.edit().putBoolean(UPDATE_REMINDERS_PREFERENCE, it).apply()
+            if (!it) AppUpdater.dismissReminder()
+        },
+        testTag = "update_reminders_switch",
+    )
+    if (!reminders) SettingsHint(stringResource(R.string.updates_reminders_off_hint))
     SettingsSwitchRow(
         title = stringResource(R.string.updates_auto_title),
         description = stringResource(R.string.updates_auto_description),

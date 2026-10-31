@@ -37,6 +37,7 @@ class AiConnectionStateTest {
         assertEquals(AiConnectionState.NOT_CONFIGURED, keyConnectionState(0, AiConnectionTest.Passed))
         assertEquals(AiConnectionState.CONNECTED, keyConnectionState(1, AiConnectionTest.Idle))
         assertEquals(AiConnectionState.CONNECTING, keyConnectionState(2, AiConnectionTest.Testing))
+
         fun failed(kind: AiErrorKind) = keyConnectionState(1, AiConnectionTest.Failed(AiFailure(kind)))
         assertEquals(AiConnectionState.CREDENTIAL_EXPIRED, failed(AiErrorKind.INVALID_KEY))
         assertEquals(AiConnectionState.PERMISSION_MISSING, failed(AiErrorKind.NO_CREDIT))

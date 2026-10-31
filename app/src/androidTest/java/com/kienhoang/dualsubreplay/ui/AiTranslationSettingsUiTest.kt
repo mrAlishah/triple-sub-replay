@@ -177,8 +177,15 @@ class AiTranslationSettingsUiTest {
             gptFlow.value = ChatGptUiState(useSubscription = true, status = status, account = "me@example.com")
             composeRule.waitForIdle()
             composeRule.onNodeWithTag("ai_connection_summary").assertIsDisplayed()
-            listOf("chatgpt_continue", "chatgpt_refresh", "chatgpt_disconnect", "chatgpt_cancel", "chatgpt_account", "ai_key_field", "ai_save_key")
-                .forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
+            listOf(
+                "chatgpt_continue",
+                "chatgpt_refresh",
+                "chatgpt_disconnect",
+                "chatgpt_cancel",
+                "chatgpt_account",
+                "ai_key_field",
+                "ai_save_key",
+            ).forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
         }
         gptFlow.value = ChatGptUiState(useSubscription = true, status = ChatGptStatus.READY, account = "me@example.com")
         composeRule.waitForIdle()

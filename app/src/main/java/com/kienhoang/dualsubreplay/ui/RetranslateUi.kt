@@ -316,24 +316,23 @@ private fun RefreshProgress(state: RefreshState) {
     }
 }
 
-/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings, and hide. [compact] uses 32 dp buttons, otherwise 36 dp. */
+/** The panel header's actions in order: Re-translate with AI (always shown), the subtitle settings (long press opens the full page), and hide. [compact] uses 32 dp buttons, otherwise 36 dp. */
 @Composable
 internal fun PanelHeaderActions(
     onSettings: () -> Unit,
+    onLongPressSettings: () -> Unit,
     onHide: () -> Unit,
     compact: Boolean,
 ) {
     val button = Modifier.size(if (compact) 32.dp else 36.dp)
     val icon = Modifier.size(if (compact) 18.dp else 22.dp)
     RetranslateButton(LocalTranslationSourceInfo.current.refresh, modifier = button)
-    IconButton(onClick = onSettings, modifier = button) {
-        Icon(
-            Icons.Default.Settings,
-            contentDescription = stringResource(R.string.player_subtitle_settings),
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = icon,
-        )
-    }
+    PanelSettingsButton(
+        onClick = onSettings,
+        onLongClick = onLongPressSettings,
+        size = if (compact) 32.dp else 36.dp,
+        iconSize = if (compact) 18.dp else 22.dp,
+    )
     IconButton(onClick = onHide, modifier = button) {
         Icon(
             Icons.Default.Close,
@@ -356,7 +355,11 @@ internal fun SegmentRetranslateMenu(
 ) {
     val actions = LocalTranslationSourceInfo.current.refresh ?: return
     val available by actions.available.collectAsState()
-    val slots = buildSet { if (showSecond) add(SubtitleSlot.SECOND); if (showThird) add(SubtitleSlot.THIRD) }.intersect(available)
+    val slots =
+        buildSet {
+            if (showSecond) add(SubtitleSlot.SECOND)
+            if (showThird) add(SubtitleSlot.THIRD)
+        }.intersect(available)
     var open by remember { mutableStateOf(false) }
     val name = stringResource(R.string.retranslate_title)
     Box {
@@ -368,7 +371,12 @@ internal fun SegmentRetranslateMenu(
                 .testTag("segment_retranslate_menu"),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(

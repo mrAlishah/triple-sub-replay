@@ -107,7 +107,13 @@ internal fun aiConnectionSummary(
         }
         is AiConnectionTarget.Key ->
             aiState.keys[target.provider].orEmpty().size.let { count ->
-                if (count == 0) stringResource(R.string.ai_settings_keys_none) else pluralStringResource(R.plurals.ai_settings_keys_count, count, count)
+                if (count ==
+                    0
+                ) {
+                    stringResource(R.string.ai_settings_keys_none)
+                } else {
+                    pluralStringResource(R.plurals.ai_settings_keys_count, count, count)
+                }
             }
     }
 
@@ -135,7 +141,11 @@ internal fun AiChatGptModelSettings(chatGpt: ChatGptActions) {
     var text by remember(state.model) { mutableStateOf(state.model) }
     val commit = {
         val id = text.trim()
-        if (id.isEmpty()) text = state.model else if (id != state.model) chatGpt.selectModel(id)
+        if (id.isEmpty()) {
+            text = state.model
+        } else if (id != state.model) {
+            chatGpt.selectModel(id)
+        }
     }
     OutlinedTextField(
         value = text,
@@ -159,33 +169,33 @@ internal fun AiChatServiceSettings(
     chatTarget: AiConnectionTarget,
 ) {
     val hasChatGpt = chatGpt != null
-        val gptState by (chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
-        SettingsSubheading(stringResource(R.string.ai_chat_service))
-        AiServiceMenu(
-            aiState,
-            chatTarget,
-            offered = { service ->
-                service == chatTarget ||
-                    when (service) {
-                        AiConnectionTarget.ChatGpt -> gptState.status == ChatGptStatus.READY
-                        is AiConnectionTarget.Key -> aiState.keys[service.provider].orEmpty().isNotEmpty()
-                    }
-            },
-            onSelect = {
-                when (it) {
-                    AiConnectionTarget.ChatGpt -> controller.selectChatGptService()
-                    is AiConnectionTarget.Key -> controller.selectProvider(it.provider)
+    val gptState by (chatGpt?.state ?: remember { MutableStateFlow(ChatGptUiState()) }).collectAsStateWithLifecycle()
+    SettingsSubheading(stringResource(R.string.ai_chat_service))
+    AiServiceMenu(
+        aiState,
+        chatTarget,
+        offered = { service ->
+            service == chatTarget ||
+                when (service) {
+                    AiConnectionTarget.ChatGpt -> gptState.status == ChatGptStatus.READY
+                    is AiConnectionTarget.Key -> aiState.keys[service.provider].orEmpty().isNotEmpty()
                 }
-            },
-            tag = "ai_chat_service",
-            showChatGpt = hasChatGpt,
-        )
-        SettingsHint(stringResource(R.string.ai_chat_gear_hint))
-        SettingsSwitchRow(
-            title = stringResource(R.string.ai_show_response_source_title),
-            description = stringResource(R.string.ai_show_response_source_description),
-            checked = aiState.settings.showResponseSource,
-            onCheckedChange = controller::setShowResponseSource,
-            testTag = "ai_show_response_source",
-        )
+        },
+        onSelect = {
+            when (it) {
+                AiConnectionTarget.ChatGpt -> controller.selectChatGptService()
+                is AiConnectionTarget.Key -> controller.selectProvider(it.provider)
+            }
+        },
+        tag = "ai_chat_service",
+        showChatGpt = hasChatGpt,
+    )
+    SettingsHint(stringResource(R.string.ai_chat_gear_hint))
+    SettingsSwitchRow(
+        title = stringResource(R.string.ai_show_response_source_title),
+        description = stringResource(R.string.ai_show_response_source_description),
+        checked = aiState.settings.showResponseSource,
+        onCheckedChange = controller::setShowResponseSource,
+        testTag = "ai_show_response_source",
+    )
 }

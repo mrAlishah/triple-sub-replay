@@ -6,6 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +51,7 @@ import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.LanguageAwareTokenizer
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.WordTap
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
 
 @Composable
 internal fun CompactSubtitleCard(
@@ -54,6 +59,7 @@ internal fun CompactSubtitleCard(
     active: Boolean,
     fontScale: Float,
     onReplay: () -> Unit,
+    playing: Boolean = false,
     activeWordIndex: Int = -1,
     originalColor: Color = subtitleColor(DEFAULT_ORIGINAL_COLOR_KEY, appThemeIsLight()),
     translatedColor: Color = subtitleColor(DEFAULT_TRANSLATED_COLOR_KEY, appThemeIsLight()),
@@ -72,6 +78,9 @@ internal fun CompactSubtitleCard(
     showTranslation: Boolean = true,
     translationPosition: TranslationPosition = TranslationPosition.BELOW,
     thirdText: String? = null,
+    thirdOrigin: TranslationOrigin? = null,
+    /** Goes before the row's click, for a focus requester (TV layout). */
+    focusModifier: Modifier = Modifier,
 ) {
     if (!showOriginal && !showTranslation && thirdText == null) return
     val slotControls = LocalTripleSubtitleControls.current
@@ -82,16 +91,23 @@ internal fun CompactSubtitleCard(
             Modifier
                 .fillMaxWidth()
                 .semantics { stateDescription = rowState }
-                .clickable(enabled = replayEnabled, onClick = onReplay),
+                .tvFocusRing(),
         border = activeCardBorder(active),
         colors = activeCardColors(active),
         shape = RoundedCornerShape(10.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 7.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 7.dp).heightIn(min = if (replayEnabled) 60.dp else 0.dp).height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (replayEnabled) ReplayButton(active)
+            if (replayEnabled) {
+                Box(Modifier.width(34.dp).fillMaxHeight()) {
+                    Box(Modifier.align(Alignment.TopStart).offset(x = (-6).dp, y = (-5).dp)) {
+                        SegmentRetranslateMenu(segment, showTranslation, thirdText != null)
+                    }
+                    Box(Modifier.align(Alignment.Center)) { ReplayButton(active, playing, onReplay, focusModifier) }
+                }
+            }
             if (replayEnabled) Spacer(Modifier.size(9.dp))
             Column(Modifier.weight(1f)) {
                 val isSentenceEligibleForPos = !wordLearningActiveOnly || active
@@ -116,7 +132,6 @@ internal fun CompactSubtitleCard(
                                         targetLanguage,
                                         isDownloadingTranslationModel,
                                         onWordClick,
-                                        onReplay,
                                     )
                                 }
                             }
@@ -139,8 +154,10 @@ internal fun CompactSubtitleCard(
                                         targetLanguage,
                                         stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
                                         onWordClick,
-                                        onReplay,
                                     )
+                                }
+                                if (segment.translatedText != null) {
+                                    TranslationSourceTag(segment.translationOrigin, SubtitleSlot.SECOND, targetLanguage, translatedColor)
                                 }
                             }
                         SubtitleSlot.THIRD ->
@@ -154,8 +171,9 @@ internal fun CompactSubtitleCard(
                                     segment,
                                     highlightColor,
                                     onWordClick,
-                                    onReplay,
+                                    {},
                                 )
+                                TranslationSourceTag(thirdOrigin, SubtitleSlot.THIRD, slotControls.language, translatedColor)
                             }
                     }
                 }
@@ -179,9 +197,15 @@ private fun activeCardColors(active: Boolean) =
     )
 
 @Composable
-private fun ReplayButton(active: Boolean) {
+private fun ReplayButton(
+    active: Boolean,
+    playing: Boolean,
+    onReplay: () -> Unit,
+    focusModifier: Modifier,
+) {
     Card(
-        modifier = Modifier.size(34.dp),
+        onClick = onReplay,
+        modifier = focusModifier.size(34.dp),
         shape = CircleShape,
         colors =
             CardDefaults.cardColors(
@@ -190,8 +214,8 @@ private fun ReplayButton(active: Boolean) {
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.player_replay_paragraph),
+                if (active && playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = stringResource(if (active && playing) R.string.playback_pause else R.string.player_replay_paragraph),
                 modifier = Modifier.size(22.dp),
                 tint = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             )
@@ -216,7 +240,6 @@ private fun OriginalCardText(
     targetLanguage: String,
     isDownloadingTranslationModel: Boolean,
     onWordClick: (WordTap) -> Unit,
-    onReplay: () -> Unit,
 ) {
     val shouldHighlightPos =
         wordLearningEnabled && isSentenceEligibleForPos && (wordLearningTarget == "original" || wordLearningTarget == "both")
@@ -247,7 +270,7 @@ private fun OriginalCardText(
             translated = false,
             highlightColor = highlightColor,
             onWordClick = onWordClick,
-            onBlankTap = onReplay,
+            onBlankTap = {},
         )
     } else {
         Text(
@@ -280,7 +303,6 @@ private fun TranslatedCardText(
     targetLanguage: String,
     fallbackText: String,
     onWordClick: (WordTap) -> Unit,
-    onReplay: () -> Unit,
 ) {
     val shouldHighlightTrans =
         wordLearningEnabled && isSentenceEligibleForPos && (wordLearningTarget == "translation" || wordLearningTarget == "both")
@@ -325,7 +347,7 @@ private fun TranslatedCardText(
             translated = true,
             highlightColor = highlightColor,
             onWordClick = onWordClick,
-            onBlankTap = onReplay,
+            onBlankTap = {},
             alignedOriginalTokens = originalTokens,
         )
     } else {
@@ -351,3 +373,12 @@ internal fun pendingTranslationTextRes(
         downloadingModel -> R.string.player_downloading_translation_model
         else -> R.string.player_translating
     }
+
+/** The Play button of a card: pauses when this card's line is the one playing now, otherwise plays the line from its start. */
+internal fun YouTubeWebController.replayOrPause(
+    state: DualSubUiState,
+    segment: SubtitleSegment,
+) {
+    val playingThis = !state.playbackPaused && state.segments.getOrNull(state.currentIndex)?.id == segment.id
+    if (playingThis) pause() else replayFrom(segment.startMs / 1_000f)
+}

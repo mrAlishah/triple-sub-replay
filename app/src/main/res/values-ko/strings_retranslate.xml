@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">AI로 다시 번역</string>
+    <string name="retranslate_subtitles">대상 자막</string>
+    <string name="retranslate_both">둘 다</string>
+    <string name="retranslate_scope">범위</string>
+    <string name="retranslate_scope_sentence">현재 문장</string>
+    <string name="retranslate_scope_window">현재 재생 구간</string>
+    <string name="retranslate_scope_video">동영상 전체</string>
+    <string name="retranslate_note">AI에 다시 요청하며 ChatGPT 요금제 사용량이나 API 크레딧을 더 쓸 수 있습니다. 새 자막이 도착할 때까지 화면의 자막은 그대로 유지됩니다.</string>
+    <string name="retranslate_video_warning">약 %1$d개 문장을 약 %2$d번의 요청으로 보내며 사용량이나 크레딧을 많이 쓸 수 있습니다.</string>
+    <string name="retranslate_video_confirm">내용을 이해했으며 계속합니다</string>
+    <string name="retranslate_start">다시 번역</string>
+    <string name="retranslate_stop">중지</string>
+    <string name="retranslate_progress">다시 번역 중… %1$d / %2$d</string>
+    <string name="retranslate_refreshing">새로 고치는 중…</string>
+    <string name="retranslate_failed">다시 번역하지 못했습니다(%1$s). 갱신되지 않은 줄은 그대로 유지됩니다.</string>
+    <string name="retranslate_failed_short">새로 고치지 못함</string>
+    <string name="retranslate_unavailable">먼저 AI 제공업체를 연결하세요. ChatGPT로 로그인하거나 AI 설정에서 API 키를 추가하세요.</string>
+</resources>

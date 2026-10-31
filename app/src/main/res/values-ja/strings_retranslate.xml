@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">AIで再翻訳</string>
+    <string name="retranslate_subtitles">対象の字幕</string>
+    <string name="retranslate_both">両方</string>
+    <string name="retranslate_scope">範囲</string>
+    <string name="retranslate_scope_sentence">現在の文</string>
+    <string name="retranslate_scope_window">現在の再生範囲</string>
+    <string name="retranslate_scope_video">動画全体</string>
+    <string name="retranslate_note">AIに改めて依頼します。ChatGPTプランの利用枠やAPIクレジットを多く消費することがあります。新しい字幕が届くまで、画面の字幕はそのままです。</string>
+    <string name="retranslate_video_warning">約%1$d文を約%2$d回のリクエストで送信し、利用枠やクレジットを大きく消費することがあります。</string>
+    <string name="retranslate_video_confirm">理解したうえで続行します</string>
+    <string name="retranslate_start">再翻訳</string>
+    <string name="retranslate_stop">停止</string>
+    <string name="retranslate_progress">再翻訳中… %1$d / %2$d</string>
+    <string name="retranslate_refreshing">更新中…</string>
+    <string name="retranslate_failed">再翻訳できませんでした(%1$s)。更新されていない行はそのまま残ります。</string>
+    <string name="retranslate_failed_short">更新できませんでした</string>
+    <string name="retranslate_unavailable">先にAIプロバイダーを接続してください。ChatGPTでサインインするか、AI設定でAPIキーを追加します。</string>
+</resources>

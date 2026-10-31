@@ -107,9 +107,11 @@ private const val OVERLAY_ACTION_BUTTON_DP = 48
 internal fun fullscreenOverlayTextMaxWidthDp(
     screenWidthDp: Int,
     actionsVisible: Boolean,
+    /** How many 48 dp action buttons the box shows: settings and close, plus Re-translate when a line uses the AI. */
+    buttons: Int = 2,
 ): Int {
     val box = (screenWidthDp * FULLSCREEN_OVERLAY_MAX_WIDTH_FRACTION).roundToInt().coerceAtMost(OVERLAY_MAX_WIDTH_DP)
-    val actions = if (actionsVisible) 2 * OVERLAY_ACTION_BUTTON_DP - 12 else 0
+    val actions = if (actionsVisible) buttons * OVERLAY_ACTION_BUTTON_DP - 12 else 0
     return (box - 28 - actions).coerceAtLeast(80)
 }
 
@@ -430,18 +432,21 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             .apply()
     }
 
+    // A remote cannot reach the floating subtitle box: the TV layout always uses the panel.
+    val tvLayout by rememberTvLayout()
     val automaticLandscapeOverlay =
-        shouldUseAutomaticLandscapeOverlay(
-            mode = mode,
-            autoLandscape = autoOverlayLandscape,
-            orientation = configuration.orientation,
-        )
+        !tvLayout &&
+            shouldUseAutomaticLandscapeOverlay(
+                mode = mode,
+                autoLandscape = autoOverlayLandscape,
+                orientation = configuration.orientation,
+            )
     val automaticFullscreenOverlay =
         mode == PlayerExperienceMode.TRANSCRIPT_PANEL && autoOverlayFullscreen && youtubeFullscreen
     val automaticPresentationOverlay = automaticLandscapeOverlay || automaticFullscreenOverlay
     val effectiveMode =
         if (
-            mode == PlayerExperienceMode.SCROLL_FRIENDLY_OVERLAY || automaticPresentationOverlay
+            (mode == PlayerExperienceMode.SCROLL_FRIENDLY_OVERLAY && !tvLayout) || automaticPresentationOverlay
         ) {
             PlayerExperienceMode.SCROLL_FRIENDLY_OVERLAY
         } else {
@@ -554,7 +559,8 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 viewModel::tryGoogleTranslationAgain,
                 viewModel::setGoogleWait,
                 viewModel::setSubtitleTranslator,
-                viewModel::setAiTranslationModel,
+                viewModel.aiConfig.actions(viewModel.chatGpt.actions()),
+                viewModel::setShowTranslationSource,
             )
         }
     val tripleControls =
@@ -588,8 +594,28 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 onAlignmentChange = viewModel::setSlotAlignment,
             )
         }
+    val translationSourceInfo =
+        remember(viewModel, state.showTranslationSource) {
+            TranslationSourceInfo(
+                state.showTranslationSource,
+                viewModel.translationDiagnostics.events,
+                RefreshActions(
+                    viewModel.refreshSlots,
+                    viewModel.refresher.state,
+                    viewModel::refreshSentenceCount,
+                    viewModel::refreshTranslation,
+                    viewModel::cancelRefresh,
+                    viewModel::refreshSegment,
+                ),
+            )
+        }
     val aiViewModel: AiAssistantViewModel = viewModel()
-    val aiAssistant = remember(aiViewModel) { AiAssistantHost(aiViewModel.controller) { aiViewModel.guide } }
+    LaunchedEffect(aiViewModel, viewModel) { aiViewModel.attachChatGpt(viewModel.chatGpt) }
+    val aiAssistant = remember(aiViewModel) { AiAssistantHost(
+            aiViewModel.controller,
+            chatGpt = viewModel.chatGpt.actions(),
+            translation = AiTranslationLink(viewModel.aiConfig::accessIdNow, viewModel.aiConfig::legacyModel, viewModel.aiConfig::settingsChanged),
+        ) { aiViewModel.guide } }
     val studySavedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
     val studyTools = rememberStudyTools(state, studySavedWords)
     CompositionLocalProvider(
@@ -597,8 +623,11 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         LocalLanguageDownloads provides viewModel.languageDownloads,
         LocalTranslationEngineActions provides translationEngineActions,
         LocalTripleSubtitleControls provides tripleControls,
+        LocalTranslationSourceInfo provides translationSourceInfo,
         LocalAiAssistant provides aiAssistant,
         LocalStudyTools provides studyTools,
+        LocalTvLayout provides tvLayout,
+        tvFocusShading(tvLayout),
     ) {
         Box(Modifier.fillMaxSize().clearPhraseSelectionOnTapElsewhere(phraseSelection)) {
             DualSubApp(
@@ -728,6 +757,7 @@ internal fun LearningSubtitleOverlay(
     onRetryTranscript: (() -> Unit)? = null,
     onClose: () -> Unit,
 ) {
+    val retranslateOffered = LocalTranslationSourceInfo.current.refresh != null
     if (content.originalText == null && content.translatedText == null && content.statusText == null) {
         Box(modifier) { TextButton(onClick = onSettings) { Text(stringResource(R.string.player_subtitle_settings)) } }
         return
@@ -824,13 +854,19 @@ internal fun LearningSubtitleOverlay(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
-                modifier = if (isFullscreen) {
-                    Modifier.widthIn(
-                        max = fullscreenOverlayTextMaxWidthDp(configuration.screenWidthDp, overlayActionsVisible).dp,
-                    )
-                } else {
-                    Modifier.weight(1f)
-                },
+                modifier =
+                    if (isFullscreen) {
+                        Modifier.widthIn(
+                            max =
+                                fullscreenOverlayTextMaxWidthDp(
+                                    configuration.screenWidthDp,
+                                    overlayActionsVisible,
+                                    if (retranslateOffered) 3 else 2,
+                                ).dp,
+                        )
+                    } else {
+                        Modifier.weight(1f)
+                    },
                 horizontalAlignment = Alignment.Start,
             ) {
                 val slotControls = LocalTripleSubtitleControls.current
@@ -855,13 +891,14 @@ internal fun LearningSubtitleOverlay(
                                 SelectableSubtitleText(
                                     text = original,
                                     annotated = annotated,
-                                    style = TextStyle(
-                                        textAlign = slotControls.alignment.original.textAlign(),
-                                        fontSize = (17f * fontScale * slotScales.original).sp,
-                                        lineHeight = (21f * fontScale * slotScales.original).sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = originalColor,
-                                    ),
+                                    style =
+                                        TextStyle(
+                                            textAlign = slotControls.alignment.original.textAlign(),
+                                            fontSize = (17f * fontScale * slotScales.original).sp,
+                                            lineHeight = (21f * fontScale * slotScales.original).sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = originalColor,
+                                        ),
                                     languageCode = originalLanguageCode,
                                     segment = content.segment,
                                     translated = false,
@@ -915,12 +952,13 @@ internal fun LearningSubtitleOverlay(
                                 SelectableSubtitleText(
                                     text = translated,
                                     annotated = annotated,
-                                    style = TextStyle(
-                                        textAlign = slotControls.alignment.second.textAlign(),
-                                        fontSize = (14f * fontScale * slotScales.second).sp,
-                                        lineHeight = (18f * fontScale * slotScales.second).sp,
-                                        color = translatedColor,
-                                    ),
+                                    style =
+                                        TextStyle(
+                                            textAlign = slotControls.alignment.second.textAlign(),
+                                            fontSize = (14f * fontScale * slotScales.second).sp,
+                                            lineHeight = (18f * fontScale * slotScales.second).sp,
+                                            color = translatedColor,
+                                        ),
                                     languageCode = targetLanguageCode,
                                     segment = content.segment,
                                     translated = true,
@@ -945,6 +983,10 @@ internal fun LearningSubtitleOverlay(
                             }
                         }
                     }
+                val sourceInfo = LocalTranslationSourceInfo.current
+                val refreshMarks by sourceInfo.refreshState.collectAsStateWithLifecycle()
+                // The label, or the refreshing mark of a line being re-translated (shown without the debug setting).
+                val showSource = sourceInfo.show || refreshMarks.running.isNotEmpty() || refreshMarks.failed.isNotEmpty()
                 val orderedLines =
                     slotControls.order.arranged<@Composable () -> Unit> { slot ->
                         val line: (@Composable () -> Unit)? =
@@ -969,9 +1011,35 @@ internal fun LearningSubtitleOverlay(
                                         }
                                     }
                             }
+                        // Show translation source: a small label under a line that really shows a translation.
+                        val sourceTag: (@Composable () -> Unit)? =
+                            when (slot) {
+                                SubtitleSlot.SECOND ->
+                                    content.segment?.takeIf { it.translatedText != null }?.let { row ->
+                                        @Composable {
+                                            TranslationSourceTag(row.translationOrigin, slot, targetLanguageCode.orEmpty(), translatedColor)
+                                        }
+                                    }
+                                SubtitleSlot.THIRD ->
+                                    content.thirdText?.let {
+                                        @Composable {
+                                            TranslationSourceTag(content.thirdOrigin, slot, slotControls.language, translatedColor)
+                                        }
+                                    }
+                                SubtitleSlot.ORIGINAL -> null
+                            }.takeIf { showSource }
                         line?.let { inner ->
                             @Composable {
-                                Box(Modifier.align(slotControls.alignment[slot].horizontal())) { inner() }
+                                Box(Modifier.align(slotControls.alignment[slot].horizontal())) {
+                                    if (sourceTag == null) {
+                                        inner()
+                                    } else {
+                                        Column {
+                                            inner()
+                                            sourceTag()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -1000,6 +1068,7 @@ internal fun LearningSubtitleOverlay(
                 }
             }
             if (overlayActionsVisible) {
+                RetranslateButton(LocalTranslationSourceInfo.current.refresh)
                 IconButton(onClick = onSettings) {
                     Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.player_dual_subtitle_settings))
                 }

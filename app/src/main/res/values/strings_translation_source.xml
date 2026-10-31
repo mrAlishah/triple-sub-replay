@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_source_setting_title">Show translation source (debug)</string>
+    <string name="translation_source_setting_description">Labels each translated subtitle with where its text came from. Tap a label for details.</string>
+    <string name="translation_source_chatgpt">ChatGPT Subscription</string>
+    <string name="translation_source_chatgpt_cached">ChatGPT Subscription (cached)</string>
+    <string name="translation_source_google">Google Translate</string>
+    <string name="translation_source_on_device">On-device translation</string>
+    <string name="translation_source_youtube">YouTube translated captions</string>
+    <string name="translation_source_ai_provider">AI provider</string>
+    <string name="translation_source_ai_provider_cached">AI provider (cached)</string>
+    <string name="translation_source_unknown">Unknown</string>
+    <string name="translation_source_dialog_title">Translation source</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">Model: %1$s</string>
+    <string name="translation_source_dialog_events">Recent AI and fallback events</string>
+    <string name="translation_source_dialog_no_events">Nothing recorded yet for this language.</string>
+    <string name="translation_source_event_request">AI request · sentences: %1$d</string>
+    <string name="translation_source_event_succeeded">AI answered · sentences: %1$d</string>
+    <string name="translation_source_event_failed">AI failed · %1$s · sentences kept: %2$d</string>
+    <string name="translation_source_event_identical">%1$s gave the same text as shown</string>
+    <string name="translation_source_event_fallback">Showing %1$s instead of the AI</string>
+    <string name="translation_source_close">Close</string>
+    <string name="translation_source_event_scheduled">AI asked for sentences: %1$d</string>
+    <string name="translation_source_event_upgraded">The AI replaced lines on screen: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Re-translation asked · sentences: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Saved translations skipped for the new request</string>
+    <string name="translation_source_event_refresh_succeeded">Re-translated · sentences: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Re-translation failed · %1$s</string>
+</resources>

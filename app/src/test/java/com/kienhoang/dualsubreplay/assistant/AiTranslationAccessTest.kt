@@ -28,9 +28,10 @@ class AiTranslationAccessTest {
     }
 
     @Test fun thinkingIsTurnedOffWhereTheServiceAllowsIt() {
-        assertEquals("none", aiTranslationEffort(AiProvider.GEMINI))
-        assertEquals("minimal", aiTranslationEffort(AiProvider.OPENAI))
-        assertNull(aiTranslationEffort(AiProvider.CLAUDE))
+        assertEquals("none", aiTranslationEffort(AiProvider.GEMINI, "gemini-flash-lite-latest"))
+        assertEquals("none", aiTranslationEffort(AiProvider.OPENAI, "gpt-6-luna"))
+        assertEquals("minimal", aiTranslationEffort(AiProvider.OPENAI, "gpt-5-mini"))
+        assertNull(aiTranslationEffort(AiProvider.CLAUDE, "claude-haiku-5-5"))
     }
 
     @Test fun requestsTakeTurnsOverTheKeys() =
@@ -86,7 +87,9 @@ class AiTranslationAccessTest {
                     if (request.reasoningEffort != null) throw AiChatException(AiErrorKind.UNSUPPORTED_THINKING)
                     AiReply("ok")
                 }
-            val model = aiTranslationModel(gemini, null, store, transport, AiKeyPacer(intervalMs = 0))!!
+            // A Pro model cannot turn thinking off, so Automatic sends nothing for it (see aiTranslationEffort); Flash does.
+            val flash = AiAssistantSettings(provider = AiProvider.GEMINI, models = mapOf(AiProvider.GEMINI to "gemini-flash-latest"))
+            val model = aiTranslationModel(flash, null, store, transport, AiKeyPacer(intervalMs = 0))!!
             assertEquals("ok", model.ask("system", "user"))
             assertEquals(listOf("none", null), efforts)
         }

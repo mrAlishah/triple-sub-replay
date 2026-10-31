@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiAppSnapshot
 import com.kienhoang.dualsubreplay.assistant.AiAssistantController
+import com.kienhoang.dualsubreplay.assistant.AiChatMessage
 import com.kienhoang.dualsubreplay.assistant.AiAssistantUiState
 import com.kienhoang.dualsubreplay.assistant.AiPanelPage
 import com.kienhoang.dualsubreplay.assistant.AiRole
@@ -138,7 +139,7 @@ internal fun AiAssistantPanel(
                                     .verticalScroll(rememberScrollState())
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .testTag("ai_settings_page"),
-                            ) { AiAssistantSettingsSection(host) }
+                            ) { AiAssistantSettingsSection(host, chatOnly = true) }
                         AiPanelPage.MODELS -> AiModelsPage(aiState, controller, Modifier.weight(1f))
                         AiPanelPage.MEMORY -> AiMemoryPage(aiState, controller, Modifier.weight(1f))
                         AiPanelPage.CHAT ->
@@ -148,6 +149,10 @@ internal fun AiAssistantPanel(
                                     onDecline = controller::declineIntro,
                                     modifier = Modifier.weight(1f),
                                 )
+                            } else if (aiState.settings.chatGptService && !aiState.chatGptChatReady) {
+                                Column(Modifier.weight(1f).padding(16.dp)) {
+                                    AiChatGptStateCard(aiState.chatGpt.status, onOpenSettings = { controller.showPage(AiPanelPage.SETTINGS) })
+                                }
                             } else {
                                 AiChatContent(
                                     aiState = aiState,
@@ -278,11 +283,21 @@ private fun LazyListScope.aiMessages(
     onRetry: () -> Unit,
 ) {
     items(aiState.messages, key = { it.id }) { message ->
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { AiMessageBubble(message, handlers) }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { AiMessageBubble(message, handlers, aiState.settings.showResponseSource) }
     }
-    if (aiState.sending) item(key = "thinking") { AiThinkingRow() }
+    if (aiState.sending) {
+        // ChatGPT streams its reply: the text so far is the answer bubble; until the first piece arrives, the thinking row shows.
+        if (aiState.draft.isNotEmpty()) {
+            item(key = "draft") {
+                Column(Modifier.testTag("ai_draft")) { AiMessageText(AiChatMessage("draft", AiRole.ASSISTANT, aiState.draft, 0L)) }
+            }
+        } else {
+            item(key = "thinking") { AiThinkingRow() }
+        }
+    }
     // After actions that ran, the question has an answer, so asking it again is left to the user.
     val canRetry = aiState.ready && aiState.messages.lastOrNull()?.role == AiRole.USER
-    aiState.failure?.let { failure -> item(key = "failure") { AiFailureRow(failure, onRetry.takeIf { canRetry }) } }
-    if (aiState.stopped && !aiState.sending) item(key = "stopped") { AiStoppedRow(onRetry.takeIf { canRetry }) }
+    val attempt = aiState.lastAttempt.takeIf { aiState.settings.showResponseSource }
+    aiState.failure?.let { failure -> item(key = "failure") { AiFailureRow(failure, onRetry.takeIf { canRetry }, attempt) } }
+    if (aiState.stopped && !aiState.sending) item(key = "stopped") { AiStoppedRow(onRetry.takeIf { canRetry }, attempt) }
 }

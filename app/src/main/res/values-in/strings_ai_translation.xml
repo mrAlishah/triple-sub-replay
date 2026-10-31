@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_config_provider">Penyedia AI</string>
+    <string name="ai_config_model">Model AI</string>
+    <string name="ai_config_effort">Tingkat penalaran</string>
+    <string name="ai_config_model_replaced">“%1$s” tidak lagi tersedia. Memakai %2$s.</string>
+    <string name="ai_config_models_loading">Memuat model…</string>
+    <string name="ai_config_models_failed">Daftar model tidak dapat dimuat. Buka menu dan ketuk Segarkan.</string>
+    <string name="ai_config_models_empty">Tidak ada model yang dapat dipakai.</string>
+    <string name="ai_config_models_connect_chatgpt">Hubungkan ChatGPT untuk melihat model Anda.</string>
+    <string name="ai_config_models_connect_key">Tambahkan kunci untuk memuat daftar model lengkap.</string>
+    <string name="ai_config_models_refresh">Segarkan daftar model</string>
+    <string name="ai_config_effort_replaced">“%1$s” tidak tersedia di model ini, jadi dipakai Otomatis.</string>
+    <string name="ai_config_effort_fixed_chatgpt">Langganan ChatGPT tidak memiliki tingkat penalaran yang dapat diatur.</string>
+    <string name="ai_config_effort_fixed">Model ini tidak memiliki tingkat yang dapat diatur.</string>
+    <string name="ai_config_effort_unknown_claude">Muat daftar model untuk melihat tingkat yang didukung model ini.</string>
+    <string name="ai_config_effort_auto_note">Menjaga penalaran tetap singkat untuk subtitle jika model mengizinkan.</string>
+    <string name="ai_config_key_saved">Kunci API tersimpan</string>
+    <string name="ai_config_key_missing">Tidak ada kunci API untuk penyedia ini. Google menerjemahkan sampai Anda menambahkannya.</string>
+    <string name="ai_config_manage_keys">Kelola kunci</string>
+    <string name="ai_access_chatgpt_subscription">Langganan ChatGPT</string>
+    <string name="ai_access_chatgpt_note">Memakai paket ChatGPT Anda, tanpa kunci API.</string>
+    <string name="ai_access_gemini_api">Gemini API (tersedia tingkat gratis)</string>
+    <string name="ai_access_gemini_note">Perlu kunci Gemini API. Tingkat gratis hanya berlaku jika Google mengizinkannya untuk kunci dan model Anda. Paket Gemini AI Pro/Ultra adalah produk terpisah dan tidak dipakai di sini. Biaya bergantung pada pengaturan penagihan Google Anda.</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">Perlu kunci Claude API dari Anthropic Console. Penggunaan ditagih sesuai tarif API atau memakai kredit Console yang Anda miliki. Langganan Claude Pro dan Max tidak dipakai di sini.</string>
+    <string name="ai_translation_effort_auto">Otomatis (disarankan)</string>
+    <string name="ai_translation_effort_off">Mati</string>
+    <string name="ai_translation_effort_minimal">Minimal</string>
+    <string name="ai_translation_effort_low">Rendah</string>
+    <string name="ai_translation_effort_medium">Sedang</string>
+    <string name="ai_translation_effort_high">Tinggi</string>
+    <string name="ai_translation_effort_xhigh">Sangat tinggi</string>
+    <string name="ai_translation_effort_max">Maksimum</string>
+    <string name="ai_translation_test">Uji terjemahan</string>
+    <string name="ai_translation_testing">Menerjemahkan…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">Kalimat uji: Jerman → Persia</string>
+    <string name="ai_translation_test_result">Hasil: %1$s</string>
+    <string name="ai_translation_test_origin">Dijawab oleh: %1$s</string>
+    <string name="ai_translation_test_no_key">Tidak ada kunci API tersimpan untuk penyedia ini.</string>
+    <string name="ai_translation_test_effort_refused">Model ini menolak tingkat yang dipilih. Pilih Otomatis atau tingkat lain.</string>
+</resources>

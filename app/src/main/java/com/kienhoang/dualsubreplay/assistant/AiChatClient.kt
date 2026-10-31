@@ -68,6 +68,15 @@ internal enum class AiErrorKind {
 
     /** The service refused its own web search (off for the account, or not for this model); asked again without it. */
     UNSUPPORTED_WEB_SEARCH,
+
+    /** ChatGPT Subscription: the sign-in ended or plan usage was not granted. */
+    PLAN_SIGN_IN_REQUIRED,
+
+    /** ChatGPT Subscription: this account cannot use plan usage. */
+    PLAN_NOT_AVAILABLE,
+
+    /** ChatGPT Subscription: the plan's usage limit was reached. */
+    PLAN_USAGE_LIMIT,
 }
 
 /** [detail] is the service's own English message, with the key removed, for reports. */
@@ -75,7 +84,13 @@ internal class AiChatException(
     val kind: AiErrorKind,
     val detail: String? = null,
     cause: Throwable? = null,
-) : IOException(detail ?: kind.name, cause)
+) : IOException(detail ?: kind.name, cause),
+    com.kienhoang.dualsubreplay.translation.DiagnosticReason {
+    override val reason: String get() = kind.name
+
+    /** Who ran the request that failed, set by the transport; null when no request was sent. */
+    var execution: AiExecution? = null
+}
 
 internal enum class AiRole(
     val wire: String,
@@ -114,6 +129,8 @@ internal data class AiChatRequest(
     val format: AiWireFormat = AiWireFormat.OPENAI_CHAT,
     /** The service's own web search goes with the request: Claude's `web_search` or OpenRouter's server tool. */
     val webSearch: Boolean = false,
+    /** The provider whose key and address this request was built from, for the transport to report; empty in tests. */
+    val providerId: String = "",
 )
 
 /** Sends one chat request and returns the reply, or throws [AiChatException]. */
@@ -135,6 +152,10 @@ internal data class AiModelInfo(
     val id: String,
     val free: Boolean = false,
     val pictures: Boolean = false,
+    /** The service's own name for the model (Claude's `display_name`), when it gives one. */
+    val name: String? = null,
+    /** The effort levels the model accepts (Claude's `capabilities.effort`); empty when none, null when the service does not say. */
+    val efforts: Set<String>? = null,
 )
 
 /** Reads the service's model list, or throws [AiChatException]. */
@@ -236,10 +257,22 @@ internal fun parseAiModelList(body: String): List<AiModelInfo> {
                     id.endsWith(":free") || id.endsWith("-free") ||
                         (pricing?.optString("prompt") == "0" && pricing.optString("completion") == "0"),
                 pictures = inputs != null && (0 until inputs.length()).any { inputs.optString(it) == "image" },
+                name = model.optString("display_name").trim().takeIf { it.isNotEmpty() },
+                efforts = model.optJSONObject("capabilities")?.optJSONObject("effort")?.let(::supportedEfforts),
             )
         }.distinctBy { it.id }
         .sortedBy { it.id.lowercase() }
 }
+
+private val EFFORT_LEVELS = listOf("low", "medium", "high", "xhigh", "max")
+
+/** Claude's `capabilities.effort`: `{"supported": true, "low": {"supported": true}, …}`; only levels it marks supported. */
+private fun supportedEfforts(effort: JSONObject): Set<String> =
+    if (!effort.optBoolean("supported", false)) {
+        emptySet()
+    } else {
+        EFFORT_LEVELS.filterTo(LinkedHashSet()) { effort.optJSONObject(it)?.optBoolean("supported", false) == true }
+    }
 
 /** Parts of model names that mean the model makes embeddings, speech, pictures or moderation, not chat. */
 private val NON_CHAT_MODEL_WORDS =
@@ -382,6 +415,20 @@ internal fun redactApiKey(
     return if (redacted.length > MAX_AI_ERROR_DETAIL_CHARS) redacted.take(MAX_AI_ERROR_DETAIL_CHARS) + "…" else redacted
 }
 
+/**
+ * Later GPTs answer 400 "Function tools with reasoning_effort are not supported": the thinking level is
+ * the problem, so the actions are not dropped.
+ */
+private fun thinkingRefusedWithTools(
+    code: Int,
+    lower: String,
+    sentThinking: Boolean,
+    sentTools: Boolean,
+): AiErrorKind? =
+    AiErrorKind.UNSUPPORTED_THINKING.takeIf {
+        sentThinking && sentTools && code == 400 && ("reasoning_effort" in lower || "reasoning effort" in lower)
+    }
+
 /** A refusal of what came with the question (web search, actions, pictures and files, or a thinking level), or null. */
 private fun unsupportedExtra(
     code: Int,
@@ -415,7 +462,10 @@ internal fun aiErrorKindForStatus(
     sentWebSearch: Boolean = false,
 ): AiErrorKind {
     val lower = message.orEmpty().lowercase()
-    unsupportedExtra(code, lower, sentThinking, sentAttachments, sentTools, sentWebSearch)?.let { return it }
+    (
+        thinkingRefusedWithTools(code, lower, sentThinking, sentTools)
+            ?: unsupportedExtra(code, lower, sentThinking, sentAttachments, sentTools, sentWebSearch)
+    )?.let { return it }
     return when {
         code == 401 -> AiErrorKind.INVALID_KEY
         // OpenRouter also answers 403 for a model it keeps for coding apps; only a key problem names the key.
@@ -473,6 +523,8 @@ internal class AiHttpTransport(
     AiModelLister,
     AiHttpPoster {
     override suspend fun complete(request: AiChatRequest): AiReply {
+        // A ChatGPT request has no key and no keyed address; it never goes out through this transport.
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))
@@ -510,6 +562,7 @@ internal class AiHttpTransport(
         request: AiChatRequest,
         onText: (String) -> Unit,
     ): AiReply {
+        if (request.format == AiWireFormat.CHATGPT_RESPONSES) throw AiChatException(AiErrorKind.BAD_REQUEST)
         val anthropic = request.format == AiWireFormat.ANTHROPIC_MESSAGES
         val url =
             (if (anthropic) anthropicMessagesUrl(request.baseUrl) else chatCompletionsUrl(request.baseUrl))

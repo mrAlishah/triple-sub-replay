@@ -20,6 +20,11 @@ context for later practice. See the [product guide](../../README.md) for feature
   default but sends nothing until a key is added, can be turned off completely, and every
   other feature keeps working without it. The project still runs no server and holds no
   shared key.
+  On 2026-10-29 the owner approved a third, optional exception ([spec](../specs/2026-10-29-chatgpt-subscription-translation.md)):
+  Settings → Translation can translate subtitles with the user's own ChatGPT plan through OpenAI's official
+  Sign in with ChatGPT flow. It is off by default, starts only when the user taps Continue with ChatGPT,
+  sends only subtitle text to OpenAI, never reads ChatGPT conversations, and plan allowance and eligibility
+  vary by account. The project still runs no server and holds no client secret or shared key.
 - Be precise about privacy: YouTube browsing/captions and model downloads use the
   network; speech engines may use online voices; AI assistant questions go to the
   service whose key the user added. On-device translation does not

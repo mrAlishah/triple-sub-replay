@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tab
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
@@ -80,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
@@ -109,6 +111,7 @@ internal enum class MoreSettingsSection(
     TABS("tabs", R.string.settings_section_tabs_title, R.string.settings_section_tabs_summary),
     ADS("ads", R.string.settings_section_ads_title, R.string.settings_section_ads_summary),
     UPDATES("updates", R.string.settings_section_updates_title, R.string.settings_section_updates_summary),
+    TV("tv", R.string.settings_section_tv_title, R.string.settings_section_tv_summary),
 
     /** Only in builds with the assistant ([LocalAiAssistant] is set). */
     AI_ASSISTANT("ai_assistant", R.string.settings_section_ai_title, R.string.settings_section_ai_summary),
@@ -445,6 +448,7 @@ internal fun SubtitleSettingsDialog(
     var openSection by remember { mutableStateOf<MoreSettingsSection?>(null) }
     val aiAssistant = LocalAiAssistant.current
     var showResetConfirmation by remember { mutableStateOf(false) }
+    var aiConnectionTarget by remember { mutableStateOf<AiConnectionTarget?>(null) }
     val languageDownloads = LocalLanguageDownloads.current
     val translationEngineActions = LocalTranslationEngineActions.current
     var showLanguageDownloads by remember { mutableStateOf(false) }
@@ -521,7 +525,13 @@ internal fun SubtitleSettingsDialog(
                         testTag = "settings_group_reading",
                     ) {
                         Text(stringResource(R.string.settings_text_size, (fontScale * 100).toInt()))
-                        Slider(value = fontScale, onValueChange = onFontScaleChange, valueRange = MIN_FONT_SCALE..MAX_FONT_SCALE)
+                        Slider(
+                            value = fontScale,
+                            onValueChange = onFontScaleChange,
+                            modifier = Modifier.tvArrowsLeave(),
+                            valueRange = MIN_FONT_SCALE..MAX_FONT_SCALE,
+                            steps = fontScaleSteps(LocalTvLayout.current),
+                        )
                         CaptionVisibilitySettings()
                         TranslationPositionSettings(
                             LocalTripleSubtitleControls.current.order.translationPosition(),
@@ -652,7 +662,13 @@ internal fun SubtitleSettingsDialog(
                             OnlineTranslationSettingsRows(
                                 onlineTranslation,
                                 translationEngineActions,
-                                onOpenAiSettings = aiAssistant?.let { { openSection = MoreSettingsSection.AI_ASSISTANT } },
+                                onOpenAiConnection =
+                                    aiAssistant?.let {
+                                        { target ->
+                                            aiConnectionTarget = target
+                                            openSection = MoreSettingsSection.AI_ASSISTANT
+                                        }
+                                    },
                             )
                         }
                         SettingsSwitchRow(
@@ -694,9 +710,13 @@ internal fun SubtitleSettingsDialog(
                         AppUpdateSettingsSection()
                     }
 
+                    Section(MoreSettingsSection.TV, Icons.Default.Tv) {
+                        TvLayoutSettingsSection()
+                    }
+
                     if (aiAssistant != null) {
                         Section(MoreSettingsSection.AI_ASSISTANT, Icons.Default.AutoAwesome) {
-                            AiAssistantSettingsSection(aiAssistant, nested = true)
+                            AiAssistantSettingsSection(aiAssistant, nested = true, connectionTarget = aiConnectionTarget)
                         }
                     }
 
@@ -941,7 +961,7 @@ private fun PronunciationVolumeSetting() {
             onValueChangeFinished = { preferences.edit().putFloat(PRONUNCIATION_VOLUME_PREFERENCE, volume).apply() },
             valueRange = MIN_PRONUNCIATION_VOLUME..MAX_PRONUNCIATION_VOLUME,
             steps = PRONUNCIATION_VOLUME_STEPS,
-            modifier = Modifier.testTag("pronunciation_volume_slider"),
+            modifier = Modifier.tvArrowsLeave().testTag("pronunciation_volume_slider"),
         )
     }
 }
@@ -1146,7 +1166,7 @@ private fun SubtitleColorSwatchRow(
 private fun OnlineTranslationSettingsRows(
     settings: OnlineTranslationSettings,
     actions: TranslationEngineActions,
-    onOpenAiSettings: (() -> Unit)?,
+    onOpenAiConnection: ((AiConnectionTarget) -> Unit)?,
 ) {
     val translator = settings.translator
     Text(
@@ -1158,12 +1178,18 @@ private fun OnlineTranslationSettingsRows(
         TranslatorOptionRow(option, translator, actions.selectTranslator)
     }
     if (translator.usesAi) {
-        AiTranslationModelSettings(settings.aiTranslationModel, actions.selectAiTranslationModel)
-        AiTranslationServiceNote(onOpenAiSettings)
+        actions.aiConfig?.let { AiConfigurationSection(it, onOpenAiConnection) }
     }
     if (translator == SubtitleTranslator.GOOGLE || translator == SubtitleTranslator.AI_WITH_GOOGLE) {
         GoogleWaitSettings(settings.googleWait, actions.selectGoogleWait)
     }
+    SettingsSwitchRow(
+        title = stringResource(R.string.translation_source_setting_title),
+        description = stringResource(R.string.translation_source_setting_description),
+        checked = settings.showSource,
+        onCheckedChange = actions.setShowSource,
+        testTag = "translation_source_switch",
+    )
 }
 
 @Composable
@@ -1201,13 +1227,14 @@ internal fun SettingsSwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     testTag: String,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title)
+            Text(title, color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 description,
                 style = MaterialTheme.typography.bodySmall,
@@ -1218,6 +1245,7 @@ internal fun SettingsSwitchRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             modifier = Modifier.testTag(testTag),
+            enabled = enabled,
         )
     }
 }

@@ -55,35 +55,42 @@ class OnlineTranslationUiTest {
             TranslationEngineActions(select = {}, selectTranslator = { chosen += it }),
         )
         composeRule.onNodeWithTag("translator_google").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag("ai_translation_model_same").assertDoesNotExist()
+        composeRule.onNodeWithTag("ai_config").assertDoesNotExist()
         composeRule.onNodeWithTag("translator_ai_only").performScrollTo().performClick()
         assertEquals(listOf(SubtitleTranslator.AI_ONLY), chosen)
     }
 
     @Test
-    fun aiChoiceShowsTheModelPickerWithTheAssistantsModelFirst() {
-        val picked = mutableListOf<String>()
+    fun aiChoiceShowsOnlyTheTranslationServiceItsStatusAndTheTest() {
+        val state =
+            AiTranslationUiState(
+                accessId = "gemini",
+                model = "gemini-flash-lite-latest",
+                models = listOf(AiModelChoice("gemini-flash-lite-latest", "gemini-flash-lite-latest")),
+                modelsState = AiModelsState.LOADED,
+                keyPresent = true,
+            )
         showTranslationSettings(
             OnlineTranslationSettings(engine = TranslationEngine.GOOGLE_WEB, aiTranslation = true),
-            TranslationEngineActions(select = {}, selectAiTranslationModel = { picked += it }),
+            TranslationEngineActions(select = {}, aiConfig = fakeAiActions(state)),
         )
-        composeRule
-            .onNodeWithTag("ai_translation_model_same")
-            .performScrollTo()
-            .assertIsSelected()
+        composeRule.onNodeWithTag("ai_provider_field").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_connection_summary").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("ai_test").performScrollTo().assertIsDisplayed()
+        // Model and effort are set in Settings → AI Connection, not here.
+        composeRule.onNodeWithTag("ai_model_field").assertDoesNotExist()
+        composeRule.onNodeWithTag("ai_effort_field").assertDoesNotExist()
         saveUiEvidence("settings-translate-subtitles-with-ai")
         composeRule.onNodeWithTag("google_wait_auto").performScrollTo().assertIsDisplayed()
-        // The assistant's model (Gemini's default) is not offered twice.
-        composeRule.onNodeWithTag("ai_translation_model_gemini-flash-lite-latest").assertDoesNotExist()
-        composeRule.onNodeWithTag("ai_translation_model_gemini-flash-latest").performScrollTo().performClick()
-        assertEquals(listOf("gemini-flash-latest"), picked)
     }
 
     @Test
     fun aiOnlyHidesWaitForGoogle() {
         val aiOnly = OnlineTranslationSettings(engine = TranslationEngine.GOOGLE_WEB, aiTranslation = true, aiTranslationOnly = true)
-        showTranslationSettings(aiOnly)
-        composeRule.onNodeWithTag("ai_translation_model_same").performScrollTo().assertIsDisplayed()
+        val state =
+            AiTranslationUiState(accessId = "gemini", model = "m", models = emptyList(), modelsState = AiModelsState.NEEDS_CONNECTION)
+        showTranslationSettings(aiOnly, TranslationEngineActions(select = {}, aiConfig = fakeAiActions(state)))
+        composeRule.onNodeWithTag("ai_provider_field").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("google_wait_auto").assertDoesNotExist()
     }
 
@@ -155,6 +162,29 @@ class OnlineTranslationUiTest {
         composeRule.onNodeWithText("Retry translation").performClick()
         assertEquals(0, triedGoogle)
         assertEquals(1, retried)
+    }
+
+    @Test
+    fun aFailingAiShowsALongReasonCutAndTriesTheAiAgain() {
+        var triedAgain = 0
+        val reason = "HTTP 429: You exceeded your current quota. " + "Please check your plan and billing details. ".repeat(12)
+        composeRule.setContent {
+            DualSubTheme {
+                TranslationIssueButton(
+                    TranslationIssue.AiPaused(reason.trim()),
+                    onTryGoogleAgain = { triedAgain++ },
+                    onRetryTranslation = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("translation_issue_button").performClick()
+        composeRule.onNodeWithText("AI translation paused").assertIsDisplayed()
+        // The long reason starts cut to three lines; tapping it shows all of it.
+        composeRule.onNodeWithText("Show more").assertIsDisplayed()
+        composeRule.onNodeWithTag("translation_issue_detail").performClick()
+        composeRule.onNodeWithText("Show less").assertIsDisplayed()
+        composeRule.onNodeWithText("Try AI again").performClick()
+        assertEquals(1, triedAgain)
     }
 
     @Test

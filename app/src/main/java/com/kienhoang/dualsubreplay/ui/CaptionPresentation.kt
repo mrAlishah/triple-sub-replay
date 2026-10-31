@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalResources
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleWord
+import com.kienhoang.dualsubreplay.translation.TranslationOrigin
 
 internal data class LearningOverlayContent(
     val originalText: String?,
@@ -17,6 +18,8 @@ internal data class LearningOverlayContent(
     val words: List<SubtitleWord> = segment?.words.orEmpty(),
     /** The fork's third line (Triple subtitles), or null. */
     val thirdText: String? = null,
+    /** Who wrote [thirdText] (shown by Show translation source); null when not recorded. */
+    val thirdOrigin: TranslationOrigin? = null,
 )
 
 /** Looks up the app's own texts, so plain JVM tests can pass a stub instead of Android resources. */
@@ -75,6 +78,7 @@ private fun unfilteredLearningOverlayContent(
             translatedText = active.translatedText ?: strings.get(pendingTranslationTextRes(false, state.translationError != null)),
             statusText = null,
             thirdText = state.thirdLineFor(active.id),
+            thirdOrigin = state.thirdOriginFor(active.id),
             activeWordIndex = if (state.wordHighlightEnabled) state.activeWordIndex else -1,
             segment = active,
         )

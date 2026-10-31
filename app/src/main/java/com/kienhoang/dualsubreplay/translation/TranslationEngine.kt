@@ -1,5 +1,7 @@
 package com.kienhoang.dualsubreplay.translation
 
+import android.content.SharedPreferences
+
 internal const val TRANSLATION_ENGINE_PREFERENCE = "translation_engine"
 
 /** Settings → Translation → Translate with AI; off by default (owner request 2026-10-28). */
@@ -59,3 +61,33 @@ internal fun subtitleTranslator(
         aiOnly -> SubtitleTranslator.AI_ONLY
         else -> SubtitleTranslator.AI_WITH_GOOGLE
     }
+
+/** The three saved values the translation mode is made of, as they were chosen in Settings → Captions & translation. */
+internal data class StoredTranslationMode(
+    val engine: TranslationEngine,
+    val ai: Boolean,
+    val aiOnly: Boolean,
+) {
+    val translator: SubtitleTranslator get() = subtitleTranslator(engine, ai, aiOnly)
+}
+
+/**
+ * The saved translation mode. Google is the default only when nothing is saved. A failure at translation time (Google
+ * refusing, the AI failing, the device taking over) is shown on the screen but is never written here, so it cannot
+ * change the mode the user chose.
+ */
+internal fun SharedPreferences.storedTranslationMode(): StoredTranslationMode =
+    StoredTranslationMode(
+        engine = storedTranslationEngine(getString(TRANSLATION_ENGINE_PREFERENCE, null)),
+        ai = getBoolean(AI_TRANSLATION_PREFERENCE, false),
+        aiOnly = getBoolean(AI_TRANSLATION_ONLY_PREFERENCE, false),
+    )
+
+/** Saves [translator] as the three values [storedTranslationMode] reads back, so the choice survives a restart. */
+internal fun SharedPreferences.saveTranslationMode(translator: SubtitleTranslator) {
+    edit()
+        .putString(TRANSLATION_ENGINE_PREFERENCE, translator.engine.storageValue)
+        .putBoolean(AI_TRANSLATION_PREFERENCE, translator.usesAi)
+        .putBoolean(AI_TRANSLATION_ONLY_PREFERENCE, translator == SubtitleTranslator.AI_ONLY)
+        .apply()
+}

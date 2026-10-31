@@ -39,7 +39,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -64,11 +63,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -182,6 +185,7 @@ fun DualSubApp(
                     onWordClick = viewModel::selectLearningWord,
                     onResetSettings = viewModel::resetAllSettings,
                     tabActions = remember(viewModel) { browserTabActions(viewModel) },
+                    onOpenVideo = { videoId -> viewModel.acceptSharedText("https://m.youtube.com/watch?v=$videoId") },
                 )
             }
         }
@@ -296,6 +300,7 @@ private fun DualSubExperience(
     onWordClick: (WordTap) -> Unit = {},
     onResetSettings: () -> Unit,
     tabActions: BrowserTabActions = BrowserTabActions(),
+    onOpenVideo: (videoId: String) -> Unit = {},
 ) {
     // The assistant panel beside the app may pause, replay and change the speed of the page video.
     BindAiPlayerControls(webController)
@@ -330,10 +335,13 @@ private fun DualSubExperience(
     val nativeDialogVisible by youtubeNativeDialogVisible.collectAsStateWithLifecycle()
     val playerFrame by youtubePlayerFrame.collectAsStateWithLifecycle()
     val tracksVisible = state.showOriginal() || state.showTranslation() || state.showThird()
+    // The TV layout opens on TV home and always keeps the panel beside the video.
+    val tvLayout = LocalTvLayout.current
+    var tvHomeShown by rememberSaveable { mutableStateOf(true) }
     val sideBySide =
         tracksVisible && !nativeDialogVisible &&
             shouldUseLandscapeSplit(
-                splitEnabled = state.landscapeSplitEnabled,
+                splitEnabled = landscapeSplitWanted(state.landscapeSplitEnabled, tvLayout),
                 subtitlePanelVisible = state.subtitlePanelVisible,
                 hasActiveVideo = state.activeVideoId != null,
                 orientation = configuration.orientation,
@@ -443,9 +451,7 @@ private fun DualSubExperience(
                             onSettings = { showQuickSettings = true },
                             onRetry = onRetry,
                             onWordClick = onWordClick,
-                            onReplay = { segment ->
-                                webController.replayFrom(segment.startMs / 1_000f)
-                            },
+                            onReplay = { segment -> webController.replayOrPause(state, segment) },
                         )
                     }
                 }
@@ -459,9 +465,7 @@ private fun DualSubExperience(
                             onSettings = { showQuickSettings = true },
                             onRetry = onRetry,
                             onWordClick = onWordClick,
-                            onReplay = { segment ->
-                                webController.replayFrom(segment.startMs / 1_000f)
-                            },
+                            onReplay = { segment -> webController.replayOrPause(state, segment) },
                         )
                     }
                     if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -488,6 +492,13 @@ private fun DualSubExperience(
             }
         }
     }
+    TvLayer(
+        state = state,
+        webController = webController,
+        homeShown = tvHomeShown,
+        onHomeShownChange = { tvHomeShown = it },
+        actions = TvLayerActions(onOpenVideo, tabActions, onShowSubtitles, onVocabulary, onProgress) { showSettings = true },
+    )
     if (showQuickSettings) {
         QuickLanguageSettingsDialog(
             sourcePreference = sourceChoiceSelection(state),
@@ -661,20 +672,7 @@ private fun SubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    IconButton(onClick = onSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.player_subtitle_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                    IconButton(onClick = onHide) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+                    PanelHeaderActions(onSettings, onHide, compact = false)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -847,22 +845,7 @@ private fun SideSubtitlePanel(
                         )
                     }
                     ComprehensionChip()
-                    IconButton(onClick = onSettings, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.player_subtitle_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    IconButton(onClick = onHide, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.player_hide_dual_subtitles),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                    PanelHeaderActions(onSettings, onHide, compact = true)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -937,11 +920,17 @@ internal fun SubtitleTimeline(
     val showOriginal = state.showOriginal()
     val showTranslation = state.showTranslation()
     val activeWordIndex = if (state.wordHighlightEnabled) state.activeWordIndex else -1
+    // TV layout: OK on a line opens its words (no touch to select them), and text is larger.
+    val tvLayout = LocalTvLayout.current
+    var tvLine by remember { mutableStateOf<SubtitleSegment?>(null) }
+    val activeRowFocus = remember { FocusRequester() }
+    val fontScale = if (tvLayout) state.fontScale * TV_TEXT_SCALE else state.fontScale
+    BindTvPanelFocus(tvLayout, activeRowFocus, state.currentIndex)
     val onLight = appThemeIsLight()
     val originalColor = effectiveOriginalColor(state, onLight)
     val translatedColor = effectiveTranslatedColor(state, onLight)
     val highlightColor = effectiveHighlightColor(state, onLight)
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().onFocusChanged { if (tvLayout) TvRemoteKeys.panelFocused = it.hasFocus }) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -952,12 +941,14 @@ internal fun SubtitleTimeline(
                 val active = index == state.currentIndex
                 CompactSubtitleCard(
                     segment = segment,
+                    playing = !state.playbackPaused,
                     showOriginal = showOriginal,
                     showTranslation = showTranslation,
                     translationPosition = state.translationPosition,
                     active = active,
-                    fontScale = state.fontScale,
-                    onReplay = { onReplay(segment) },
+                    fontScale = fontScale,
+                    onReplay = { if (tvLayout) tvLine = segment else onReplay(segment) },
+                    focusModifier = if (active) Modifier.focusRequester(activeRowFocus) else Modifier,
                     // Only the active row draws the spoken word. Giving the others a constant lets them
                     // skip recomposition each time the highlighted word moves.
                     activeWordIndex = if (active) activeWordIndex else -1,
@@ -974,6 +965,7 @@ internal fun SubtitleTimeline(
                     translationUnavailable = state.translationError != null,
                     onWordClick = onWordClick,
                     thirdText = state.thirdLineFor(segment.id)?.takeIf { state.showThird() },
+                    thirdOrigin = state.thirdOriginFor(segment.id),
                 )
             }
         }
@@ -983,6 +975,32 @@ internal fun SubtitleTimeline(
             startMs = state.segments.getOrNull(state.currentIndex)?.startMs,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+    tvLine?.let { TvLineWords(it, state.resolvedSourceLanguage ?: state.sourcePreference, onReplay, onWordClick) { tvLine = null } }
+}
+
+/**
+ * Lets the remote's ▼ on the video move focus to the playing line while the panel is shown. While
+ * the video plays with focus in the panel, focus follows the playing line, so the panel's scrolling
+ * never drops it.
+ */
+@Composable
+private fun BindTvPanelFocus(
+    tvLayout: Boolean,
+    activeRowFocus: FocusRequester,
+    currentIndex: Int,
+) {
+    if (!tvLayout) return
+    DisposableEffect(activeRowFocus) {
+        val focus = { runCatching { activeRowFocus.requestFocus() }.isSuccess }
+        TvRemoteKeys.focusPanel = focus
+        onDispose {
+            if (TvRemoteKeys.focusPanel === focus) TvRemoteKeys.focusPanel = null
+            TvRemoteKeys.panelFocused = false
+        }
+    }
+    LaunchedEffect(currentIndex) {
+        if (TvRemoteKeys.panelFocused) runCatching { activeRowFocus.requestFocus() }
     }
 }
 
@@ -1178,16 +1196,23 @@ internal fun LanguagePickerDialog(
             emptyList()
         }
     val selectedLabel = stringResource(R.string.player_language_selected)
+    // On a TV the remote starts on the list: a focused search field would open the keyboard at once.
+    val tvLayout = LocalTvLayout.current
+    val firstRowFocus = remember { FocusRequester() }
+    if (tvLayout) LaunchedEffect(Unit) { runCatching { firstRowFocus.requestFocus() } }
 
     @Composable
     fun ChoiceRow(
         choice: LanguageChoice,
         shown: String,
         tag: String,
+        first: Boolean = false,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(if (tvLayout && first) Modifier.focusRequester(firstRowFocus) else Modifier)
+                .tvFocusRing()
                 .clickable { onChoice(choice) }
                 .testTag(tag)
                 .padding(horizontal = 8.dp, vertical = 12.dp),
@@ -1218,7 +1243,7 @@ internal fun LanguagePickerDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
-                    modifier = Modifier.fillMaxWidth().testTag("language_search"),
+                    modifier = Modifier.fillMaxWidth().tvArrowsLeave().testTag("language_search"),
                     label = { Text(stringResource(R.string.player_search_languages)) },
                     singleLine = true,
                 )
@@ -1227,13 +1252,13 @@ internal fun LanguagePickerDialog(
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = listMaxHeight)) {
                     if (recentChoices.isNotEmpty()) {
                         item(key = "recent_heading") { GroupHeading(stringResource(R.string.player_recent_languages)) }
-                        items(recentChoices, key = { "recent_${it.first.code}" }) { (choice, shown) ->
-                            ChoiceRow(choice, shown, "language_recent_${testTagPrefix}_${choice.code}")
+                        itemsIndexed(recentChoices, key = { _, item -> "recent_${item.first.code}" }) { index, (choice, shown) ->
+                            ChoiceRow(choice, shown, "language_recent_${testTagPrefix}_${choice.code}", first = index == 0)
                         }
                         item(key = "all_heading") { GroupHeading(stringResource(R.string.player_all_languages)) }
                     }
-                    itemsIndexed(filteredChoices, key = { _, item -> item.first.code }) { _, (choice, shown) ->
-                        ChoiceRow(choice, shown, "language_option_${testTagPrefix}_${choice.code}")
+                    itemsIndexed(filteredChoices, key = { _, item -> item.first.code }) { index, (choice, shown) ->
+                        ChoiceRow(choice, shown, "language_option_${testTagPrefix}_${choice.code}", first = index == 0 && recentChoices.isEmpty())
                     }
                 }
             }

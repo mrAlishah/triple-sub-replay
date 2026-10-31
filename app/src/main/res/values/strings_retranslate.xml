@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retranslate_title">Re-translate with AI</string>
+    <string name="retranslate_subtitles">Which subtitles</string>
+    <string name="retranslate_both">Both</string>
+    <string name="retranslate_scope">How much</string>
+    <string name="retranslate_scope_sentence">Current sentence</string>
+    <string name="retranslate_scope_window">Current playback window</string>
+    <string name="retranslate_scope_video">Entire video</string>
+    <string name="retranslate_note">Asks the AI again and may use more of your ChatGPT plan allowance or API credit. The subtitles on screen stay until the new ones arrive.</string>
+    <string name="retranslate_video_warning">Sends about %1$d sentences in roughly %2$d requests and can use a lot of allowance or credit.</string>
+    <string name="retranslate_video_confirm">I understand and want to continue</string>
+    <string name="retranslate_start">Re-translate</string>
+    <string name="retranslate_stop">Stop</string>
+    <string name="retranslate_progress">Re-translating… %1$d of %2$d</string>
+    <string name="retranslate_refreshing">Refreshing…</string>
+    <string name="retranslate_failed">Couldn’t re-translate (%1$s). Lines that were not refreshed stay as they were.</string>
+    <string name="retranslate_failed_short">Couldn’t refresh</string>
+    <string name="retranslate_unavailable">Connect an AI provider first: sign in with ChatGPT or add an API key in the AI settings.</string>
+</resources>

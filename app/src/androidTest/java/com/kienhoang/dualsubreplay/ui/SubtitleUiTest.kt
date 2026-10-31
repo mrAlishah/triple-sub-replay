@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.performTouchInput
@@ -31,6 +32,7 @@ import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -297,7 +299,7 @@ class SubtitleUiTest {
     }
 
     @Test
-    fun activeSubtitleIsIdentifiedAndReplays() {
+    fun activeSubtitleIsIdentifiedAndOnlyThePlayButtonReplays() {
         var replayed = false
         composeRule.setContent {
             DualSubTheme {
@@ -313,6 +315,8 @@ class SubtitleUiTest {
         composeRule.onNodeWithText("Active original")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active subtitle"))
             .performClick()
+        composeRule.runOnIdle { assertFalse(replayed) }
+        composeRule.onNodeWithContentDescription("Replay this paragraph").performClick()
         composeRule.onNodeWithText("Bản dịch").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(replayed) }
     }

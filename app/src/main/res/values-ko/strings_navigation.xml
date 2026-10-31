@@ -6,6 +6,7 @@
     <string name="navigation_open_menu">탐색 메뉴 열기</string>
     <string name="navigation_close_menu">탐색 메뉴 닫기</string>
     <string name="navigation_tagline">YouTube로 언어 배우기</string>
+    <string name="navigation_fork_note">DualSub Replay를 기반으로 커스터마이징한 버전</string>
     <string name="navigation_app_language">앱 언어</string>
     <string name="navigation_device_language">기기 언어</string>
     <string name="navigation_no_browser">GitHub를 열 수 있는 브라우저가 없습니다.</string>

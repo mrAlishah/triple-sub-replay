@@ -6,6 +6,7 @@
     <string name="navigation_open_menu">Mở menu điều hướng</string>
     <string name="navigation_close_menu">Đóng menu điều hướng</string>
     <string name="navigation_tagline">Học ngôn ngữ qua YouTube</string>
+    <string name="navigation_fork_note">Phiên bản tùy chỉnh dựa trên DualSub Replay</string>
     <string name="navigation_app_language">Ngôn ngữ ứng dụng</string>
     <string name="navigation_device_language">Ngôn ngữ thiết bị</string>
     <string name="navigation_no_browser">Không có trình duyệt nào để mở GitHub.</string>

@@ -6,6 +6,7 @@
     <string name="navigation_open_menu">Buka menu navigasi</string>
     <string name="navigation_close_menu">Tutup menu navigasi</string>
     <string name="navigation_tagline">Belajar bahasa dengan YouTube</string>
+    <string name="navigation_fork_note">Versi kustom dari DualSub Replay</string>
     <string name="navigation_app_language">Bahasa aplikasi</string>
     <string name="navigation_device_language">Bahasa perangkat</string>
     <string name="navigation_no_browser">Tidak ada browser untuk membuka GitHub.</string>

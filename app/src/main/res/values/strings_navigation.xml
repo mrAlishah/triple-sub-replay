@@ -6,6 +6,7 @@
     <string name="navigation_open_menu">Open navigation menu</string>
     <string name="navigation_close_menu">Close navigation menu</string>
     <string name="navigation_tagline">Learn languages with YouTube</string>
+    <string name="navigation_fork_note">Customized fork of DualSub Replay</string>
     <string name="navigation_app_language">App language</string>
     <string name="navigation_device_language">Device language</string>
     <string name="navigation_no_browser">No browser is available to open GitHub.</string>

@@ -6,6 +6,7 @@
     <string name="navigation_open_menu">ナビゲーションメニューを開く</string>
     <string name="navigation_close_menu">ナビゲーションメニューを閉じる</string>
     <string name="navigation_tagline">YouTube で語学を学ぼう</string>
+    <string name="navigation_fork_note">DualSub Replay をカスタマイズした派生版</string>
     <string name="navigation_app_language">アプリの言語</string>
     <string name="navigation_device_language">端末の言語</string>
     <string name="navigation_no_browser">GitHub を開けるブラウザがありません。</string>

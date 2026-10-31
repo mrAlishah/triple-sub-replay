@@ -138,6 +138,11 @@ private fun DrawerHeader(onClose: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                stringResource(R.string.navigation_fork_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         IconButton(onClick = onClose, modifier = Modifier.testTag("close_navigation_menu")) {
             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.navigation_close_menu))

@@ -1,227 +1,96 @@
-[![Latest release](https://img.shields.io/github/v/release/hoangkien1703/dual-sub-replay?label=latest)](https://github.com/hoangkien1703/dual-sub-replay/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/hoangkien1703/dual-sub-replay/total?label=downloads&color=brightgreen)](https://github.com/hoangkien1703/dual-sub-replay/releases)
-[![Android 8+](https://img.shields.io/badge/Android-8.0%2B-3ddc84?logo=android&logoColor=white)](https://github.com/hoangkien1703/dual-sub-replay/releases/latest/download/DualSub-Replay.apk)
-[![CI](https://github.com/hoangkien1703/dual-sub-replay/actions/workflows/android.yml/badge.svg)](https://github.com/hoangkien1703/dual-sub-replay/actions/workflows/android.yml)
-[![Source: MIT](https://img.shields.io/badge/Source-MIT-26c6da.svg)](LICENSE)
-[![App distribution: GPL-3.0](https://img.shields.io/badge/App-GPL--3.0-blue.svg)](THIRD_PARTY_NOTICES.md)
+# TripleSub Replay
 
-# DualSub Replay
+**Learn languages with YouTube, three subtitle lines, AI-assisted translation, and vocabulary practice on Android.**
 
-**Learn a language with YouTube.** Watch videos with subtitles in two languages, tap a sentence to hear it again, and tap a word to see what it means. Free for Android phones.
+[![Latest TripleSub Replay release](https://img.shields.io/github/v/release/mrAlishah/triple-sub-replay?label=TripleSub%20release)](https://github.com/mrAlishah/triple-sub-replay/releases/latest)
+[![APK downloads](https://img.shields.io/github/downloads/mrAlishah/triple-sub-replay/total?label=Fork%20downloads)](https://github.com/mrAlishah/triple-sub-replay/releases)
+[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3ddc84?logo=android&logoColor=white)](https://github.com/mrAlishah/triple-sub-replay/releases)
+[![Original project](https://img.shields.io/badge/Based%20on-DualSub%20Replay-77909a)](https://github.com/hoangkien1703/dual-sub-replay)
 
-<p align="center">
-  <a href="https://github.com/hoangkien1703/dual-sub-replay/releases/latest/download/DualSub-Replay.apk"><img src="https://img.shields.io/badge/Download_for_Android-Free-3ddc84?style=for-the-badge&logo=android&logoColor=white" alt="Download DualSub Replay for Android, free" height="56"></a>
-</p>
+<p align="center"><a href="https://github.com/mrAlishah/triple-sub-replay/releases/latest"><img src="https://img.shields.io/badge/Download%20TripleSub%20Replay%20APK-Releases-18bbcf?style=for-the-badge&logo=android&logoColor=white" alt="Choose and download the latest TripleSub Replay APK from GitHub Releases"></a></p>
 
-<p align="center">
-  Android 8.0 or newer · No account · No ads<br>
-  Want to try changes before they are released? <a href="https://github.com/hoangkien1703/dual-sub-replay/releases/tag/preview">Get a preview build</a> of an open pull request (may be less stable).
-</p>
+**[Download APK](https://github.com/mrAlishah/triple-sub-replay/releases/latest)** · **[Start here](docs/user-guide/getting-started.md)** · **[User guide](docs/user-guide/README.md)** · **[What's new](docs/releases/README.md)** · **[Fork changelog](myCHANGELOG.md)**
 
-### How to install
+> **Which app is this?** TripleSub Replay is a customized fork maintained at [mrAlishah/triple-sub-replay](https://github.com/mrAlishah/triple-sub-replay/tree/mydevelop). It builds on [DualSub Replay](https://github.com/hoangkien1703/dual-sub-replay) by Hoang Trung Kien. Download **TripleSub-Replay.apk** from this fork's Releases; the original project's APK and releases are a different distribution.
 
-1. Tap the green **Download for Android** button above on your phone.
-2. When the download finishes, open the file `DualSub-Replay.apk`.
-3. If your phone asks, allow your browser or file manager to **install unknown apps**, then tap **Install**.
+## What you can do
 
-Android may show a warning because the app comes from GitHub instead of Google Play. This is normal for apps installed this way. Official versions update the installed app in place.
+- **Watch with up to three subtitle lines:** Original Subtitle, Subtitle 1 and Subtitle 2, with independent languages, size, order and alignment.
+- **Replay a line:** use its **Play** button to seek and play that sentence. In current development builds, tapping the card body is not the Play action.
+- **Translate your way:** Google Translate, AI translation (best quality), AI only, or on-device translation; availability depends on the build and your configuration.
+- **Look up, save and practice words:** learn meanings in multiple languages, retain source-video context and review saved vocabulary.
+- **Use AI for language learning:** supported AI translation and assistant features depend on configured connections, credentials and build version.
+- **Send vocabulary to AnkiDroid and import/export your study data.**
+- **Open multiple YouTube tabs:** up to 10 tabs are described in the [v2.8.0 release](docs/releases/v2.8.0.md), with device-dependent multi-account support.
 
-**Updating:** open the menu at the top left and tap **Check for updates**. To get new versions without asking, turn on **Settings → More settings → App updates → Update automatically**.
+See the [illustrated user guide](docs/user-guide/README.md) for each workflow.
 
-**Obtainium:** if you use [Obtainium](https://obtainium.imranr.dev/), [add DualSub Replay to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/hoangkien1703/dual-sub-replay) to get updates straight from GitHub releases.
+## Real app screenshots
 
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/hoangkien1703/dual-sub-replay"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
-
-> **About preview builds:** they install as a separate app called **DualSub Replay Preview**, so you can keep both. Your saved words do not move between them automatically; use **Saved words → Export** and **Import** to copy them.
-
-## See it in action
+These are **real screenshots previously published with fork APK releases**, not mock-ups. They depict the indicated historical versions, so current development menus may differ.
 
 <p align="center">
-  <a href="docs/media/dualsub-replay-promo.mp4">
-    <img src="docs/images/dualsub-replay-demo.gif" alt="DualSub Replay showing dual subtitles on a YouTube video, then tapping a Japanese word to see its meaning, grammar and Save to vocabulary" width="400">
-  </a>
+<img src="https://github.com/user-attachments/assets/02c7778d-900a-4c75-92d4-cdca97147a01" alt="TripleSub Replay screenshot from the v2.8.0 release" width="250">
+<img src="https://github.com/user-attachments/assets/86f9fe80-12ff-49a3-8852-789e1e0bd7c2" alt="TripleSub Replay screenshot from the v2.8.0 release" width="250">
+<img src="https://github.com/user-attachments/assets/edc2dd34-fc85-45d4-a607-a30f3bafb85e" alt="TripleSub Replay screenshot from the v2.8.2 release" width="250">
 </p>
 
-<p align="center"><a href="docs/media/dualsub-replay-promo.mp4"><strong>▶ Watch the full video (50 seconds)</strong></a></p>
+See the [v2.8.0 gallery](docs/releases/v2.8.0.md) and [v2.8.2 gallery](docs/releases/v2.8.2.md) for more release-specific screenshots.
 
-### [Download DualSub Replay for Android](https://github.com/hoangkien1703/dual-sub-replay/releases/latest/download/DualSub-Replay.apk)
+## Install or update
 
-Free · Android 8.0 or newer · See [How to install](#how-to-install) if you need help.
+1. Open **[TripleSub Replay Releases](https://github.com/mrAlishah/triple-sub-replay/releases/latest)**.
+2. Under **Assets**, download `TripleSub-Replay.apk` (not `DualSub-Replay.apk`).
+3. On Android 8.0 or later, open the file and allow installation from that source if Android asks.
+4. To update an installed copy, use a newer fork APK **only if package ID and signing certificate match**. Otherwise Android may refuse to update it. **Back up Practice data first**.
+5. If you want to verify the download, compare its SHA-256 with the accompanying `TripleSub-Replay.apk.sha256` asset.
 
-## Why DualSub Replay?
-
-DualSub Replay is a free, open-source **dual subtitles app for YouTube on Android**. It shows bilingual captions (the original and a translation into any of 59 languages), replays a sentence with one tap, explains words and English, Japanese and Chinese grammar, and saves words for spaced-repetition practice. [Website](https://hoangkien1703.github.io/dual-sub-replay/) · [Tiếng Việt](https://hoangkien1703.github.io/dual-sub-replay/vi/)
-
-- **See every meaning.** The original caption and its translation stay together while you watch.
-- **Repeat without scrubbing.** Tap a subtitle line and the video jumps back to that exact moment.
-- **Learn the words you hear.** Tap a word for its meaning, part of speech, pronunciation and, for English, Japanese and Chinese, the grammar around it.
-- **Remember them.** Save words with their original sentence and review them with spaced repetition.
-- **Stay private.** There is no account, no tracking, and no ads. Translation uses Google Translate by default, or turn it off and your phone translates on its own.
-
-### How it compares
-
-| App | On Android | Cost | Best at |
-| --- | --- | --- | --- |
-| **DualSub Replay** | App with YouTube inside | Free, open source, no ads | Tap-to-replay, word lookup, grammar help, saved-word practice |
-| Trancy | App and browser extension | Free plan; Premium from about $3.49 a month | Bilingual subtitles; AI tools need Premium, free plan saves up to 100 words |
-| LingoTube | App on Google Play | Free, with ads | Dual captions with A-B repeat |
-| Language Reactor | No Android app (desktop Chrome only) | Free, paid Pro plan | Studying YouTube and Netflix on a computer |
-
-Facts checked in October 2026. See the [full comparison](https://hoangkien1703.github.io/dual-sub-replay/dual-subtitles-youtube-android/) for Migaku, Dualsub and more.
-
-If DualSub Replay helps your learning, consider [starring the repository](https://github.com/hoangkien1703/dual-sub-replay). It helps other language learners discover the project.
-
-<p align="center">
-  <img src="docs/images/dualsub-replay-japanese-english.webp" alt="DualSub Replay with a Japanese YouTube video, Japanese subtitles and English translations, the playing line's words colored by part of speech" width="280">
-  &nbsp;
-  <img src="docs/images/dualsub-replay-english-vietnamese.webp" alt="DualSub Replay with an English YouTube video, English subtitles and Vietnamese translations, the playing line's words colored by part of speech" width="280">
-</p>
-
-<p align="center">
-  <img src="docs/images/dualsub-replay-full-hd.jpg" alt="DualSub Replay showing bilingual English and Vietnamese subtitles over a landscape interview video" width="900">
-</p>
-
-<p align="center">
-  <img src="docs/images/dualsub-replay-landscape.png" alt="DualSub Replay in landscape with the YouTube video on the left and replayable Japanese and English subtitles on the right" width="900">
-</p>
-
-## Features
-
-### Watch with dual subtitles
-
-- Browse and search the real mobile YouTube site inside the app, or share a YouTube link (watch, Shorts, live, embed, or `youtu.be`) to DualSub Replay.
-- Captions load automatically, manual or auto-generated, in any language the video offers.
-- Translations go into any of the 59 languages Google ML Kit supports. Download language models ahead of time in **Settings → Translation → Languages on this device** to translate offline.
-- Short caption fragments are merged into readable sentences, and the current one is highlighted. On eligible auto-generated captions, the spoken word is highlighted too.
-
-### Replay any sentence
-
-- Tap a subtitle line to jump back to its start and hear it again.
-- Swipe the subtitle panel away to see the whole YouTube page (likes, comments, recommendations) and bring it back anytime.
-- Rotate to landscape for an edge-to-edge split view: the video on the left and subtitles on the right. Drag the divider to resize it; the app remembers your choice.
-
-### Look up words and grammar
-
-- Tap a word in either subtitle line; tap another word in the same line to select the whole phrase. A small bar shows the translation right away, with **Copy**, **Translate** and **Pronounce**.
-- **Translate** opens a card with the meaning, each word's part of speech, and **Save to vocabulary**.
-- For Japanese, the card also explains the grammar of the selection and the particle right after it (for example に or 〜てくれました), with its JLPT level.
-- For English, each word is colored by its part of speech in that sentence, the card shows its dictionary form (went → go) and CEFR word level (A1–B2), and it explains grammar points such as be going to, the present perfect or phrasal verbs with their CEFR level. The data is in the app, so it works offline.
-- For Chinese, lines are split into words colored by their part of speech, the card shows each word's pinyin (银行 yínháng), and it explains grammar points such as 了, 把 or 虽然…但是 with their HSK 3.0 level. Traditional characters work too. The data is in the app, so it works offline from the first video.
-- **Pronounce** uses the voices installed on your phone, preferring offline voices.
-
-### Practice saved words
-
-- Open **Saved words** to search, edit, or practice your cards. Each card keeps its original sentence and can replay it in the video.
-- Reviews use spaced repetition: **Again** (10 minutes), **Hard** (1 day), **Good** (3 days), or **Easy** (7 days), with intervals growing on later reviews.
-- Export a full backup or Anki text, and import it on another phone. See [Practice transfer](docs/practice-transfer.md).
-
-### Ask the AI assistant
-
-- The ✨ button at the top right opens an assistant from the right side. Ask where a setting is, what a word or sentence means, or tap **Explain the current line**.
-- Problems such as Google Translate failing or subtitles not loading show at the top of the panel, with **Ask AI about this**.
-- It uses your own free or paid API key from Google Gemini, OpenRouter, OpenAI, Claude, OpenCode, or another OpenAI-compatible service. Pick a service in the panel, and **Get a key** opens the page that gives you one. The key is checked before the first question.
-- Under the chat box, **+** adds photos and files (pictures, PDFs, subtitle and text files), and you can switch the model and how long it thinks, as in other chat apps.
-- Your key is encrypted on the phone and never backed up. Chats stay on the phone for 7 days by default. Turn the assistant off completely in **More settings → AI assistant**.
-
-### Track your progress
-
-- **Progress** in the menu shows today's watch time against a daily goal, your streak, totals for the week, month, year and all time, and the time spent in each language.
-- Time counts only while a captioned video plays, and it is stored only on your device.
-
-### Watch on Android TV (beta)
-
-- The same APK installs on Android TV and Google TV and shows on the TV home screen. On a TV it opens on **TV home**: search YouTube with the remote, continue a tab, or open the YouTube page.
-- On a video, OK plays or pauses, ◀ ▶ jump to the previous or next line, ▲ replays the line, and ▼ moves to the subtitles. OK on a subtitle line shows its words as big buttons; pick one for its word card.
-- **Settings → Android TV (beta)** turns the TV layout off. Phones and tablets never use it.
-
-<p align="center">
-  <img src="docs/images/dualsub-replay-android-tv.webp" alt="DualSub Replay on Android TV: a Japanese YouTube video with the subtitle panel beside it, Japanese lines colored by part of speech with English translations" width="900">
-</p>
-
-### Use the app in your language
-
-The interface is available in English, Tiếng Việt, Español, Português (Brasil), 日本語, 한국어, 简体中文 and Bahasa Indonesia. It follows your phone's language; the globe button at the bottom of the menu picks another.
+The fork's own update checker is intended to use fork releases. If an update cannot be installed, do not uninstall the old copy before exporting your study data. See [installation help](docs/user-guide/getting-started.md) and [troubleshooting](docs/user-guide/troubleshooting.md).
 
 ## Quick start
 
-1. Open DualSub Replay, choose your native language and the language you are learning, and skim the short guide.
-2. Search YouTube and pick a video with captions.
-3. Read the original and translated subtitles below the video, or beside it in landscape.
-4. Tap a subtitle line to replay it, or tap a word to learn it.
-5. Press Back to keep browsing YouTube as usual.
+1. Open a YouTube video with captions.
+2. Open **Subtitle languages** and choose the **Original Subtitle**, **Subtitle 1** and, optionally, **Subtitle 2**.
+3. Choose your subtitle display and translation mode in Settings.
+4. Use a subtitle row's **Play** button to replay it; select words for meaning and learning actions.
+5. Save useful words or phrases, then open **Practice** to review them.
+6. If you want AI translation or chat, configure **AI Connection** and choose the relevant service.
 
-## FAQ
+**[Follow the step-by-step guide](docs/user-guide/getting-started.md)**
 
-**How do I watch YouTube with two subtitles at once on Android?** Install DualSub Replay, open a captioned video, and pick your language. The original caption and its translation appear together under the video, or beside it in landscape.
+## Latest released changes vs development features
 
-**Which languages can I learn?** The original can be any caption language a video offers, including auto-generated captions. Translations go into the 59 languages supported by Google ML Kit, such as English, Spanish, Japanese, Korean, Chinese, French, German, and Vietnamese. **Settings → Translation → Languages on this device** lists them, shows which are downloaded, and lets you download or remove each one so translation works offline.
+The latest verified published release is **[v2.8.5](docs/releases/v2.8.5.md)** (October 29, 2026). It documents AI-powered subtitle translation, offline German grammar highlighting, subtitle merging improvements and fallback fixes.
 
-**Is there a Language Reactor-style tool for Android?** Browser extensions such as Language Reactor run in desktop Chrome, not in the Android YouTube app. DualSub Replay is a separate, unaffiliated Android app with a similar two-language view, plus tap-to-replay, word lookup, and saved-word practice.
+The `mydevelop` branch may contain **newer, unreleased customizations** such as additional AI Connection workflows, ChatGPT Subscription chat integration, and a per-segment **Re-translate with AI** menu. Their presence in source or current screenshots does **not** guarantee they are in the latest released APK. Read [Unreleased](myCHANGELOG.md) and the [guide's build-status note](docs/user-guide/README.md) before relying on them.
 
-**Can I sign in to YouTube?** Experimentally. The Google sign-in flow stays inside the app and returns to your video afterwards, but Google does not officially support signing in from embedded WebViews and may reject it with a "browser or app may not be secure" message. The app never pretends to be another browser or copies cookies. (On Android TV it only adds "Mobile" to the WebView's own user agent when it is missing, so YouTube sends its phone site.)
+## Documentation
 
-**Does it work on Android TV?** Yes, in beta. Sideload the same APK (for example with the Downloader app) and the app shows on the TV home screen with a remote-friendly layout. See [Watch on Android TV](#watch-on-android-tv-beta).
+| Read | Purpose |
+| --- | --- |
+| [Getting started](docs/user-guide/getting-started.md) | Install, update and first video |
+| [Triple subtitles](docs/user-guide/triple-subtitles.md) | Languages, layouts and replay |
+| [Translation & AI](docs/user-guide/ai-translation.md) | Translation modes, connections and refresh |
+| [AI Assistant](docs/user-guide/ai-assistant.md) | Chat about words, subtitles and the app |
+| [Practice & vocabulary](docs/user-guide/practice.md) | Save, filter and review |
+| [Anki & backups](docs/user-guide/anki-backup.md) | Export, import and AnkiDroid |
+| [Troubleshooting](docs/user-guide/troubleshooting.md) | Common questions and safe recovery |
+| [Release history](docs/releases/README.md) | Changes and historical screenshots |
+| [Full fork changelog](myCHANGELOG.md) | Technical and unreleased change history |
 
-**Is it on Google Play?** Not yet. Install the official APK from [GitHub releases](https://github.com/hoangkien1703/dual-sub-replay/releases/latest).
+## Privacy and limitations
 
-## Privacy
+Subtitles may be sent to Google Translate or your selected AI provider when you enable those features. **On this device only** avoids online subtitle-translation requests, although YouTube video and caption access still uses the network. The app's translation options and AI-provider eligibility vary by version and configuration. Saved words contain learning content; treat exported backups as private.
 
-No account or API key is required, and the app has no analytics or advertising SDKs. The optional AI assistant sends nothing until you add your own key and ask it something; questions then go to the AI service you chose. YouTube receives the same page, player and caption requests as a normal visit. By default the app sends subtitle text to Google Translate (online) for better translations. Turn off Settings → Translation → Google Translate (online) to translate on the device instead: ML Kit downloads only the language models you use, then translates on the device. Settings, saved words, and progress stay in local app storage. See [PRIVACY.md](PRIVACY.md) for details.
+YouTube caption retrieval and playback depend on the embedded YouTube experience and may change as YouTube changes. See [Privacy](PRIVACY.md), [troubleshooting](docs/user-guide/troubleshooting.md) and the release notes.
 
-## Limitations
+## Fork, original project and credits
 
-- YouTube's official Data API does not let ordinary viewers download captions from arbitrary public videos, so DualSub Replay reads them through YouTube's undocumented internal interfaces. They can change without notice, and their use may be restricted by YouTube's terms. That code is isolated in `YouTubeCaptionProvider` so it can be replaced.
-- Videos play in YouTube's own mobile webpage player; the app does not download video. Spoken-word highlighting depends on YouTube's page and may be unavailable or less precise on some videos and phones, in which case it falls back to sentence timing.
+| Project | Source | Releases | Website |
+| --- | --- | --- | --- |
+| **TripleSub Replay (customized fork)** | [`mydevelop`](https://github.com/mrAlishah/triple-sub-replay/tree/mydevelop) | [Fork APK releases](https://github.com/mrAlishah/triple-sub-replay/releases) | — |
+| **DualSub Replay (original)** | [Original repository](https://github.com/hoangkien1703/dual-sub-replay) | [Original releases](https://github.com/hoangkien1703/dual-sub-replay/releases) | [Original project website](https://hoangkien1703.github.io/dual-sub-replay/) |
 
-## Community
+**Original project and author:** DualSub Replay by **Hoang Trung Kien** and its contributors. TripleSub Replay includes fork-specific customizations by **mrAlishah**. This repository retains the original authors' license and notices; see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The original upstream repository remains the authoritative source for its own releases and documentation.
 
-> "Thank you for creating and sharing DualSub Replay. It's a great open-source app!"
->
-> — [mrAlishah](https://github.com/hoangkien1703/dual-sub-replay/discussions/81#discussioncomment-19228373), who built [Triple Sub Replay](https://github.com/mrAlishah/triple-sub-replay), a fork that adds a third subtitle line for learning German with English and Persian, and became this project's first code contributor
-
-Ideas and questions are welcome in [Discussions](https://github.com/hoangkien1703/dual-sub-replay/discussions). Bug reports and feature requests go to [Issues](https://github.com/hoangkien1703/dual-sub-replay/issues).
-
-<a href="https://star-history.com/#hoangkien1703/dual-sub-replay&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=hoangkien1703/dual-sub-replay&type=Date&theme=dark">
-    <img src="https://api.star-history.com/svg?repos=hoangkien1703/dual-sub-replay&type=Date" alt="Star history of DualSub Replay on GitHub" width="600">
-  </picture>
-</a>
-
-## For developers
-
-### Build
-
-Requirements: Android Studio compatible with Android Gradle Plugin 9.3, JDK 17, Android SDK 36, and an API 36 AOSP x86_64 system image for managed-device tests. The Gradle 9.5 wrapper is committed, so a separate Gradle installation is not required.
-
-```bash
-bash ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
-bash ./gradlew pixel2Api36DebugAndroidTest
-```
-
-On Windows, use `.\gradlew.bat` instead. The managed-device suite runs on a Pixel 2 profile with offline WebView fixtures, so it never calls the live YouTube site; on headless hosts also pass `-Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect`.
-
-The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Release builds need the four `ANDROID_RELEASE_*` signing variables and `-PrequireReleaseSigning=true`; never commit signing material.
-
-### Architecture
-
-- `SingleYouTubePage` owns the app's only WebView and keeps normal YouTube navigation and playback intact. A small JavaScript polling bridge reads the page video's time and seeks that same video for replay.
-- `YouTubeUrlParser` normalizes shared links; `YouTubeCaptionProvider` discovers and downloads timed captions; `SubtitleMerger` turns short cues into replayable sentences.
-- `OnDeviceTranslator` translates with Google ML Kit when Google Translate (online) is off or fails.
-- `AppViewModel` tracks the active video, caption loading, translation, and the current line; `DualSubApp` places the subtitle panel below the video in portrait or beside it in landscape.
-
-See the [technical context](docs/project/tech-stack.md) for the invariants that tests enforce.
-
-### CI, releases, and the website
-
-Pull requests run formatting, complexity, unit, lint, build, and managed-device checks, and publish a numbered test APK to the rolling preview release. Merges by the owner publish an official release automatically. See [Continuous integration and releases](docs/releasing.md) for versioning, release labels, and recovery.
-
-The landing page in `site/` (English and Vietnamese) deploys to GitHub Pages when `site/` or `docs/images/` changes on `main`. The demo video, README GIF, poster and social card are rendered from code in [tools/promo-video](tools/promo-video/README.md).
-
-## Contributing and roadmap
-
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the compact [roadmap](ROADMAP.md) before opening a pull request. Humans and coding agents share the [project context](docs/project/mission.md), [technical context](docs/project/tech-stack.md), and [lightweight spec workflow](docs/specs/README.md); [AGENTS.md](AGENTS.md) gives operational instructions.
-
-## License
-
-Source contributed to this repository is released under the [MIT license](LICENSE). See [third-party notices and build/source information](THIRD_PARTY_NOTICES.md). This project is independently implemented and is not affiliated with 1Letters, YouTube, or Google.
+Found a problem with the fork? [Open an issue here](https://github.com/mrAlishah/triple-sub-replay/issues). For upstream bugs, see the [original repository](https://github.com/hoangkien1703/dual-sub-replay).

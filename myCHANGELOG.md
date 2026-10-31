@@ -3,6 +3,8 @@
 All notable changes made in this fork. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
+**Version history:** [Release guides](docs/releases/README.md) · [Fork APK releases](https://github.com/mrAlishah/triple-sub-replay/releases). Entries under **Unreleased** describe development changes and must not be assumed present in a published APK. Release sections below summarize *verified published release notes*; existing development entries are preserved without unverified version reassignment.
+
 ## [Unreleased]
 
 ### Added
@@ -26,6 +28,7 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Changed
 
+- **Fork documentation and release guides.** Replaced the upstream-oriented README with a TripleSub Replay landing page, a task-based user guide, and release-note-backed version pages, retaining upstream credits and compatibility links.
 - **Captions & translation no longer duplicates AI settings.** The AI model, Reasoning effort, sign-in, refresh, disconnect and key controls moved to Settings → AI Assistant; Captions & translation keeps the Translation AI Service row, a one-line status with Manage AI connection, and Test translation. Existing choices are kept: the translation service is frozen from what translated before, a model or effort saved for translation keeps working until that service's Model box or Thinking level is edited, and no ChatGPT Subscription choice ever becomes a keyed service.
 - **Subtitle languages in collapsible panels; Caption format defaults to Whole sentence.** In the Subtitle languages popup and the Languages card of Settings, Original Subtitle, Subtitle 1 and Subtitle 2 each sit in their own panel headed `Role · Language` (Auto when unresolved); all panels, and every card on the Settings page including Languages, start closed, and opening is presentation only. With no saved Caption format the app now uses Whole sentence; a saved choice is kept, and Reset all settings restores Whole sentence.
 - **Word meanings in every subtitle language.** Tapping a word now shows a separately labeled meaning for each subtitle language that is on (for example English and Persian for a German word), each loaded, retried and edited on its own and laid out right-to-left when needed. Saving keeps every meaning under its language code; Vocabulary and Practice show them (Practice after the answer is revealed), search covers them, and the saved-word view edits each one. Backups keep them, the Anki TSV export gets a trailing `meanings` column (older files still import), and the Anki Meaning field lists each extra language as its own labeled block. Clearing a language's text in the word card and saving removes that saved meaning, and a lookup that takes over 20 s counts as failed so Save is never blocked. Existing saved words, their ids and review schedules are unchanged. See `docs/specs/2026-10-25-triple-subtitles.md` (Revision 2).
@@ -35,3 +38,49 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 - **RTL checkbox per subtitle slot.** Each slot in the Subtitle languages dialog has an RTL checkbox that shows that line right-to-left (flush right). Only the Third slot is on by default, for Persian; unchecked slots keep upstream's automatic direction.
 - **Default second language.** The translation language now defaults to English instead of Vietnamese.
 - **Debug build identity.** The debug app is called "Triple Sub Replay" and installs as `com.kienhoang.dualsubreplay.triple`, beside the original app, and is never offered upstream updates.
+
+## [v2.8.5] - 2026-10-29
+
+### Added
+
+- **AI subtitle translation modes.** The published APK offers Google, AI best quality, AI only and on-device choices, with AI progress, batching and cache optimizations.
+- **Offline German part-of-speech highlighting.** Context-aware grammatical colors on Original German subtitles.
+
+### Fixed
+
+- **Translation reliability.** Sentence merging, punctuation, alignment, unwanted HTML and fallback handling were improved.
+
+[User-facing guide](docs/releases/v2.8.5.md) · [Published release](https://github.com/mrAlishah/triple-sub-replay/releases/tag/v2.8.5)
+
+## [v2.8.2] - 2026-10-28
+
+### Added
+
+- **Open in Google Translate.** Selected subtitle and Practice text can be shared to the installed Google Translate app.
+
+### Changed
+
+- **Subtitle settings.** Collapsible Original/Subtitle 1/Subtitle 2 panels and Whole sentence as the initial caption format.
+
+[User-facing guide](docs/releases/v2.8.2.md) · [Published release](https://github.com/mrAlishah/triple-sub-replay/releases/tag/v2.8.2)
+
+## [v2.8.0] - 2026-10-27
+
+### Added
+
+- **YouTube tabs.** Up to 10 video tabs and optional multi-account WebView profiles where supported.
+- **Extended AnkiDroid integration.** TripleSub Replay v3 note fields, preserving older note data.
+
+### Changed
+
+- **Advanced triple subtitles.** Updated three-slot controls, size, alignment, ordering, RTL, fullscreen and floating panel behavior.
+
+[User-facing guide](docs/releases/v2.8.0.md) · [Published release](https://github.com/mrAlishah/triple-sub-replay/releases/tag/v2.8.0)
+
+## [v2.7.14] - 2026-10-26
+
+### Added
+
+- **First public TripleSub Replay APK.** Triple subtitle slots, multilingual word learning, Practice, AnkiDroid support, Persian RTL and import/export.
+
+[User-facing guide](docs/releases/v2.7.14.md) · [Published release](https://github.com/mrAlishah/triple-sub-replay/releases/tag/v2.7.14)

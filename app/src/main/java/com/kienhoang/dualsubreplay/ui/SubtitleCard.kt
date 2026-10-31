@@ -102,7 +102,7 @@ internal fun CompactSubtitleCard(
         ) {
             if (replayEnabled) {
                 Box(Modifier.width(34.dp).fillMaxHeight()) {
-                    Box(Modifier.align(Alignment.TopStart).offset(x = (-4).dp, y = (-5).dp)) {
+                    Box(Modifier.align(Alignment.TopStart).offset(x = (-6).dp, y = (-5).dp)) {
                         SegmentRetranslateMenu(segment, showTranslation, thirdText != null)
                     }
                     Box(Modifier.align(Alignment.Center)) { ReplayButton(active, playing, onReplay, focusModifier) }

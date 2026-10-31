@@ -362,7 +362,7 @@ internal fun SegmentRetranslateMenu(
     Box {
         Box(
             Modifier
-                .size(width = 26.dp, height = 18.dp)
+                .size(width = 20.dp, height = 18.dp)
                 .clickable(role = Role.Button, onClick = { open = !open })
                 .semantics { contentDescription = name }
                 .testTag("segment_retranslate_menu"),

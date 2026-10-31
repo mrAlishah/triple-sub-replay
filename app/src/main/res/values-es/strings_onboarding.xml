@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">Cada frase hablada aparece en una lista con su traducción. Toca el botón de reproducir de una frase para volver a ese momento del video y usa el engranaje para cambiar los idiomas o el tamaño del texto.</string>
     <string name="onboarding_guide_replay_image">Panel de subtítulos con la lista de frases y botones para repetir</string>
     <string name="onboarding_guide_open_video_title">Abre cualquier video</string>
-    <string name="onboarding_guide_open_video_body">Pega un enlace de YouTube, comparte un video directamente desde la app de YouTube o simplemente navega dentro de DualSub Replay.</string>
-    <string name="onboarding_language_welcome">Te damos la bienvenida a DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">Pega un enlace de YouTube, comparte un video directamente desde la app de YouTube o simplemente navega dentro de TripleSub Replay.</string>
+    <string name="onboarding_language_welcome">Te damos la bienvenida a TripleSub Replay</string>
     <string name="onboarding_language_intro">Elige tus idiomas una sola vez. Puedes cambiarlos después en los ajustes de subtítulos.</string>
     <string name="onboarding_language_native_title">Tu idioma nativo</string>
     <string name="onboarding_language_native_helper">Se muestra como el subtítulo traducido pequeño.</string>

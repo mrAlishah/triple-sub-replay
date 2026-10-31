@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">모든 대사가 번역과 함께 목록으로 표시돼요. 대사의 재생 버튼을 탭하면 영상이 그 장면으로 돌아가고, 톱니바퀴 아이콘으로 언어나 글자 크기를 바꿀 수 있어요.</string>
     <string name="onboarding_guide_replay_image">자막 줄과 다시 재생 버튼이 나열된 자막 패널</string>
     <string name="onboarding_guide_open_video_title">원하는 동영상 열기</string>
-    <string name="onboarding_guide_open_video_body">YouTube 링크를 붙여넣거나, YouTube 앱에서 동영상을 바로 공유하거나, DualSub Replay 안에서 바로 둘러보세요.</string>
-    <string name="onboarding_language_welcome">DualSub Replay에 오신 것을 환영해요</string>
+    <string name="onboarding_guide_open_video_body">YouTube 링크를 붙여넣거나, YouTube 앱에서 동영상을 바로 공유하거나, TripleSub Replay 안에서 바로 둘러보세요.</string>
+    <string name="onboarding_language_welcome">TripleSub Replay에 오신 것을 환영해요</string>
     <string name="onboarding_language_intro">언어는 한 번만 선택하면 돼요. 나중에 자막 설정에서 바꿀 수 있어요.</string>
     <string name="onboarding_language_native_title">내 모국어</string>
     <string name="onboarding_language_native_helper">작은 번역 자막으로 표시돼요.</string>

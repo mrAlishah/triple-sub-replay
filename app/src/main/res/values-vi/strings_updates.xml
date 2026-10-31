@@ -8,7 +8,7 @@
     <string name="updates_checking">Đang kiểm tra cập nhật…</string>
     <string name="updates_up_to_date">Bạn đang dùng phiên bản mới nhất (%1$s).</string>
     <string name="updates_available">Đã có phiên bản %1$s. Bạn đang dùng %2$s.</string>
-    <string name="updates_first_time_note">Lần đầu, Android sẽ hỏi bạn có cho phép DualSub Replay cài ứng dụng không. Từ đã lưu và cài đặt của bạn vẫn được giữ.</string>
+    <string name="updates_first_time_note">Lần đầu, Android sẽ hỏi bạn có cho phép TripleSub Replay cài ứng dụng không. Từ đã lưu và cài đặt của bạn vẫn được giữ.</string>
     <string name="updates_whats_new">Có gì mới</string>
     <string name="updates_update">Cập nhật</string>
     <string name="updates_not_now">Để sau</string>

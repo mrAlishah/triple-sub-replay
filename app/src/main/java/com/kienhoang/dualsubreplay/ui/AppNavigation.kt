@@ -132,7 +132,7 @@ private fun DrawerHeader(onClose: () -> Unit) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text("DualSub Replay", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
             Text(
                 stringResource(R.string.navigation_tagline),
                 style = MaterialTheme.typography.bodySmall,

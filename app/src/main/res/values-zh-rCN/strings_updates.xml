@@ -8,7 +8,7 @@
     <string name="updates_checking">正在检查更新…</string>
     <string name="updates_up_to_date">已是最新版本（%1$s）。</string>
     <string name="updates_available">有新版本 %1$s。当前版本为 %2$s。</string>
-    <string name="updates_first_time_note">第一次更新时，Android 会请你允许 DualSub Replay 安装应用。已保存的单词和设置都会保留。</string>
+    <string name="updates_first_time_note">第一次更新时，Android 会请你允许 TripleSub Replay 安装应用。已保存的单词和设置都会保留。</string>
     <string name="updates_whats_new">新功能</string>
     <string name="updates_update">更新</string>
     <string name="updates_not_now">以后再说</string>

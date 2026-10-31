@@ -8,7 +8,7 @@
     <string name="updates_checking">Checking for updates…</string>
     <string name="updates_up_to_date">You have the latest version (%1$s).</string>
     <string name="updates_available">Version %1$s is available. You have %2$s.</string>
-    <string name="updates_first_time_note">The first time, Android asks you to allow installing apps from DualSub Replay. Your saved words and settings stay.</string>
+    <string name="updates_first_time_note">The first time, Android asks you to allow installing apps from TripleSub Replay. Your saved words and settings stay.</string>
     <string name="updates_whats_new">What\'s new</string>
     <string name="updates_update">Update</string>
     <string name="updates_not_now">Not now</string>

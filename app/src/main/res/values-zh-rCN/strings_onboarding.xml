@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">每句台词都会连同翻译一起列出。点按某句的播放按钮即可让视频跳回那一刻，点按齿轮图标可更改语言或文字大小。</string>
     <string name="onboarding_guide_replay_image">列出字幕行和重播按钮的字幕面板</string>
     <string name="onboarding_guide_open_video_title">打开任意视频</string>
-    <string name="onboarding_guide_open_video_body">粘贴 YouTube 链接、直接从 YouTube 应用分享视频，或者直接在 DualSub Replay 中浏览。</string>
-    <string name="onboarding_language_welcome">欢迎使用 DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">粘贴 YouTube 链接、直接从 YouTube 应用分享视频，或者直接在 TripleSub Replay 中浏览。</string>
+    <string name="onboarding_language_welcome">欢迎使用 TripleSub Replay</string>
     <string name="onboarding_language_intro">只需选择一次语言，之后可以在字幕设置中更改。</string>
     <string name="onboarding_language_native_title">你的母语</string>
     <string name="onboarding_language_native_helper">显示为较小的翻译字幕。</string>

@@ -21,6 +21,7 @@ internal val transferColumns =
         "startMs",
         "endMs",
         "sourceTitle",
+        "deck",
     )
 
 /** Not in [transferColumns] (those drive the import mapping form); read by header name, so old files lack it. */
@@ -217,7 +218,8 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
     require(words.size <= MAX_TRANSFER_RECORDS) { "Export exceeds 20,000 records." }
 
     fun quote(value: String): String = "\"${value.replace("\"", "\"\"")}\""
-    val columns = (transferColumns + TRANSLATIONS_COLUMN + MEANINGS_COLUMN + NOTES_COLUMN).joinToString("\t")
+    // Deck goes last so the columns Anki users already mapped by position keep their places.
+    val columns = (transferColumns - "deck" + TRANSLATIONS_COLUMN + MEANINGS_COLUMN + NOTES_COLUMN + "deck").joinToString("\t")
     return "#separator:Tab\n#html:false\n#columns:$columns\n" +
         words.joinToString("\n") { word ->
             listOf(
@@ -235,6 +237,7 @@ internal fun exportAnkiTsv(words: List<SavedWord>): String {
                 encodeSentenceTranslations(word.sentenceTranslations),
                 encodeSentenceTranslations(word.meanings),
                 word.personalNotes,
+                word.deck.orEmpty(),
             ).joinToString("\t", transform = ::quote)
         }
 }
@@ -297,6 +300,7 @@ internal fun previewImport(
                         meanings = decodeSentenceTranslationsText(translationsCell(document, row, MEANINGS_COLUMN)),
                         personalNotes = translationsCell(document, row, NOTES_COLUMN),
                         sourceTitle = normalizeSourceTitle(field("sourceTitle")),
+                        deck = cleanDeckName(field("deck")),
                     )
                 validateTransferWord(word)
                 val id =
@@ -334,4 +338,6 @@ internal fun validateTransferWord(word: SavedWord) {
     require(word.startMs >= 0 && word.endMs >= word.startMs && word.dueAt >= 0 && word.intervalMs >= 0)
     require(word.videoId == null || word.videoId.matches(Regex("[A-Za-z0-9_-]{11}")))
     require(!word.online || validClipRange(word.videoId, word.startMs, word.endMs))
+    require(word.deck == null || word.deck == cleanDeckName(word.deck))
+    require(word.sourceTitle == null || word.sourceTitle == normalizeSourceTitle(word.sourceTitle))
 }

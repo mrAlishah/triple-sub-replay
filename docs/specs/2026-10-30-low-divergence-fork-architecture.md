@@ -109,3 +109,34 @@ Compile check only; unit tests and device tests are the owner's. Rollback: delet
 - `./gradlew formatCheck`: not executed in effect: it starts `python`, which is not on this machine and which the owner forbids running. Unverified.
 - RefreshSession review: declared at line 1395, after `_state` (554) and `refresher`; `install` and `end` are called in the translation run and its `finally`; `end` ignores a replaced context; `thirdLine?.cancel()` still in `finally`. `install` is called before the `try` as before the move (unchanged structure). No test covers a concurrent refresh or a video switch mid-refresh.
 - Data contracts: see the table in `upstream-integration.md`; read from source, no data touched.
+
+## Upstream sync record: `main` (83d21f9) into `merge_upstream` (2026-11-04)
+
+Merge in progress, not committed. Resolved by meaning, hunk by hunk; merge base `d91b044`, 26 incoming upstream commits. Debug build only (`./gradlew :app:assembleDebug`); no tests, lint, formatting or complexity checks were run (owner tests on a device).
+
+### Accepted from upstream
+
+- **Practice decks** (spec `2026-11-02-practice-decks.md`): `data/PracticeDecks.kt`, `ui/PracticeDecks.kt`, `SavedWord.deck` (null = the language's automatic deck, never part of the id), deck chip on the word card and in Practice, deck list, rename and delete (`VocabularyRepository.updateWhere`; `retitleVideo` is now a one-line wrapper over it), the assistant saving into the last deck used for the language. Deck and Source Title stay independent: the deck narrows the words first, the source picker then works inside it; Due Words, search and counts follow both. Deck is stored only when set (`deck` JSON key; `deck` is the last TSV column so Anki's positional mappings do not shift); saving from the word card sets the deck it shows (Auto clears it), and import (`keepSavedNotes`) never clears an existing deck. Renaming or deleting a deck moves words only; vocabulary and review history are untouched.
+- **Centred transcript and Forever line loop** (spec `2026-11-03-centred-transcript-and-line-loop.md`): `TranscriptFollow`, `FollowPlayingRow`, segment-id play-mode tracking, the assistant's `transcript_follow` and `forever` values. Only transcript scrolling and study-mode seeks changed; the subtitle card's Play button (`onReplay`) and tap, selection and Re-translate behaviour are the fork's and were not touched.
+- **Azerbaijani** interface (`az`) and the online-only translation languages; the 206 fork-only strings it lacked were machine-translated (`values-az/`, marked "not native-reviewed" in each file).
+- Screen-off playback and WebView fixes, `updateWhere`, CI and dependency bumps (setup-gradle 6.4.1, CPU-scenario regex, webkit 1.18.0, OkHttp 5.5.1, AGP 9.5.0, Gradle 9.8.2).
+- Upstream JSON backups import: `notes` is read as `personalNotes`, and a single `thirdSentence` + `thirdLanguage` becomes one more `sentenceTranslations` entry (fork keys win).
+
+### Intentionally excluded (fork behaviour kept)
+
+- **Upstream's optional third line** (`ui/ThirdSubtitleLine.kt`, its settings switch and picker entry, `thirdLineEnabled`, `ThirdLineChoice`, its card and overlay rendering, `withThirdLineOnScreen`): replaced by the fork's three slots and `ThirdLineTranslation`; no second pipeline. Its stale-result protection already exists here as `isCurrentLoad`.
+- **Upstream saved-word fields** `notes`, `thirdSentence`, `thirdLanguage` and `cleanSourceTitle`: the fork keeps `personalNotes`, `sentenceTranslations`, `meanings`, `sourceTitle` and their JSON/TSV keys. `PracticeVideoFilter.kt` (video filter) is replaced by the fork's Source filter.
+- **AI thinking for translation** (`AiTranslationThinking`, its model and thinking settings, `ai_translation_thinking` preference, assistant setting and strings): covered by the per-service model and effort in Settings → AI Assistant (`aiTranslationEffort`, `AiEffort`); upstream's Off/Low/Medium map to Automatic/Low/Medium there. `AiTranslationAccess.kt` and its test equal the fork's. No cache scope or saved preference changed.
+- Practice's upstream presentation changes (example box with the highlighted word, two-by-two rating buttons, `MeaningPanel` editing) and the legacy AnkiDroid translation field carrying a third line.
+- Upstream README, site and promo-video changes merged as upstream's own pages (no fork branding existed there to lose); the Obtainium line is gone.
+- Their tests for the excluded behaviour were removed: `ThirdLineOnSavedWordsTest`, `ThirdLineAndVideoFilterTest`, `SavedWordNotesAndSourceTest`, the AI-thinking tests in `OnlineTranslationUiTest`, `AiTranslationAccessTest` (restored to the fork's), and `SavedWordsScreenTest.practiceShowsTheThirdSubtitleLineAfterTheMeaning`.
+
+### Remaining manual verification (owner)
+
+- Subtitle card: a plain tap does not seek or play, only its Play button does; centred transcript with the playing line in the middle, and the Jump back pill while browsing; Forever repeat and Repeat each line (no runaway counts); text selection and the segment dropdown (Re-translate with AI) are independent.
+- Three slots: order, size, alignment, RTL, language per slot, overlay, portrait and landscape; the third line while seeking.
+- Practice: decks list and one open deck; deck chip when saving and editing; rename and delete a deck (words stay, schedule unchanged); Source Title filter inside a deck; Due Words for a deck and source; search; old words show in their language's deck.
+- Data: import an old fork JSON backup, an upstream JSON backup (notes, third line), old and new TSV (`deck` column), then export again; Anki (AnkiDroid and AnkiConnect, note type `TripleSub Replay v4`) still sends and detects duplicates.
+- AI: Settings → AI Assistant per-service Thinking and Model, Translation AI Service row, ChatGPT sign-in, Test translation, Re-translate with AI.
+- Azerbaijani: pick it in the interface language list and read the screens; the machine translation needs a native review.
+- Not run: unit tests, lint, formatting, complexity, instrumented tests (`AppLanguageTest` and lint `MissingTranslation` should now pass for `az`, unverified).

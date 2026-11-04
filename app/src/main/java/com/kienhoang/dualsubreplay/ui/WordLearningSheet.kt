@@ -48,6 +48,9 @@ internal fun WordLearningDialog(
     onSpeechSettings: (() -> Unit)? = null,
     onSpeakPart: (AnalyzedToken) -> Unit = {},
     onTranslateMeaning: suspend (language: String) -> String = { "" },
+    deck: String? = null,
+    namedDecks: List<String> = emptyList(),
+    onDeckChange: ((String?) -> Unit)? = null,
 ) {
     var meaning by remember(selection) { mutableStateOf(existingWord?.meaning.orEmpty()) }
     var loading by remember(selection) { mutableStateOf(true) }
@@ -123,6 +126,9 @@ internal fun WordLearningDialog(
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
+                    }
+                    onDeckChange?.let { change ->
+                        DeckChip(deck, selection.wordLanguage, namedDecks, { change(it).also { saved = false } }, enabled = !saving)
                     }
                     SaveWordButton(saving = saving, saved = saved, enabled = !saving && !loading && extras.loading.isEmpty() && !saved) {
                         saving = true
@@ -238,16 +244,19 @@ private fun ExtraMeaningPanels(
 /**
  * The meaning, the answer the learner opened the card for: a tinted panel with an accent bar and
  * large bold text right under the word (owner request 2026-10-24). The pencil turns it into a
- * text field to correct the meaning before saving.
+ * text field to correct the meaning before saving. Practice shows saved words with the same panel:
+ * read-only in a review ([editable] false), and [onDone] saves a corrected meaning.
  */
 @Composable
-private fun MeaningPanel(
+internal fun MeaningPanel(
     meaning: String,
     language: String,
     loading: Boolean,
     enabled: Boolean,
     onChange: (String) -> Unit,
     tagSuffix: String = "",
+    editable: Boolean = true,
+    onDone: () -> Unit = {},
 ) {
     var editing by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -286,12 +295,17 @@ private fun MeaningPanel(
                         )
                 }
             }
-            IconButton(onClick = { editing = !editing }, enabled = enabled, modifier = Modifier.testTag("edit_meaning$tagSuffix")) {
-                Icon(
-                    if (editing) Icons.Default.Check else Icons.Default.Edit,
-                    contentDescription = stringResource(if (editing) R.string.practice_meaning_done else R.string.practice_meaning_edit),
-                    tint = colors.primary,
-                )
+            if (editable) {
+                IconButton(onClick = {
+                    if (editing) onDone()
+                    editing = !editing
+                }, enabled = enabled, modifier = Modifier.testTag("edit_meaning$tagSuffix")) {
+                    Icon(
+                        if (editing) Icons.Default.Check else Icons.Default.Edit,
+                        contentDescription = stringResource(if (editing) R.string.practice_meaning_done else R.string.practice_meaning_edit),
+                        tint = colors.primary,
+                    )
+                }
             }
         }
     }

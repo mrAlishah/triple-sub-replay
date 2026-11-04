@@ -105,3 +105,7 @@ Do not change any of these in a sync without a migration plan and owner approval
 | Anki fields and tags | `ankiTriple fields` in `TRIPLE_FIELDS` order, `ankiTags` | no language names or codes in fields | A changed field list needs a new note type name |
 
 Tests covering these (JVM, pass in the Stage 11 full run): `SavedWordTest`, `SourceTitleTest`, `PracticeTransferTest`, `LegacyVocabularyUpgradeTest`, `AnkiTripleNoteTest`, `AnkiConnectNotesTest`, `AnkiDroidNotesTest`, `AnkiDroidSenderTest`.
+
+## Sync 2026-11-04
+
+Record, accepted and excluded items and the manual checklist: [low-divergence spec](../specs/2026-10-30-low-divergence-fork-architecture.md#upstream-sync-record-main-83d21f9-into-merge_upstream-2026-11-04). Seams to remember: upstream's saved-word `notes` / `thirdSentence` map to `personalNotes` / `sentenceTranslations` (read in `decodeWord`, never written); `deck` is the only new saved-word field; upstream's per-slot or third-line UI and the AI-thinking settings stay out (use the fork's slots and per-service effort).

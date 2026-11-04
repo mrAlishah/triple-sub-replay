@@ -77,6 +77,8 @@ data class SavedWord(
     val personalNotes: String = "",
     /** The human-readable title of the video the word was saved from. Display and filtering only: never part of the id. */
     val sourceTitle: String? = null,
+    /** The deck the learner put the word in; null keeps it in its language's automatic deck. Independent of [sourceTitle]. */
+    val deck: String? = null,
 )
 
 enum class ReviewRating { AGAIN, HARD, GOOD, EASY }
@@ -121,6 +123,7 @@ internal fun keepSavedNotes(
     imported.copy(
         personalNotes = imported.personalNotes.ifBlank { existing.personalNotes },
         sourceTitle = imported.sourceTitle ?: existing.sourceTitle,
+        deck = imported.deck ?: existing.deck,
     )
 
 /** Saving a word again keeps its review schedule and every translation already stored (new languages are added). */
@@ -132,6 +135,7 @@ internal fun mergeResaved(old: SavedWord, new: SavedWord): SavedWord =
         meanings = (old.meanings + new.meanings).filterValues { it.isNotBlank() },
         personalNotes = new.personalNotes.ifBlank { old.personalNotes },
         sourceTitle = new.sourceTitle ?: old.sourceTitle,
+        deck = new.deck,
     )
 
 internal fun savedWordFrom(

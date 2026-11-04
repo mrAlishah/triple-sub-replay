@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -80,11 +81,21 @@ internal fun SavedWordsScreen(
     val editedExtra = remember(selected?.id, selected?.meanings) { editableMeanings(selected) }
     var editedNotes by remember(selected?.id, selected?.personalNotes) { mutableStateOf(selected?.personalNotes.orEmpty()) }
     var editedSourceTitle by remember(selected?.id, selected?.sourceTitle) { mutableStateOf(selected?.sourceTitle.orEmpty()) }
-    val sources = remember(words) { sourceOptions(words) }
+    val context = LocalContext.current
+    var openDeck by remember { mutableStateOf<PracticeDeck?>(null) }
+    var renamingDeck by remember { mutableStateOf<String?>(null) }
+    var deletingDeck by remember { mutableStateOf<String?>(null) }
+    val decks = deckSummaries(words, now)
+    val named = namedDecks(words)
+    val currentDeck = openDeck?.takeIf { deck -> decks.any { it.deck == deck } }
+    val showDeckList = currentDeck == null && decks.size > 1
+    // Deck and source are independent: the deck narrows the words first, the source picker then works inside it.
+    val deckWords = currentDeck?.let { deck -> words.filter { deckOf(it) == deck } } ?: words
+    val sources = remember(deckWords) { sourceOptions(deckWords) }
     // A source whose last word was deleted or retitled away falls back to All Sources.
     val activeSource = sourceFilter?.takeIf { key -> sources.any { it.key == key } }
-    val sourceWords = words.filter { matchesSource(it, activeSource) }
-    val due = dueWordsForSource(words, activeSource, now).sortedBy { it.dueAt }
+    val sourceWords = deckWords.filter { matchesSource(it, activeSource) }
+    val due = dueWordsForSource(deckWords, activeSource, now).sortedBy { it.dueAt }
     val locale = currentInterfaceLocale()
     val titleEditor = LocalVideoTitleEditor.current
     val searchLabel = stringResource(R.string.practice_search_label)
@@ -147,6 +158,7 @@ internal fun SavedWordsScreen(
         onDismiss()
     }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth(0.96f).fillMaxHeight(0.9f), shape = MaterialTheme.shapes.large) {
+            BackHandler(enabled = currentDeck != null && selected == null && !practice) { openDeck = null }
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.practice_title), style = MaterialTheme.typography.titleLarge)
@@ -169,7 +181,16 @@ internal fun SavedWordsScreen(
                         Text(stringResource(R.string.practice_session_complete_body))
                         TextButton(onClick = { practice = false }) { Text(backLabel) }
                     } else {
-                        PracticeTransferControls(repository, words)
+                        if (currentDeck == null) {
+                            PracticeTransferControls(repository, words)
+                        } else {
+                            DeckHeader(
+                                currentDeck,
+                                onBack = { openDeck = null },
+                                onRename = { renamingDeck = currentDeck.name },
+                                onDelete = { deletingDeck = currentDeck.name },
+                            )
+                        }
                         Text(
                             stringResource(
                                 R.string.practice_word_summary,
@@ -187,11 +208,15 @@ internal fun SavedWordsScreen(
                             val next = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, locale).format(Date(it))
                             Text(stringResource(R.string.practice_next_review, next), style = MaterialTheme.typography.bodySmall)
                         }
-                        LazyColumn(Modifier.weight(1f)) {
-                            items(filterSavedWords(words, activeSource) { it.matchesSearch(search) }, key = { it.id }) { word ->
-                                ListItem(headlineContent = { Text(word.word) }, supportingContent = { MeaningWithSource(word) },
-                                    modifier = Modifier.clickable { selectedId = word.id }.testTag("saved_word_${word.id}"))
-                                HorizontalDivider()
+                        if (showDeckList && search.isBlank() && activeSource == null) {
+                            DeckList(decks, { openDeck = it }, Modifier.weight(1f))
+                        } else {
+                            LazyColumn(Modifier.weight(1f)) {
+                                items(filterSavedWords(deckWords, activeSource) { it.matchesSearch(search) }, key = { it.id }) { word ->
+                                    ListItem(headlineContent = { Text(word.word) }, supportingContent = { MeaningWithSource(word) },
+                                        modifier = Modifier.clickable { selectedId = word.id }.testTag("saved_word_${word.id}"))
+                                    HorizontalDivider()
+                                }
                             }
                         }
                     }
@@ -222,6 +247,11 @@ internal fun SavedWordsScreen(
                                 EditMeanings(selected, editedMeaning, { editedMeaning = it }, editedExtra, locale, !busy) {
                                     action { repository.update(selected.id) { it.withMeanings(editedMeaning, editedExtra) } }
                                 }
+                            }
+                            if (!practice) {
+                                DeckChip(selected.deck, selected.wordLanguage, named, { deck ->
+                                    action { repository.update(selected.id) { it.copy(deck = deck) } }
+                                }, enabled = !busy, tag = "word_deck")
                             }
                             PracticeSelectableText(selected.sentence, selected.wordLanguage)
                             selected.translatedSentence?.let { PracticeSelectableText(it, selected.meaningLanguage) }
@@ -283,6 +313,34 @@ internal fun SavedWordsScreen(
                 }
             }
         }
+    }
+    renamingDeck?.let { old ->
+        DeckNameDialog(
+            title = stringResource(R.string.practice_deck_rename),
+            initial = old,
+            confirmLabel = stringResource(R.string.practice_deck_rename_confirm),
+            onConfirm = { typed ->
+                renamingDeck = null
+                resolveDeckName(typed, named - old)?.let { new ->
+                    action {
+                        repository.updateWhere({ it.deck == old }) { it.copy(deck = new) }
+                        replaceRememberedDeck(context, old, new)
+                        openDeck = PracticeDeck(name = new)
+                    }
+                }
+            },
+            onDismiss = { renamingDeck = null },
+        )
+    }
+    deletingDeck?.let { name ->
+        DeleteDeckDialog(name, onDelete = {
+            deletingDeck = null
+            action {
+                repository.updateWhere({ it.deck == name }) { it.copy(deck = null) }
+                replaceRememberedDeck(context, name, null)
+                openDeck = null
+            }
+        }, onKeep = { deletingDeck = null })
     }
     confirmDelete?.let { word ->
         val deleteTitle = stringResource(R.string.practice_delete_word_title, word.word)

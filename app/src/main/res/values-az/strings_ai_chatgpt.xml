@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="chatgpt_note">OpenAI girişi ilə öz ChatGPT planınızdan API açarı olmadan istifadə edir. Altyazı mətni tərcümə üçün OpenAI-yə göndərilir; ChatGPT söhbətləriniz oxunmur. Planınızın limitləri tətbiq olunur və əlçatanlıq plana görə fərqlənir.</string>
+    <string name="chatgpt_continue">ChatGPT ilə davam et</string>
+    <string name="chatgpt_status_not_connected">Qoşulmayıb</string>
+    <string name="chatgpt_status_connecting">Qoşulur… girişi brauzerdə tamamlayın</string>
+    <string name="chatgpt_status_checking">Hesabınız yoxlanılır…</string>
+    <string name="chatgpt_status_ready">Qoşulub · plan istifadəsinə icazə verilib</string>
+    <string name="chatgpt_status_no_plan">Qoşulub, lakin plan istifadəsinə icazə verilməyib. Yenidən davam edin və icazə verin.</string>
+    <string name="chatgpt_status_not_eligible">Bu hesab üçün ChatGPT plan istifadəsi əlçatan deyil.</string>
+    <string name="chatgpt_status_sign_in">ChatGPT planından istifadəni davam etdirmək üçün yenidən daxil olun.</string>
+    <string name="chatgpt_status_limit">ChatGPT planınızın istifadə limitinə çatıldı. ChatGPT ayarları → İstifadə bölməsinə baxın.</string>
+    <string name="chatgpt_status_temporary">ChatGPT müvəqqəti əlçatan deyil. Sonra yenidən cəhd edin.</string>
+    <string name="chatgpt_sign_in_failed">Giriş tamamlanmadı. Yenidən cəhd edin.</string>
+    <string name="chatgpt_account">Hesab: %1$s</string>
+    <string name="chatgpt_account_unknown">Qoşulmuş ChatGPT hesabı</string>
+    <string name="chatgpt_refresh">Statusu yenilə</string>
+    <string name="chatgpt_disconnect">Bağlantını kəs</string>
+    <string name="chatgpt_test_failed">Sınaq tərcüməsi alınmadı.</string>
+    <string name="chatgpt_cancel">Ləğv et</string>
+</resources>

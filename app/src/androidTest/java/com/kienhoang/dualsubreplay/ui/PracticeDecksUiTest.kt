@@ -36,7 +36,7 @@ class PracticeDecksUiTest {
         id: String,
         language: String,
         deck: String? = null,
-    ) = SavedWord(id, "w$id", null, language, "en", "meaning $id", "", null, null, 0, 0, false, false, 0, 0, deck)
+    ) = SavedWord(id, "w$id", null, language, "en", "meaning $id", "", null, null, 0, 0, false, false, 0, 0, deck = deck)
 
     @Before fun closeDialogs() = closeSystemDialogs()
 
@@ -149,7 +149,7 @@ class PracticeDecksUiTest {
                     selection,
                     false,
                     { "từ" },
-                    { _, _ -> savedDeck = deck },
+                    { _, _, _ -> savedDeck = deck },
                     {},
                     null,
                     {},

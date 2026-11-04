@@ -11,7 +11,7 @@ class PracticeDecksTest {
         language: String,
         deck: String? = null,
         dueAt: Long = 0,
-    ) = SavedWord(id, "w$id", null, language, "en", "meaning", "", null, null, 0, 0, false, false, dueAt, 0, deck)
+    ) = SavedWord(id, "w$id", null, language, "en", "meaning", "", null, null, 0, 0, false, false, dueAt, 0, deck = deck)
 
     @Test fun wordsWithoutADeckSitInTheirLanguageDeck() {
         assertEquals(PracticeDeck(language = "ar"), deckOf(word("1", "ar")))

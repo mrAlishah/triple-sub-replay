@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">Aba atual</string>
+    <string name="tab_settings_scope_default">Padrão para novas abas</string>
+    <string name="tab_settings_current_hint">Idioma, tradução e aparência das legendas ficam salvos só nesta aba. Contas, chaves de IA e o chat continuam compartilhados.</string>
+    <string name="tab_settings_default_hint">Estas configurações são copiadas para cada nova aba. As abas que você já tem e o vídeo em reprodução não mudam.</string>
+    <string name="tab_settings_ai_service">Serviço de IA para tradução</string>
+    <string name="tab_settings_reset_tab">Redefinir esta aba para o padrão</string>
+    <string name="tab_settings_reset_title">Redefinir esta aba?</string>
+    <string name="tab_settings_reset_message">O idioma, a tradução e a aparência das legendas desta aba serão substituídos pelo Padrão para novas abas. As outras abas não mudam.</string>
+    <string name="tab_settings_reset_confirm">Redefinir</string>
+    <string name="tab_settings_playback_speed">Velocidade de reprodução</string>
+    <string name="tab_settings_speed_follow">Como o YouTube lembra</string>
+    <string name="tab_settings_use_as_default">Usar as configurações desta aba como padrão</string>
+    <string name="tab_settings_use_as_default_title">Substituir o padrão?</string>
+    <string name="tab_settings_use_as_default_message">O Padrão para novas abas passa a ser uma cópia das configurações desta aba, incluindo posições arrastadas, modos de reprodução e o modelo de IA. As abas que você já tem não mudam.</string>
+    <string name="tab_settings_use_as_default_confirm">Substituir</string>
+    <string name="tab_settings_group_title">Configurações por aba</string>
+    <string name="tab_settings_group_summary">Aba atual, padrão para novas abas, redefinir</string>
+</resources>

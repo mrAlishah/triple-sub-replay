@@ -28,9 +28,19 @@ class ReleaseLinksTest {
     }
 
     @Test
-    fun theAutomaticUpdaterStillAsksTheOriginalRepository() {
-        assertEquals("hoangkien1703/dual-sub-replay", UPDATE_REPOSITORY)
+    fun theAutomaticUpdaterAsksTheForkRepository() {
+        assertEquals("mrAlishah/triple-sub-replay", UPDATE_REPOSITORY)
         assertEquals("com.kienhoang.dualsubreplay", OFFICIAL_APPLICATION_ID)
-        assertEquals(BuildConfig.UPSTREAM_RELEASES_URL, UPDATE_RELEASES_PAGE_URL)
+        assertEquals(BuildConfig.FORK_RELEASES_URL, UPDATE_RELEASES_PAGE_URL)
+        assertEquals("TripleSub-Replay.apk", OFFICIAL_APK_NAME)
+    }
+
+    @Test
+    fun remoteSwitchesAndProblemReportsStayWithTheOriginalRepository() {
+        assertEquals("hoangkien1703/dual-sub-replay", UPSTREAM_REPOSITORY)
+        assertEquals(
+            "https://raw.githubusercontent.com/hoangkien1703/dual-sub-replay/main/remote-config/switches.json",
+            REMOTE_SWITCHES_URL,
+        )
     }
 }

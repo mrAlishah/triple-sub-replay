@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">Toque em um parágrafo para repeti-lo</string>
     <string name="player_subtitle_settings">Configurações de legendas</string>
-    <string name="player_dual_subtitle_settings">Configurações de legendas duplas</string>
+    <string name="player_dual_subtitle_settings">Configurações</string>
     <string name="player_show_dual_subtitles">Mostrar legendas duplas</string>
     <string name="player_hide_dual_subtitles">Ocultar legendas duplas</string>
     <string name="player_loading_captions">Carregando legendas…</string>

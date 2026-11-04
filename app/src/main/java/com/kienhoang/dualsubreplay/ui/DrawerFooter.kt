@@ -24,6 +24,7 @@ internal val LICENSE_ASSETS =
     listOf("licenses/MIT.txt", "licenses/libraries.txt", "licenses/hanzi.txt", "licenses/translation.txt")
 
 internal const val PROJECT_REPOSITORY_URL = "https://github.com/hoangkien1703/dual-sub-replay"
+internal const val FORK_SOURCE_URL = "https://github.com/mrAlishah/triple-sub-replay/tree/mydevelop"
 
 @Composable
 private fun FooterLinkText(text: String) {
@@ -64,18 +65,24 @@ internal fun DrawerFooter(beforeOpen: suspend () -> Unit = {}) {
         ) {
             FooterLinkText(stringResource(R.string.navigation_licenses))
         }
-        Text("·", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        // Owner request 2026-10-24: a small link so people can see the code and star the project.
-        TextButton(
-            onClick = {
-                scope.launch {
-                    beforeOpen()
-                    uriHandler.openUri(PROJECT_REPOSITORY_URL)
-                }
-            },
-            modifier = Modifier.testTag("github_repository_link"),
-        ) {
-            FooterLinkText(stringResource(R.string.navigation_github_repository))
+    }
+    Row(Modifier.padding(start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        listOf(
+            Triple(R.string.updates_link_fork, FORK_SOURCE_URL, "github_fork_link"),
+            Triple(R.string.updates_link_upstream, PROJECT_REPOSITORY_URL, "github_repository_link"),
+        ).forEachIndexed { index, (label, url, tag) ->
+            if (index > 0) Text("·", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        beforeOpen()
+                        uriHandler.openUri(url)
+                    }
+                },
+                modifier = Modifier.testTag(tag),
+            ) {
+                FooterLinkText(stringResource(label))
+            }
         }
     }
     if (showLicense) {

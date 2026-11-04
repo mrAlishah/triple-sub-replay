@@ -89,6 +89,10 @@ Mostly upstream-owned. Fork hunks: (1) in `DualSubApp`, the `CompositionLocalPro
 - Invariants: `end` ignores a context a newer run replaced; the context's `isCurrent` uses `isCurrentLoad`; `refreshSession` must be declared after `_state` in the ViewModel (initialization order).
 - On a sync: if upstream changes the translation run or `isCurrentLoad`, keep those two calls and the run's `finally`; check `rowTranslationTexts` / `translationTexts` still give the AI's form of the rows. Test (owner): `ForceRetranslateTest`, then Re-translate with AI for sentence, window and video on a device.
 
+## Per-tab settings profiles (FC-09)
+
+Upstream code keeps reading and writing `dual_sub_preferences` as before: it is the open tab's effective settings, and a preference listener copies the whitelisted keys into the open tab's profile. When merging, keep the additive seams in `AppViewModel` (`tabSettings` bootstrap and listener, `showActiveTabWithSettings`, `changeTabs`) and the `next_tab_id` field of `BrowserTabs`. If upstream adds a setting that should differ per tab, add its key to `TAB_SETTING_KINDS` and its reader to `withTabSettings` in `ui/TabSettings.kt`; do not duplicate the setting.
+
 ## Data contracts read from source (Stage 11, read-only)
 
 Do not change any of these in a sync without a migration plan and owner approval.

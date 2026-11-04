@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">Cada fala aparece listada com a tradução. Toque no botão de reproduzir de uma fala para voltar o vídeo até aquele momento e use a engrenagem para mudar os idiomas ou o tamanho do texto.</string>
     <string name="onboarding_guide_replay_image">Painel de legendas com a lista de falas e botões para repetir</string>
     <string name="onboarding_guide_open_video_title">Abra qualquer vídeo</string>
-    <string name="onboarding_guide_open_video_body">Cole um link do YouTube, compartilhe um vídeo direto do app do YouTube ou simplesmente navegue dentro do DualSub Replay.</string>
-    <string name="onboarding_language_welcome">Boas-vindas ao DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">Cole um link do YouTube, compartilhe um vídeo direto do app do YouTube ou simplesmente navegue dentro do TripleSub Replay.</string>
+    <string name="onboarding_language_welcome">Boas-vindas ao TripleSub Replay</string>
     <string name="onboarding_language_intro">Escolha seus idiomas uma vez. Você pode alterá-los depois nas configurações de legendas.</string>
     <string name="onboarding_language_native_title">Seu idioma nativo</string>
     <string name="onboarding_language_native_helper">Aparece como a legenda traduzida menor.</string>

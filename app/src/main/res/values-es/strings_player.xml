@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">Toca un párrafo para repetirlo</string>
     <string name="player_subtitle_settings">Ajustes de subtítulos</string>
-    <string name="player_dual_subtitle_settings">Ajustes de subtítulos dobles</string>
+    <string name="player_dual_subtitle_settings">Ajustes</string>
     <string name="player_show_dual_subtitles">Mostrar subtítulos dobles</string>
     <string name="player_hide_dual_subtitles">Ocultar subtítulos dobles</string>
     <string name="player_loading_captions">Cargando subtítulos…</string>

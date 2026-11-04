@@ -133,7 +133,7 @@ internal fun problemIssueUrl(
     device: String,
 ): String {
     val base =
-        "https://github.com/$UPDATE_REPOSITORY/issues/new?template=bug_report.yml" +
+        "https://github.com/$UPSTREAM_REPOSITORY/issues/new?template=bug_report.yml" +
             "&app-version=${urlEncoded(appVersion)}&device=${urlEncoded(device)}&evidence="
     val lines = report.lines().toMutableList()
     while (base.length + urlEncoded(lines.joinToString("\n")).length > MAX_PROBLEM_REPORT_URL_CHARS) {

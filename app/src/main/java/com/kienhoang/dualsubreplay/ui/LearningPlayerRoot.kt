@@ -611,6 +611,8 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         }
     val aiViewModel: AiAssistantViewModel = viewModel()
     LaunchedEffect(aiViewModel, viewModel) { aiViewModel.attachChatGpt(viewModel.chatGpt) }
+    // Waiting cards and Undo buttons belong to the tab they were made for.
+    LaunchedEffect(aiViewModel, state.browserTabs.activeId) { aiViewModel.controller.openTabChanged() }
     val aiAssistant =
         remember(aiViewModel) {
             AiAssistantHost(
@@ -624,6 +626,17 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                     ),
             ) { aiViewModel.guide }
         }
+    val tabSettingsActions =
+        remember(viewModel, state.browserTabs.activeId, state.activeVideoId) {
+            TabSettingsActions(
+                state.browserTabs.activeId,
+                TabSpeedAccess(state.activeVideoId, viewModel::tabPlaybackSpeed, viewModel::recordTabPlaybackSpeed),
+                viewModel.defaultTabProfile,
+                viewModel::updateDefaultTabProfile,
+                viewModel::resetCurrentTabToDefault,
+                viewModel::useCurrentTabAsDefault,
+            )
+        }
     val studySavedWords by viewModel.vocabulary.words.collectAsStateWithLifecycle()
     val studyTools = rememberStudyTools(state, studySavedWords)
     CompositionLocalProvider(
@@ -631,6 +644,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
         LocalLanguageDownloads provides viewModel.languageDownloads,
         LocalTranslationEngineActions provides translationEngineActions,
         LocalTripleSubtitleControls provides tripleControls,
+        LocalTabSettings provides tabSettingsActions,
         LocalTranslationSourceInfo provides translationSourceInfo,
         LocalAiAssistant provides aiAssistant,
         LocalStudyTools provides studyTools,

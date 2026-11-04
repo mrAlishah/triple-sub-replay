@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">Tab hiện tại</string>
+    <string name="tab_settings_scope_default">Mặc định cho tab mới</string>
+    <string name="tab_settings_current_hint">Ngôn ngữ, bản dịch và kiểu hiển thị phụ đề chỉ được lưu cho tab này. Tài khoản, khóa AI và trò chuyện vẫn dùng chung.</string>
+    <string name="tab_settings_default_hint">Các cài đặt này được sao chép vào mỗi tab mới. Tab đã có và video đang phát không thay đổi.</string>
+    <string name="tab_settings_ai_service">Dịch vụ AI để dịch</string>
+    <string name="tab_settings_reset_tab">Đặt lại tab này về mặc định</string>
+    <string name="tab_settings_reset_title">Đặt lại tab này?</string>
+    <string name="tab_settings_reset_message">Ngôn ngữ, bản dịch và kiểu hiển thị phụ đề của tab này sẽ được thay bằng Mặc định cho tab mới. Các tab khác không thay đổi.</string>
+    <string name="tab_settings_reset_confirm">Đặt lại</string>
+    <string name="tab_settings_playback_speed">Tốc độ phát</string>
+    <string name="tab_settings_speed_follow">Theo YouTube ghi nhớ</string>
+    <string name="tab_settings_use_as_default">Dùng cài đặt của tab này làm mặc định</string>
+    <string name="tab_settings_use_as_default_title">Thay mặc định?</string>
+    <string name="tab_settings_use_as_default_message">Mặc định cho tab mới sẽ thành bản sao cài đặt của tab này, gồm vị trí đã kéo, chế độ phát và mô hình AI. Tab đã có không thay đổi.</string>
+    <string name="tab_settings_use_as_default_confirm">Thay</string>
+    <string name="tab_settings_group_title">Cài đặt theo tab</string>
+    <string name="tab_settings_group_summary">Tab hiện tại, mặc định cho tab mới, đặt lại</string>
+</resources>

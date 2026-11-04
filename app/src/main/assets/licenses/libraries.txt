@@ -1,6 +1,6 @@
 THIRD-PARTY LIBRARIES
 
-DualSub Replay includes these libraries, all under the Apache License 2.0 (full text below):
+TripleSub Replay includes these libraries, all under the Apache License 2.0 (full text below):
 
 - AndroidX and Jetpack Compose (core, activity, lifecycle, webkit, browser, profileinstaller, Compose UI,
   foundation, Material 3, Material icons): Copyright The Android Open Source Project.

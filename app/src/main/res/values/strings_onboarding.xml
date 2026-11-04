@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">Every spoken line is listed with its translation. Tap the play button on a line to jump the video back to that moment, and use the gear to change languages or text size.</string>
     <string name="onboarding_guide_replay_image">Caption panel listing subtitle lines with replay buttons</string>
     <string name="onboarding_guide_open_video_title">Open any video</string>
-    <string name="onboarding_guide_open_video_body">Paste a YouTube link, share a video straight from the YouTube app, or just browse inside DualSub Replay.</string>
-    <string name="onboarding_language_welcome">Welcome to DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">Paste a YouTube link, share a video straight from the YouTube app, or just browse inside TripleSub Replay.</string>
+    <string name="onboarding_language_welcome">Welcome to TripleSub Replay</string>
     <string name="onboarding_language_intro">Choose your languages once. You can change them later in subtitle settings.</string>
     <string name="onboarding_language_native_title">Your native language</string>
     <string name="onboarding_language_native_helper">Shown as the small translated subtitle.</string>

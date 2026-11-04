@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">Mọi câu thoại đều được liệt kê kèm bản dịch. Nhấn nút phát trên một câu để đưa video về đúng thời điểm đó, và dùng biểu tượng bánh răng để đổi ngôn ngữ hoặc cỡ chữ.</string>
     <string name="onboarding_guide_replay_image">Bảng phụ đề liệt kê các câu phụ đề kèm nút phát lại</string>
     <string name="onboarding_guide_open_video_title">Mở bất kỳ video nào</string>
-    <string name="onboarding_guide_open_video_body">Dán liên kết YouTube, chia sẻ video trực tiếp từ ứng dụng YouTube, hoặc chỉ cần duyệt ngay trong DualSub Replay.</string>
-    <string name="onboarding_language_welcome">Chào mừng bạn đến với DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">Dán liên kết YouTube, chia sẻ video trực tiếp từ ứng dụng YouTube, hoặc chỉ cần duyệt ngay trong TripleSub Replay.</string>
+    <string name="onboarding_language_welcome">Chào mừng bạn đến với TripleSub Replay</string>
     <string name="onboarding_language_intro">Chỉ cần chọn ngôn ngữ một lần. Bạn có thể đổi lại sau trong cài đặt phụ đề.</string>
     <string name="onboarding_language_native_title">Ngôn ngữ mẹ đẻ của bạn</string>
     <string name="onboarding_language_native_helper">Hiển thị dưới dạng phụ đề dịch cỡ nhỏ.</string>

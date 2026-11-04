@@ -914,6 +914,20 @@ internal class AiAssistantController(
         persistChats()
     }
 
+    /**
+     * The open tab changed: a waiting card or an Undo made for the other tab must not act on this one, because settings are per
+     * tab. Waiting cards are cancelled and Undo buttons removed; the chat text stays.
+     */
+    fun openTabChanged() {
+        if (waitingActions.isEmpty() && undos.isEmpty()) return
+        waitingActions.keys.toList().forEach(::cancelAction)
+        undos.keys.toList().forEach { id ->
+            undos.remove(id)
+            updateAction(id) { it.copy(undoable = false) }
+        }
+        persistChats()
+    }
+
     /** Puts back what an action changed, through the actions bound now. */
     fun undoAction(actionId: String) {
         val app = appActions ?: return

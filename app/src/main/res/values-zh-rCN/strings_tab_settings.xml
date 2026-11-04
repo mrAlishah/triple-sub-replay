@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">当前标签页</string>
+    <string name="tab_settings_scope_default">新标签页默认设置</string>
+    <string name="tab_settings_current_hint">语言、翻译和字幕外观只保存在此标签页。账号、AI 密钥和聊天仍为共用。</string>
+    <string name="tab_settings_default_hint">这些设置会复制到每个新标签页。已有的标签页和正在播放的视频不会改变。</string>
+    <string name="tab_settings_ai_service">翻译所用的 AI 服务</string>
+    <string name="tab_settings_reset_tab">将此标签页恢复为默认设置</string>
+    <string name="tab_settings_reset_title">恢复此标签页?</string>
+    <string name="tab_settings_reset_message">此标签页的语言、翻译和字幕外观将替换为“新标签页默认设置”。其他标签页不变。</string>
+    <string name="tab_settings_reset_confirm">恢复</string>
+    <string name="tab_settings_playback_speed">播放速度</string>
+    <string name="tab_settings_speed_follow">沿用 YouTube 的记忆</string>
+    <string name="tab_settings_use_as_default">将此标签页的设置用作默认设置</string>
+    <string name="tab_settings_use_as_default_title">替换默认设置?</string>
+    <string name="tab_settings_use_as_default_message">“新标签页默认设置”将变为此标签页设置的副本,包括拖动后的位置、播放模式和 AI 模型。已有的标签页不会改变。</string>
+    <string name="tab_settings_use_as_default_confirm">替换</string>
+    <string name="tab_settings_group_title">每个标签页的设置</string>
+    <string name="tab_settings_group_summary">当前标签页、新标签页默认值、重置</string>
+</resources>

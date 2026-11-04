@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="tab_settings_scope_current">Cari tab</string>
+    <string name="tab_settings_scope_default">Yeni tablar üçün standart</string>
+    <string name="tab_settings_current_hint">Dil, tərcümə və altyazı görünüşü yalnız bu tab üçün saxlanılır. Hesablar, Sİ açarları və söhbət ortaq qalır.</string>
+    <string name="tab_settings_default_hint">Bu ayarlar hər yeni taba kopyalanır. Artıq mövcud olan tablar və oxunan video dəyişmir.</string>
+    <string name="tab_settings_ai_service">Tərcümə üçün Sİ xidməti</string>
+    <string name="tab_settings_reset_tab">Bu tabı standarta sıfırla</string>
+    <string name="tab_settings_reset_title">Bu tab sıfırlansın?</string>
+    <string name="tab_settings_reset_message">Bu tabın dili, tərcüməsi və altyazı görünüşü Yeni tablar üçün standart ilə əvəz olunur. Digər tablar dəyişmir.</string>
+    <string name="tab_settings_reset_confirm">Sıfırla</string>
+    <string name="tab_settings_playback_speed">Oxutma sürəti</string>
+    <string name="tab_settings_speed_follow">YouTube-un yadda saxladığı kimi</string>
+    <string name="tab_settings_use_as_default">Bu tabın ayarlarını standart kimi istifadə et</string>
+    <string name="tab_settings_use_as_default_title">Standart əvəz edilsin?</string>
+    <string name="tab_settings_use_as_default_message">Yeni tablar üçün standart bu tabın ayarlarının surətinə çevrilir; sürüşdürülmüş mövqelər, öyrənmə rejimləri və Sİ modeli də daxildir. Artıq mövcud olan tablar dəyişmir.</string>
+    <string name="tab_settings_use_as_default_confirm">Əvəz et</string>
+    <string name="tab_settings_group_title">Tab üzrə ayarlar</string>
+    <string name="tab_settings_group_summary">Cari tab, yeni tablar üçün standart, sıfırlama</string>
+</resources>

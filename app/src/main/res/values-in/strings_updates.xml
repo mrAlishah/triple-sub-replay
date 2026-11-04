@@ -8,7 +8,7 @@
     <string name="updates_checking">Memeriksa pembaruan…</string>
     <string name="updates_up_to_date">Anda memakai versi terbaru (%1$s).</string>
     <string name="updates_available">Versi %1$s tersedia. Versi Anda %2$s.</string>
-    <string name="updates_first_time_note">Pertama kali, Android meminta Anda mengizinkan DualSub Replay memasang aplikasi. Kata tersimpan dan setelan Anda tetap ada.</string>
+    <string name="updates_first_time_note">Pertama kali, Android meminta Anda mengizinkan TripleSub Replay memasang aplikasi. Kata tersimpan dan setelan Anda tetap ada.</string>
     <string name="updates_whats_new">Yang baru</string>
     <string name="updates_update">Perbarui</string>
     <string name="updates_not_now">Nanti</string>

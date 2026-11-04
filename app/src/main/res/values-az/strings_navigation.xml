@@ -10,7 +10,8 @@
     <string name="navigation_device_language">Cihazın dili</string>
     <string name="navigation_no_browser">GitHub-ı açmaq üçün brauzer yoxdur.</string>
     <string name="navigation_licenses">Açıq mənbə lisenziyaları</string>
-    <string name="navigation_github_repository">GitHub reposuna baxın</string>
     <string name="navigation_loading_license">Lisenziya yüklənir…</string>
     <string name="navigation_license_summary">DualSub Replay © 2026 Hoang Trung Kien. Tətbiq MIT Lisenziyası ilə yayılan pulsuz proqramdır və heç bir zəmanət vermir. Daxil etdiyi kitabxanaların lisenziyaları aşağıdadır; tam siyahı GitHub reposundakı THIRD_PARTY_NOTICES.md faylındadır.</string>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="navigation_fork_note">DualSub Replay-in fərdiləşdirilmiş forku</string>
 </resources>

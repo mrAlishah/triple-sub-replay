@@ -274,6 +274,12 @@ internal class AiTranslationConfig(
         own.update { Own(revision = it.revision + 1) }
     }
 
+    /** The open tab's saved provider was swapped into the preferences: the state is read again; model lists and keys stay. */
+    fun reloadChoice() {
+        testJob?.cancel()
+        own.update { it.copy(test = null, testing = false, revision = it.revision + 1) }
+    }
+
     private fun keyedProvider(): AiProvider? = aiAccessOption(current().accessId)?.provider
 
     private suspend fun runTest(

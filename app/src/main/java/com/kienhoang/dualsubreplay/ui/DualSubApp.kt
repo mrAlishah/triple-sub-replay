@@ -322,6 +322,7 @@ private fun DualSubExperience(
 ) {
     // The assistant panel beside the app may pause, replay and change the speed of the page video.
     BindAiPlayerControls(webController)
+    BindTabPlaybackSpeed(webController)
     var showSettings by remember { mutableStateOf(false) }
     // Kept while the app runs, so the settings page reopens where it was (owner request 2026-10-31).
     val settingsPageMemory = remember { SettingsPageMemory() }
@@ -347,6 +348,20 @@ private fun DualSubExperience(
                 ),
             ),
         )
+    }
+    // The landscape split is per tab: a tab switch swaps the saved value in, so follow the preference.
+    DisposableEffect(layoutPreferences) {
+        val listener =
+            android.content.SharedPreferences.OnSharedPreferenceChangeListener { preferences, key ->
+                if (key == LANDSCAPE_VIDEO_FRACTION_PREFERENCE) {
+                    landscapeVideoFraction =
+                        normalizeLandscapeVideoFraction(
+                            preferences.getFloat(LANDSCAPE_VIDEO_FRACTION_PREFERENCE, DEFAULT_LANDSCAPE_VIDEO_FRACTION),
+                        )
+                }
+            }
+        layoutPreferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { layoutPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
     var splitContainerWidthPx by remember { mutableFloatStateOf(0f) }
     val splitDragState =

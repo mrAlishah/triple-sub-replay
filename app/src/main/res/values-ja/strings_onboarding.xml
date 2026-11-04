@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">話されたセリフはすべて翻訳付きで一覧表示されます。セリフの再生ボタンをタップすると動画がその場面に戻り、歯車アイコンで言語や文字サイズを変更できます。</string>
     <string name="onboarding_guide_replay_image">字幕の行とリプレイボタンが並ぶ字幕パネル</string>
     <string name="onboarding_guide_open_video_title">好きな動画を開く</string>
-    <string name="onboarding_guide_open_video_body">YouTube のリンクを貼り付けるか、YouTube アプリから動画を共有するか、DualSub Replay 内でそのまま閲覧できます。</string>
-    <string name="onboarding_language_welcome">DualSub Replay へようこそ</string>
+    <string name="onboarding_guide_open_video_body">YouTube のリンクを貼り付けるか、YouTube アプリから動画を共有するか、TripleSub Replay 内でそのまま閲覧できます。</string>
+    <string name="onboarding_language_welcome">TripleSub Replay へようこそ</string>
     <string name="onboarding_language_intro">言語は一度選ぶだけです。あとで字幕の設定から変更できます。</string>
     <string name="onboarding_language_native_title">あなたの母語</string>
     <string name="onboarding_language_native_helper">小さい翻訳字幕として表示されます。</string>

@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">단락을 탭하면 다시 재생해요</string>
     <string name="player_subtitle_settings">자막 설정</string>
-    <string name="player_dual_subtitle_settings">이중 자막 설정</string>
+    <string name="player_dual_subtitle_settings">설정</string>
     <string name="player_show_dual_subtitles">이중 자막 표시</string>
     <string name="player_hide_dual_subtitles">이중 자막 숨기기</string>
     <string name="player_loading_captions">자막을 불러오는 중…</string>

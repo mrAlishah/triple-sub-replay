@@ -43,6 +43,12 @@ Before any upstream sync or fork refactor, read [fork-customizations.md](docs/de
 5. Update relevant permanent docs in the same PR when an authorized decision changes architecture or conventions. Keep ROADMAP.md directional and each implementation plan inside its feature spec; keep QA evidence in docs/qa/.
 6. Open a focused PR against `main` linking the spec (or explaining why none is needed). Open it ready for review, never as a draft: the owner wants to test and merge without extra GitHub steps, and a draft needs an extra click before merging (CI does not re-run on ready for review). The owner remains final merge authority; do not merge, enable auto-merge, or publish releases unless explicitly instructed.
 
+## Branding (fork rule, owner decision 2026-10-31)
+
+- The product users see is **TripleSub Replay**: launcher label, drawer, welcome and help text, notices, share text, and the AI assistant's self-identification (shared `assets/ai/assistant-guide.md`, never a per-provider prompt). Take the name from `R.string.app_name` instead of a literal.
+- **DualSub Replay** is the upstream project. Keep it wherever it is true: credits, license and copyright text (`LICENSE`, `THIRD_PARTY_NOTICES.md`, `navigation_license_summary`, `assets/licenses/`), the Original/Forked links, and fork history. The assistant must say truthfully that the app is a fork of DualSub Replay when asked.
+- Never rename technical contracts for branding: applicationId, packages, `Theme.DualSubReplay`, the backup format value `"DualSubReplay"`, `ANKI_DECK_NAME`, Anki note types, preference keys, APK/preview asset names, OAuth and deep links. Classify each occurrence; no global search-and-replace.
+
 ## Merge conflict priorities (fork rule, owner decision 2026-10-29)
 
 When `main` (or any upstream) is merged into `mydevelop`:

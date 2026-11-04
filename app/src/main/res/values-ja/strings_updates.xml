@@ -8,7 +8,7 @@
     <string name="updates_checking">アップデートを確認しています…</string>
     <string name="updates_up_to_date">最新バージョン（%1$s）です。</string>
     <string name="updates_available">バージョン %1$s があります。現在は %2$s です。</string>
-    <string name="updates_first_time_note">初回は、DualSub Replay からのアプリのインストールを許可するよう Android が求めます。保存した単語と設定はそのまま残ります。</string>
+    <string name="updates_first_time_note">初回は、TripleSub Replay からのアプリのインストールを許可するよう Android が求めます。保存した単語と設定はそのまま残ります。</string>
     <string name="updates_whats_new">新機能</string>
     <string name="updates_update">更新</string>
     <string name="updates_not_now">後で</string>

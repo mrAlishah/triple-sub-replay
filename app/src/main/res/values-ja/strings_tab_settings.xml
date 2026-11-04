@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">現在のタブ</string>
+    <string name="tab_settings_scope_default">新しいタブの既定</string>
+    <string name="tab_settings_current_hint">言語、翻訳、字幕の表示はこのタブにだけ保存されます。アカウント、AIキー、チャットは共通のままです。</string>
+    <string name="tab_settings_default_hint">この設定は新しいタブにコピーされます。すでにあるタブと再生中の動画は変わりません。</string>
+    <string name="tab_settings_ai_service">翻訳に使うAIサービス</string>
+    <string name="tab_settings_reset_tab">このタブを既定に戻す</string>
+    <string name="tab_settings_reset_title">このタブをリセットしますか?</string>
+    <string name="tab_settings_reset_message">このタブの言語、翻訳、字幕の表示が「新しいタブの既定」に置き換わります。ほかのタブは変わりません。</string>
+    <string name="tab_settings_reset_confirm">リセット</string>
+    <string name="tab_settings_playback_speed">再生速度</string>
+    <string name="tab_settings_speed_follow">YouTubeの記憶どおり</string>
+    <string name="tab_settings_use_as_default">このタブの設定を既定にする</string>
+    <string name="tab_settings_use_as_default_title">既定を置き換えますか?</string>
+    <string name="tab_settings_use_as_default_message">「新しいタブの既定」が、ドラッグした位置、再生モード、AIモデルを含むこのタブの設定のコピーになります。すでにあるタブは変わりません。</string>
+    <string name="tab_settings_use_as_default_confirm">置き換える</string>
+    <string name="tab_settings_group_title">タブごとの設定</string>
+    <string name="tab_settings_group_summary">現在のタブ、新しいタブの初期設定、リセット</string>
+</resources>

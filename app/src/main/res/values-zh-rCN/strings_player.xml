@@ -2,7 +2,7 @@
 <resources>
     <string name="player_tap_paragraph_to_replay">点按段落即可重播</string>
     <string name="player_subtitle_settings">字幕设置</string>
-    <string name="player_dual_subtitle_settings">双语字幕设置</string>
+    <string name="player_dual_subtitle_settings">设置</string>
     <string name="player_show_dual_subtitles">显示双语字幕</string>
     <string name="player_hide_dual_subtitles">隐藏双语字幕</string>
     <string name="player_loading_captions">正在加载字幕…</string>

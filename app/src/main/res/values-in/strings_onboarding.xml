@@ -10,8 +10,8 @@
     <string name="onboarding_guide_replay_body">Setiap kalimat yang diucapkan ditampilkan beserta terjemahannya. Ketuk tombol putar pada sebuah baris untuk mengembalikan video ke momen itu, dan gunakan ikon roda gigi untuk mengubah bahasa atau ukuran teks.</string>
     <string name="onboarding_guide_replay_image">Panel subtitel berisi daftar baris subtitel dengan tombol putar ulang</string>
     <string name="onboarding_guide_open_video_title">Buka video apa pun</string>
-    <string name="onboarding_guide_open_video_body">Tempel tautan YouTube, bagikan video langsung dari aplikasi YouTube, atau cukup jelajahi di dalam DualSub Replay.</string>
-    <string name="onboarding_language_welcome">Selamat datang di DualSub Replay</string>
+    <string name="onboarding_guide_open_video_body">Tempel tautan YouTube, bagikan video langsung dari aplikasi YouTube, atau cukup jelajahi di dalam TripleSub Replay.</string>
+    <string name="onboarding_language_welcome">Selamat datang di TripleSub Replay</string>
     <string name="onboarding_language_intro">Pilih bahasa Anda sekali saja. Anda dapat mengubahnya nanti di setelan subtitel.</string>
     <string name="onboarding_language_native_title">Bahasa ibu Anda</string>
     <string name="onboarding_language_native_helper">Ditampilkan sebagai subtitel terjemahan berukuran kecil.</string>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">Tab saat ini</string>
+    <string name="tab_settings_scope_default">Default untuk tab baru</string>
+    <string name="tab_settings_current_hint">Bahasa, terjemahan, dan tampilan subtitel disimpan hanya untuk tab ini. Akun, kunci AI, dan obrolan tetap dibagikan.</string>
+    <string name="tab_settings_default_hint">Pengaturan ini disalin ke setiap tab baru. Tab yang sudah ada dan video yang sedang diputar tidak berubah.</string>
+    <string name="tab_settings_ai_service">Layanan AI untuk terjemahan</string>
+    <string name="tab_settings_reset_tab">Setel ulang tab ini ke default</string>
+    <string name="tab_settings_reset_title">Setel ulang tab ini?</string>
+    <string name="tab_settings_reset_message">Bahasa, terjemahan, dan tampilan subtitel tab ini diganti dengan Default untuk tab baru. Tab lain tidak berubah.</string>
+    <string name="tab_settings_reset_confirm">Setel ulang</string>
+    <string name="tab_settings_playback_speed">Kecepatan pemutaran</string>
+    <string name="tab_settings_speed_follow">Seperti yang diingat YouTube</string>
+    <string name="tab_settings_use_as_default">Gunakan pengaturan tab ini sebagai default</string>
+    <string name="tab_settings_use_as_default_title">Ganti default?</string>
+    <string name="tab_settings_use_as_default_message">Default untuk tab baru menjadi salinan pengaturan tab ini, termasuk posisi yang digeser, mode pemutaran, dan model AI. Tab yang sudah ada tidak berubah.</string>
+    <string name="tab_settings_use_as_default_confirm">Ganti</string>
+    <string name="tab_settings_group_title">Pengaturan per tab</string>
+    <string name="tab_settings_group_summary">Tab saat ini, bawaan untuk tab baru, atur ulang</string>
+</resources>

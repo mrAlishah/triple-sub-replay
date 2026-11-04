@@ -107,6 +107,13 @@ internal class ChatGptSubscription(
         }
     }
 
+    /** The open tab's saved choice was swapped into the preferences: read it again. No sign-in, gate reset or network call. */
+    fun reloadChoice() {
+        val selected = preferences.getString(AI_ACCESS_METHOD_PREFERENCE, null) == AI_ACCESS_CHATGPT
+        val model = preferences.getString(CHATGPT_MODEL_PREFERENCE, "").orEmpty()
+        mutableState.update { it.copy(useSubscription = selected, model = model, testResult = null) }
+    }
+
     fun selectModel(slug: String) {
         preferences.edit { putString(CHATGPT_MODEL_PREFERENCE, slug) }
         gate.reset()

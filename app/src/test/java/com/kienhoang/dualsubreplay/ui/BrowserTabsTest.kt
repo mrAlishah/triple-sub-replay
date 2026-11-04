@@ -137,4 +137,20 @@ class BrowserTabsTest {
         assertNull(videoLinkOrNull(null))
         assertFalse(tabs(video).full)
     }
+
+    @Test
+    fun aClosedTabsIdIsNeverGivenToANewTab() {
+        val two = tabs(video, search)
+        val afterClose = two.closed(2).opened(video)!!
+        assertEquals(listOf(1L, 3L), afterClose.tabs.map { it.id })
+        // Even when every tab was closed and the app restarted in between.
+        val restored = decodeBrowserTabs(encodeBrowserTabs(two.closed(2).closed(1)))!!
+        assertEquals(3L, restored.opened(video)!!.active?.id)
+    }
+
+    @Test
+    fun tabsSavedBeforeIdsWereCountedStillGetFreshIds() {
+        val old = """{"active":2,"tabs":[{"id":2,"url":"$video","title":"","account":1}]}"""
+        assertEquals(3L, decodeBrowserTabs(old)!!.opened(video)!!.active?.id)
+    }
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">Current tab</string>
+    <string name="tab_settings_scope_default">Default for new tabs</string>
+    <string name="tab_settings_current_hint">Language, translation and subtitle look are saved for this tab only. Accounts, AI keys and the chat stay shared.</string>
+    <string name="tab_settings_default_hint">These settings are copied into each new tab. Tabs you already have, and the video that is playing, do not change.</string>
+    <string name="tab_settings_ai_service">Translation AI service</string>
+    <string name="tab_settings_reset_tab">Reset this tab to the default</string>
+    <string name="tab_settings_reset_title">Reset this tab?</string>
+    <string name="tab_settings_reset_message">The language, translation and subtitle look of this tab are replaced with the Default for new tabs. Other tabs do not change.</string>
+    <string name="tab_settings_reset_confirm">Reset</string>
+    <string name="tab_settings_playback_speed">Playback speed</string>
+    <string name="tab_settings_speed_follow">As YouTube remembers</string>
+    <string name="tab_settings_use_as_default">Use the settings of this tab as the default</string>
+    <string name="tab_settings_use_as_default_title">Replace the default?</string>
+    <string name="tab_settings_use_as_default_message">The Default for new tabs becomes a copy of the settings of this tab, including dragged positions, play modes and the AI model. Tabs you already have do not change.</string>
+    <string name="tab_settings_use_as_default_confirm">Replace</string>
+    <string name="tab_settings_group_title">Settings per tab</string>
+    <string name="tab_settings_group_summary">Current tab, default for new tabs, reset</string>
+</resources>

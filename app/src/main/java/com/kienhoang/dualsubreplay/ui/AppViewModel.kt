@@ -250,6 +250,19 @@ class AppViewModel internal constructor(
     private var leftTabUrl: String? = null
     private var leftTabUrlUntil = 0L
     private val tabStore = BrowserTabStore(preferences, preferences.getString("last_browser_url", null))
+    private val tabSettings =
+        TabSettingsController(
+            preferences,
+            TabSettingsStore(PreferencesTabProfileStorage(application.getSharedPreferences(TAB_SETTINGS_PREFERENCES, 0))),
+        ) { tabStore.value.activeId }
+
+    // The open tab's profile is the truth at start-up, so it is in the preferences before the state below reads them.
+    init {
+        tabSettings.bootstrap(tabStore.value)
+        // chatGpt and aiConfig were built above from the preferences as they were before the profile was applied.
+        chatGpt.reloadChoice()
+        aiConfig.reloadChoice()
+    }
 
     private val _state =
         MutableStateFlow(
@@ -397,6 +410,8 @@ class AppViewModel internal constructor(
         flushImmersion()
         loadingJob?.cancel()
         preferences.unregisterOnSharedPreferenceChangeListener(visibilityListener)
+        preferences.unregisterOnSharedPreferenceChangeListener(tabSettings.listener)
+        tabSettings.writeThrough()
         super.onCleared()
     }
 
@@ -474,6 +489,7 @@ class AppViewModel internal constructor(
         _state.update { it.copy(manualVideoTitles = manualTitles.all()) }
         preferences.edit().remove(KARAOKE_TIMING_MODE_PREFERENCE).apply()
         preferences.registerOnSharedPreferenceChangeListener(visibilityListener)
+        preferences.registerOnSharedPreferenceChangeListener(tabSettings.listener)
         readPageTokenMode()
         pageTranscripts.onTokenLearned = { needed -> preferences.edit().putBoolean(PAGE_TOKEN_NEEDED_PREFERENCE, needed).apply() }
         viewModelScope.launch {
@@ -1228,6 +1244,7 @@ class AppViewModel internal constructor(
     fun resetAllSettings() {
         val editor = preferences.edit()
         RESETTABLE_SETTING_KEYS.forEach(editor::remove)
+        editor.remove(TAB_PLAYBACK_SPEED_PREFERENCE)
         editor.apply()
         chatGpt.resetChoice()
         aiConfig.resetChoice()
@@ -1313,9 +1330,10 @@ class AppViewModel internal constructor(
 
     /** Menu → Tabs → + New tab: YouTube's home page in a new tab, signed in with [account]. */
     fun openNewTab(account: Int = MAIN_TAB_ACCOUNT): Boolean {
+        val outgoing = _state.value.browserTabs.activeId
         val opened = rememberActiveTabPosition().opened(YOUTUBE_HOME_URL, account) ?: return false
         changeTabs { opened }
-        showActiveTab()
+        showActiveTabWithSettings(outgoing)
         return true
     }
 
@@ -1329,22 +1347,75 @@ class AppViewModel internal constructor(
     }
 
     fun switchTab(id: Long) {
-        if (id == _state.value.browserTabs.activeId) return
+        val outgoing = _state.value.browserTabs.activeId
+        if (id == outgoing) return
         changeTabs { rememberActiveTabPosition().switchedTo(id) }
-        showActiveTab()
+        showActiveTabWithSettings(outgoing)
     }
 
     fun closeTab(id: Long) {
-        val wasActive = id == _state.value.browserTabs.activeId
+        val outgoing = _state.value.browserTabs.activeId
         changeTabs { it.closed(id) }
-        if (wasActive) showActiveTab()
+        if (id == outgoing) showActiveTabWithSettings(outgoing)
+    }
+
+    /** "Reset current tab to Default": only the open tab takes a fresh copy of the Default profile. */
+    fun resetCurrentTabToDefault() {
+        if (!tabSettings.resetOpenTab()) return
+        applyTabSettingsToState()
+        reloadActiveVideo()
+    }
+
+    /** The speed the open tab's video last played at, or null when the tab follows YouTube's own. */
+    internal fun tabPlaybackSpeed(): Float? = preferences.getFloat(TAB_PLAYBACK_SPEED_PREFERENCE, 0f).takeIf { it > 0f }
+
+    /** Remembers [rate] for the open tab; the preference listener copies it into the tab's profile. */
+    internal fun recordTabPlaybackSpeed(rate: Float) = preferences.edit().putFloat(TAB_PLAYBACK_SPEED_PREFERENCE, rate).apply()
+
+    /** Copies the open tab's settings into the Default for new tabs. */
+    internal fun useCurrentTabAsDefault() = tabSettings.useOpenTabAsDefault()
+
+    /** What the "Default for New Tabs" editor shows. */
+    internal val defaultTabProfile: StateFlow<TabSettingsProfile> get() = tabSettings.defaultProfile
+
+    /** Edits the Default profile only: the open tab, its preferences and the playing video are not touched. */
+    internal fun updateDefaultTabProfile(change: (TabSettingsProfile) -> TabSettingsProfile) = tabSettings.updateDefault(change)
+
+    /**
+     * Opens the tab's page after its profile is in force: the settings are in the preferences and the state before
+     * the video loads, so captions and translation start with this tab's own configuration.
+     */
+    private fun showActiveTabWithSettings(outgoing: Long?) {
+        val changed = tabSettings.activate(outgoing, _state.value.browserTabs)
+        if (changed) applyTabSettingsToState()
+        val videoBefore = _state.value.activeVideoId
+        showActiveTab()
+        // openVideo ignores a video that is already open, so a tab on the same video reloads it itself.
+        if (reloadsSameVideoAfterSwitch(changed, videoBefore, _state.value.activeVideoId)) reloadActiveVideo()
+    }
+
+    /** Publishes the effective tab settings to the state and to the two holders that keep their own copy of the AI choice. */
+    private fun applyTabSettingsToState() {
+        googleFailedOnMobile = false
+        liveTranslationJob?.cancel()
+        liveTranslationGate.reset()
+        chatGpt.reloadChoice()
+        aiConfig.reloadChoice()
+        _state.update { it.withTabSettings(preferences).copy(liveTranslated = null) }
+    }
+
+    private fun reloadActiveVideo() {
+        val videoId = _state.value.activeVideoId ?: return
+        loadVideo(videoId, showPanel = _state.value.subtitlePanelVisible)
     }
 
     /** Just after a tab switch the page may still report the tab it is leaving. */
     private fun isLeftTabReport(url: String): Boolean = url == leftTabUrl && SystemClock.elapsedRealtime() < leftTabUrlUntil
 
     private fun changeTabs(change: (BrowserTabs) -> BrowserTabs) {
+        val previousIds = tabStore.value.tabs.map { it.id }.toSet()
         tabStore.update(change)
+        tabSettings.tabsChanged(previousIds, tabStore.value)
         if (_state.value.browserTabs != tabStore.value) _state.update { it.copy(browserTabs = tabStore.value) }
     }
 
@@ -1375,7 +1446,10 @@ class AppViewModel internal constructor(
 
     /** A page opened from outside the menu (a shared link, the assistant) needs a tab when all were closed. */
     private fun ensureOpenTab(url: String) {
-        if (_state.value.browserTabs.active == null) changeTabs { it.opened(url) ?: it }
+        if (_state.value.browserTabs.active == null) {
+            changeTabs { it.opened(url) ?: it }
+            if (tabSettings.activate(null, tabStore.value)) applyTabSettingsToState()
+        }
     }
 
     fun showSubtitlePanel() = _state.update { it.copy(subtitlePanelVisible = true) }

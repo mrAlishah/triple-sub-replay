@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">현재 탭</string>
+    <string name="tab_settings_scope_default">새 탭 기본값</string>
+    <string name="tab_settings_current_hint">언어, 번역, 자막 모양은 이 탭에만 저장됩니다. 계정, AI 키, 채팅은 계속 공유됩니다.</string>
+    <string name="tab_settings_default_hint">이 설정은 새 탭마다 복사됩니다. 이미 있는 탭과 재생 중인 동영상은 바뀌지 않습니다.</string>
+    <string name="tab_settings_ai_service">번역 AI 서비스</string>
+    <string name="tab_settings_reset_tab">이 탭을 기본값으로 되돌리기</string>
+    <string name="tab_settings_reset_title">이 탭을 초기화할까요?</string>
+    <string name="tab_settings_reset_message">이 탭의 언어, 번역, 자막 모양이 “새 탭 기본값”으로 바뀝니다. 다른 탭은 바뀌지 않습니다.</string>
+    <string name="tab_settings_reset_confirm">초기화</string>
+    <string name="tab_settings_playback_speed">재생 속도</string>
+    <string name="tab_settings_speed_follow">YouTube가 기억하는 대로</string>
+    <string name="tab_settings_use_as_default">이 탭의 설정을 기본값으로 사용</string>
+    <string name="tab_settings_use_as_default_title">기본값을 바꿀까요?</string>
+    <string name="tab_settings_use_as_default_message">“새 탭 기본값”이 끌어서 옮긴 위치, 재생 모드, AI 모델을 포함한 이 탭 설정의 사본이 됩니다. 이미 있는 탭은 바뀌지 않습니다.</string>
+    <string name="tab_settings_use_as_default_confirm">바꾸기</string>
+    <string name="tab_settings_group_title">탭별 설정</string>
+    <string name="tab_settings_group_summary">현재 탭, 새 탭 기본값, 초기화</string>
+</resources>

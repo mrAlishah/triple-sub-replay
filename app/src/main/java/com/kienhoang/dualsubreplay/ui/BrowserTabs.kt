@@ -20,6 +20,9 @@ internal const val TAB_ACCOUNT_COUNT = 3
 
 internal const val BROWSER_TABS_PREFERENCE = "browser_tabs"
 
+/** The lowest tab id that was never issued; written with the tabs and never lowered, so it survives unreadable tab data. */
+internal const val BROWSER_TAB_ID_FLOOR_PREFERENCE = "browser_tab_id_floor"
+
 // A video is reopened where it was left only after this much of it played.
 private const val RESUME_FROM_MS = 5_000L
 private const val MAX_TAB_TITLE_LENGTH = 200
@@ -34,9 +37,12 @@ data class BrowserTab(
 data class BrowserTabs(
     val tabs: List<BrowserTab> = emptyList(),
     val activeId: Long? = null,
+    /** The id the next tab gets. It only grows, so a closed tab's id (and its settings profile) is never given to a new tab. */
+    val nextId: Long = 0L,
 ) {
     val active: BrowserTab? get() = tabs.firstOrNull { it.id == activeId }
     val full: Boolean get() = tabs.size >= MAX_BROWSER_TABS
+    internal val freeId: Long get() = maxOf(nextId, (tabs.maxOfOrNull { it.id } ?: 0L) + 1)
 
     /** Adds a tab after the others, or returns null when [MAX_BROWSER_TABS] are open. */
     fun opened(
@@ -45,8 +51,8 @@ data class BrowserTabs(
         activate: Boolean = true,
     ): BrowserTabs? {
         if (full) return null
-        val tab = BrowserTab(id = (tabs.maxOfOrNull { it.id } ?: 0L) + 1, url = url, account = normalizeTabAccount(account))
-        return copy(tabs = tabs + tab, activeId = if (activate || activeId == null) tab.id else activeId)
+        val tab = BrowserTab(id = freeId, url = url, account = normalizeTabAccount(account))
+        return copy(tabs = tabs + tab, activeId = if (activate || activeId == null) tab.id else activeId, nextId = tab.id + 1)
     }
 
     /** Closing the open tab opens the one after it, or the one before it when it was the last. */
@@ -60,7 +66,7 @@ data class BrowserTabs(
             } else {
                 (remaining.getOrNull(index) ?: remaining.lastOrNull())?.id
             }
-        return BrowserTabs(remaining, nextActive)
+        return BrowserTabs(remaining, nextActive, freeId)
     }
 
     fun switchedTo(id: Long): BrowserTabs = if (tabs.any { it.id == id }) copy(activeId = id) else this
@@ -133,6 +139,7 @@ internal fun watchUrlAt(
 internal fun encodeBrowserTabs(state: BrowserTabs): String =
     JSONObject()
         .put("active", state.activeId ?: -1L)
+        .put("next_tab_id", state.nextId)
         .put(
             "tabs",
             JSONArray().apply {
@@ -169,7 +176,7 @@ internal fun decodeBrowserTabs(stored: String?): BrowserTabs? {
                 }.distinctBy { it.id }
                 .take(MAX_BROWSER_TABS)
         val activeId = json.optLong("active", -1L).takeIf { id -> tabs.any { it.id == id } } ?: tabs.firstOrNull()?.id
-        BrowserTabs(tabs, activeId)
+        BrowserTabs(tabs, activeId, json.optLong("next_tab_id", 0L))
     }.getOrNull()
 }
 
@@ -181,10 +188,21 @@ internal fun decodeBrowserTabs(stored: String?): BrowserTabs? {
 internal fun initialBrowserTabs(
     stored: String?,
     lastUrl: String?,
+    idFloor: Long = 0L,
 ): BrowserTabs {
+    val decoded = decodeBrowserTabs(stored)
+    // No readable tabs: the first tab takes an id above every id ever issued (kept in [idFloor]), so a profile saved for an
+    // earlier tab can never be attached to it.
     val saved =
-        decodeBrowserTabs(stored)
-            ?: return BrowserTabs(listOf(BrowserTab(id = 1, url = trustedEmbeddedUrlOrHome(lastUrl ?: YOUTUBE_HOME_URL))), activeId = 1)
+        decoded?.let { if (it.nextId >= idFloor) it else it.copy(nextId = idFloor) }
+            ?: run {
+                val id = maxOf(1L, idFloor)
+                return BrowserTabs(
+                    listOf(BrowserTab(id = id, url = trustedEmbeddedUrlOrHome(lastUrl ?: YOUTUBE_HOME_URL))),
+                    activeId = id,
+                    nextId = id + 1,
+                )
+            }
     val latest = lastUrl?.takeIf(::isYouTubeWebUrl) ?: return saved
     return if (saved.active == null) saved else saved.withActiveUrl(latest)
 }
@@ -194,8 +212,21 @@ internal class BrowserTabStore(
     private val preferences: SharedPreferences,
     lastUrl: String?,
 ) {
-    private val mutableTabs = MutableStateFlow(initialBrowserTabs(preferences.getString(BROWSER_TABS_PREFERENCE, null), lastUrl))
+    private val mutableTabs =
+        MutableStateFlow(
+            initialBrowserTabs(
+                preferences.getString(BROWSER_TABS_PREFERENCE, null),
+                lastUrl,
+                preferences.getLong(BROWSER_TAB_ID_FLOOR_PREFERENCE, 0L),
+            ),
+        )
     val tabs: StateFlow<BrowserTabs> = mutableTabs.asStateFlow()
+
+    init {
+        if (preferences.getLong(BROWSER_TAB_ID_FLOOR_PREFERENCE, 0L) < mutableTabs.value.freeId) {
+            preferences.edit().putLong(BROWSER_TAB_ID_FLOOR_PREFERENCE, mutableTabs.value.freeId).apply()
+        }
+    }
 
     val value: BrowserTabs get() = mutableTabs.value
 
@@ -204,6 +235,11 @@ internal class BrowserTabStore(
         val after = change(before)
         if (after == before) return
         mutableTabs.value = after
-        preferences.edit().putString(BROWSER_TABS_PREFERENCE, encodeBrowserTabs(after)).apply()
+        // One edit: the tabs and the lowest id that may still be issued always change together.
+        preferences
+            .edit()
+            .putString(BROWSER_TABS_PREFERENCE, encodeBrowserTabs(after))
+            .putLong(BROWSER_TAB_ID_FLOOR_PREFERENCE, maxOf(after.freeId, preferences.getLong(BROWSER_TAB_ID_FLOOR_PREFERENCE, 0L)))
+            .apply()
     }
 }

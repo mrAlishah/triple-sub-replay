@@ -349,6 +349,7 @@ internal fun QuickLanguageSettingsDialog(
     recentTargetLanguages: List<String> = emptyList(),
     onDismiss: () -> Unit,
 ) {
+    DismissWhenOpenTabChanges(onDismiss)
     val languagePicker = remember { LanguagePickerState() }
     val autoLabel = stringResource(R.string.settings_source_language_auto)
     val interfaceLocale = currentInterfaceLocale()
@@ -497,6 +498,9 @@ internal fun SubtitleSettingsDialog(
     val languageDownloads = LocalLanguageDownloads.current
     val translationEngineActions = LocalTranslationEngineActions.current
     var showLanguageDownloads by remember { mutableStateOf(false) }
+    var tabSettingsScope by rememberSaveable { mutableStateOf(TabSettingsScope.CURRENT) }
+    DismissWhenOpenTabChanges(onDismiss)
+    var tabSettingsOpen by rememberSaveable { mutableStateOf(false) }
     var languagesOpen by rememberSaveable { mutableStateOf(false) }
     var readingOpen by rememberSaveable { mutableStateOf(false) }
     var defaultViewOpen by rememberSaveable { mutableStateOf(false) }
@@ -553,6 +557,24 @@ internal fun SubtitleSettingsDialog(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    LocalTabSettings.current?.let { tabSettings ->
+                        SettingsExpandableCard(
+                            title = stringResource(R.string.tab_settings_group_title),
+                            summary = stringResource(R.string.tab_settings_group_summary),
+                            icon = Icons.Default.Tab,
+                            expanded = tabSettingsOpen,
+                            onToggle = { tabSettingsOpen = !tabSettingsOpen },
+                            testTag = "settings_group_tab_settings",
+                        ) {
+                            TabSettingsScopeBar(tabSettingsScope) { tabSettingsScope = it }
+                            if (tabSettingsScope == TabSettingsScope.DEFAULT) {
+                                DefaultTabProfileEditor(tabSettings)
+                            } else {
+                                CurrentTabSettingsNote(tabSettings)
+                            }
+                        }
+                        if (tabSettingsOpen && tabSettingsScope == TabSettingsScope.DEFAULT) return@Column
+                    }
                     SettingsExpandableCard(
                         title = stringResource(R.string.settings_group_languages),
                         summary = stringResource(R.string.settings_group_languages_summary),
@@ -940,7 +962,7 @@ internal fun SettingsExpandableCard(
 }
 
 @Composable
-private fun WordLearningSettings(
+internal fun WordLearningSettings(
     autoPronounce: Boolean,
     onAutoPronounceChange: (Boolean) -> Unit,
     wordLearningEnabled: Boolean,
@@ -1193,7 +1215,7 @@ internal fun SettingsSectionDivider() {
 }
 
 @Composable
-private fun SubtitleColorSwatchRow(
+internal fun SubtitleColorSwatchRow(
     title: String,
     selectedKey: String,
     enabled: Boolean,
@@ -1262,7 +1284,7 @@ private fun OnlineTranslationSettingsRows(
 }
 
 @Composable
-private fun TranslatorOptionRow(
+internal fun TranslatorOptionRow(
     option: SubtitleTranslator,
     selected: SubtitleTranslator,
     onSelect: (SubtitleTranslator) -> Unit,

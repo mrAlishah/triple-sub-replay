@@ -73,6 +73,7 @@ private class LoadedAiState(
     val savedChats: List<AiChat>,
     val memory: AiMemoryData,
     val tavilyKeyHint: String?,
+    val keysInUse: Map<AiProvider, String>,
 )
 
 internal data class AiFailure(
@@ -239,7 +240,7 @@ internal data class AiAssistantUiState(
     val keyChecked: Boolean
         get() = aiCheckedSetup(settings, settings.provider).let { setup -> currentKeys.any { it.checkedSetup == setup } }
 
-    /** The key [provider]'s questions try first: the one that answered last, else the first checked one, else the first. */
+    /** The key [provider]'s questions try first: the one tapped or that answered last, else the first checked one, else the first. */
     fun keyInUse(provider: AiProvider): String? {
         val saved = keys[provider].orEmpty()
         val setup = aiCheckedSetup(settings, provider)
@@ -324,7 +325,8 @@ internal class AiAssistantController(
                     val stored = historyStorage.load()
                     val kept = keptAiChats(stored, settings.historyRetention, clock())
                     if (kept != stored) historyStorage.save(kept)
-                    LoadedAiState(settings, keys, kept, memoryStorage.load(), searchKeys?.hint())
+                    val inUse = keys.keys.mapNotNull { provider -> keyStore.inUse(provider)?.let { provider to it } }.toMap()
+                    LoadedAiState(settings, keys, kept, memoryStorage.load(), searchKeys?.hint(), inUse)
                 }
             _state.update {
                 it.copy(
@@ -333,6 +335,7 @@ internal class AiAssistantController(
                     savedChats = loaded.savedChats,
                     memory = loaded.memory,
                     tavilyKeyHint = loaded.tavilyKeyHint,
+                    keysInUse = loaded.keysInUse + it.keysInUse,
                 )
             }
         }
@@ -644,6 +647,25 @@ internal class AiAssistantController(
         scope.launch { withContext(io) { keyStore.remove(provider, id) } }
     }
 
+    /** The user tapped [id] in AI settings: the assistant asks it first from now on, even after a restart. */
+    fun useKey(
+        provider: AiProvider,
+        id: String,
+    ) {
+        val saved = _state.value.keys[provider].orEmpty()
+        if (saved.any { it.id == id }) rememberKeyInUse(provider, id)
+    }
+
+    /** [id] is asked first from now on; it is saved only when it changed, since every answer lands here. */
+    private fun rememberKeyInUse(
+        provider: AiProvider,
+        id: String,
+    ) {
+        if (_state.value.keysInUse[provider] == id) return
+        _state.update { it.copy(keysInUse = it.keysInUse + (provider to id)) }
+        scope.launch { withContext(io) { keyStore.setInUse(provider, id) } }
+    }
+
     /**
      * Asks for one word with each of the chosen service's keys and its model. Chat opens only after
      * one passes; a wrong key, model or address makes that key unchecked again, while a network
@@ -686,7 +708,7 @@ internal class AiAssistantController(
                 val inUse = _state.value.keyInUse(provider)
                 // A key in use that failed hands over to one that passed.
                 if (passed != null && tested.any { (key, result) -> key.id == inUse && result != AiConnectionTest.Passed }) {
-                    _state.update { it.copy(keysInUse = it.keysInUse + (provider to passed.id)) }
+                    rememberKeyInUse(provider, passed.id)
                 }
                 val overall =
                     when {
@@ -1227,7 +1249,7 @@ internal class AiAssistantController(
         id: String,
         setup: String?,
     ) {
-        _state.update { it.copy(keysInUse = it.keysInUse + (provider to id)) }
+        rememberKeyInUse(provider, id)
         val known =
             _state.value.keys[provider]
                 .orEmpty()

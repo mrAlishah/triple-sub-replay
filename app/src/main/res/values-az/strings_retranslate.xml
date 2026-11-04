@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="retranslate_title">Sİ ilə yenidən tərcümə et</string>
+    <string name="retranslate_subtitles">Hansı altyazılar</string>
+    <string name="retranslate_both">Hər ikisi</string>
+    <string name="retranslate_scope">Nə qədər</string>
+    <string name="retranslate_scope_sentence">Cari cümlə</string>
+    <string name="retranslate_scope_window">Cari oxutma pəncərəsi</string>
+    <string name="retranslate_scope_video">Bütün video</string>
+    <string name="retranslate_note">Sİ-dən yenidən soruşur və ChatGPT planınızın limitindən və ya API kreditindən daha çox istifadə edə bilər. Yeniləri gələnə qədər ekrandakı altyazılar qalır.</string>
+    <string name="retranslate_video_warning">Təxminən %2$d sorğuda təxminən %1$d cümlə göndərir və limitdən və ya kreditdən çox istifadə edə bilər.</string>
+    <string name="retranslate_video_confirm">Başa düşdüm və davam etmək istəyirəm</string>
+    <string name="retranslate_start">Yenidən tərcümə et</string>
+    <string name="retranslate_stop">Dayandır</string>
+    <string name="retranslate_progress">Yenidən tərcümə olunur… %1$d / %2$d</string>
+    <string name="retranslate_refreshing">Yenilənir…</string>
+    <string name="retranslate_failed">Yenidən tərcümə alınmadı (%1$s). Yenilənməyən sətirlər əvvəlki kimi qalır.</string>
+    <string name="retranslate_failed_short">Yenilənmədi</string>
+    <string name="retranslate_unavailable">Əvvəlcə Sİ provayderi qoşun: ChatGPT ilə daxil olun və ya Sİ ayarlarında API açarı əlavə edin.</string>
+</resources>

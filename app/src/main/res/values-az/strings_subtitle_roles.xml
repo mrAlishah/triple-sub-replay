@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="subtitle_role_original">Orijinal altyazı</string>
+    <string name="subtitle_role_first">Altyazı 1</string>
+    <string name="subtitle_role_second">Altyazı 2</string>
+    <string name="settings_slot_size">Ölçü</string>
+    <string name="settings_slot_position">Mövqe %1$d</string>
+    <string name="settings_slot_move_up">%1$s yuxarı apar</string>
+    <string name="settings_slot_move_down">%1$s aşağı apar</string>
+    <string name="settings_subtitle_alignment_title">Altyazının düzləndirilməsi</string>
+    <string name="settings_subtitle_alignment_auto">Avtomatik</string>
+    <string name="settings_subtitle_alignment_left">Sola</string>
+    <string name="settings_subtitle_alignment_center">Mərkəzə</string>
+    <string name="settings_subtitle_alignment_right">Sağa</string>
+</resources>

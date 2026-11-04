@@ -250,6 +250,19 @@ class AppViewModel internal constructor(
     private var leftTabUrl: String? = null
     private var leftTabUrlUntil = 0L
     private val tabStore = BrowserTabStore(preferences, preferences.getString("last_browser_url", null))
+    private val tabSettings =
+        TabSettingsController(
+            preferences,
+            TabSettingsStore(PreferencesTabProfileStorage(application.getSharedPreferences(TAB_SETTINGS_PREFERENCES, 0))),
+        ) { tabStore.value.activeId }
+
+    // The open tab's profile is the truth at start-up, so it is in the preferences before the state below reads them.
+    init {
+        tabSettings.bootstrap(tabStore.value)
+        // chatGpt and aiConfig were built above from the preferences as they were before the profile was applied.
+        chatGpt.reloadChoice()
+        aiConfig.reloadChoice()
+    }
 
     private val _state =
         MutableStateFlow(
@@ -323,6 +336,7 @@ class AppViewModel internal constructor(
                     ),
                 captionFormat = storedCaptionFormat(preferences.getString(CAPTION_FORMAT_PREFERENCE, null)),
                 translationPosition = storedTranslationPosition(preferences.getString(TRANSLATION_POSITION_PREFERENCE, null)),
+                transcriptFollow = storedTranscriptFollow(preferences.getString(TRANSCRIPT_FOLLOW_PREFERENCE, null)),
                 lockOverlayToVideo =
                     storedFeatureEnabled(
                         preferences.getBoolean(LOCK_OVERLAY_TO_VIDEO_PREFERENCE, false),
@@ -397,6 +411,8 @@ class AppViewModel internal constructor(
         flushImmersion()
         loadingJob?.cancel()
         preferences.unregisterOnSharedPreferenceChangeListener(visibilityListener)
+        preferences.unregisterOnSharedPreferenceChangeListener(tabSettings.listener)
+        tabSettings.writeThrough()
         super.onCleared()
     }
 
@@ -474,6 +490,7 @@ class AppViewModel internal constructor(
         _state.update { it.copy(manualVideoTitles = manualTitles.all()) }
         preferences.edit().remove(KARAOKE_TIMING_MODE_PREFERENCE).apply()
         preferences.registerOnSharedPreferenceChangeListener(visibilityListener)
+        preferences.registerOnSharedPreferenceChangeListener(tabSettings.listener)
         readPageTokenMode()
         pageTranscripts.onTokenLearned = { needed -> preferences.edit().putBoolean(PAGE_TOKEN_NEEDED_PREFERENCE, needed).apply() }
         viewModelScope.launch {
@@ -897,6 +914,11 @@ class AppViewModel internal constructor(
         _state.update { it.copy(translationPosition = position, subtitleOrder = storedSubtitleOrder(null, position)) }
     }
 
+    fun setTranscriptFollow(follow: TranscriptFollow) {
+        preferences.edit().putString(TRANSCRIPT_FOLLOW_PREFERENCE, follow.storageValue).apply()
+        _state.update { it.copy(transcriptFollow = follow) }
+    }
+
     fun setLockOverlayToVideo(locked: Boolean) {
         preferences.edit().putBoolean(LOCK_OVERLAY_TO_VIDEO_PREFERENCE, locked).apply()
         _state.update { it.copy(lockOverlayToVideo = locked) }
@@ -1034,11 +1056,12 @@ class AppViewModel internal constructor(
         meaning: String,
         online: Boolean,
         meanings: Map<String, String> = emptyMap(),
+        deck: String? = null,
     ): SavedWord {
         val current = _state.value
         // The title may arrive after the word was tapped, so it is read again now, still only for the word's own video.
         val titled = selection.copy(sourceTitle = current.titleOf(selection.videoId) ?: selection.sourceTitle)
-        return vocabulary.save(savedWordFrom(titled, meaning, online, current.thirdSentenceFor(selection), meanings))
+        return vocabulary.save(savedWordFrom(titled, meaning, online, current.thirdSentenceFor(selection), meanings).copy(deck = deck))
     }
 
     suspend fun translateWord(word: String): String {
@@ -1053,7 +1076,13 @@ class AppViewModel internal constructor(
         target: String,
         text: String,
     ): String {
-        if (!_state.value.translatesWithGoogle()) return translator.translateSingle(source, target, text)
+        val onDevice = translator.supports(source, target)
+        // A language without an on-device model stays with Google, even after Google failed once.
+        val online = _state.value.translatesWithGoogle() || (!onDevice && _state.value.translationEngine == TranslationEngine.GOOGLE_WEB)
+        if (!online) {
+            requireOnDeviceModel(source, target)
+            return translator.translateSingle(source, target, text)
+        }
         val translated =
             try {
                 googleTranslator.translate(source, target, text)
@@ -1061,10 +1090,27 @@ class AppViewModel internal constructor(
                 throw error
             } catch (error: Exception) {
                 fallBackToOnDevice(error)
+                if (!onDevice) throw error
                 null
             }
         // A text Google leaves blank is translated on the device; only a failure moves the video off Google.
-        return translated ?: translator.translateSingle(source, target, text)
+        return translated ?: if (onDevice) translator.translateSingle(source, target, text) else ""
+    }
+
+    /** "On this device only" with a language ML Kit has no model for: say which translator can do it. */
+    private fun requireOnDeviceModel(
+        source: String,
+        target: String,
+    ) {
+        if (!translator.supports(source, target)) throw onlineOnlyError(source, target)
+    }
+
+    private fun onlineOnlyError(
+        source: String,
+        target: String,
+    ): IllegalArgumentException {
+        val missing = if (translator.supports(source, source)) target else source
+        return IllegalArgumentException(text(R.string.status_translation_needs_online, languageName(missing)))
     }
 
     /** Settings → Translation → Google Translate (online). Reloads the current video's translations. */
@@ -1228,6 +1274,7 @@ class AppViewModel internal constructor(
     fun resetAllSettings() {
         val editor = preferences.edit()
         RESETTABLE_SETTING_KEYS.forEach(editor::remove)
+        editor.remove(TAB_PLAYBACK_SPEED_PREFERENCE)
         editor.apply()
         chatGpt.resetChoice()
         aiConfig.resetChoice()
@@ -1254,6 +1301,7 @@ class AppViewModel internal constructor(
                 studyPlayMode = StudyPlayMode.NORMAL,
                 captionFormat = DEFAULT_CAPTION_FORMAT,
                 translationPosition = TranslationPosition.BELOW,
+                transcriptFollow = TranscriptFollow.PAGE,
                 lockOverlayToVideo = false,
                 preloadModelsEnabled = true,
                 naturalSubtitlesEnabled = true,
@@ -1313,9 +1361,10 @@ class AppViewModel internal constructor(
 
     /** Menu → Tabs → + New tab: YouTube's home page in a new tab, signed in with [account]. */
     fun openNewTab(account: Int = MAIN_TAB_ACCOUNT): Boolean {
+        val outgoing = _state.value.browserTabs.activeId
         val opened = rememberActiveTabPosition().opened(YOUTUBE_HOME_URL, account) ?: return false
         changeTabs { opened }
-        showActiveTab()
+        showActiveTabWithSettings(outgoing)
         return true
     }
 
@@ -1329,22 +1378,75 @@ class AppViewModel internal constructor(
     }
 
     fun switchTab(id: Long) {
-        if (id == _state.value.browserTabs.activeId) return
+        val outgoing = _state.value.browserTabs.activeId
+        if (id == outgoing) return
         changeTabs { rememberActiveTabPosition().switchedTo(id) }
-        showActiveTab()
+        showActiveTabWithSettings(outgoing)
     }
 
     fun closeTab(id: Long) {
-        val wasActive = id == _state.value.browserTabs.activeId
+        val outgoing = _state.value.browserTabs.activeId
         changeTabs { it.closed(id) }
-        if (wasActive) showActiveTab()
+        if (id == outgoing) showActiveTabWithSettings(outgoing)
+    }
+
+    /** "Reset current tab to Default": only the open tab takes a fresh copy of the Default profile. */
+    fun resetCurrentTabToDefault() {
+        if (!tabSettings.resetOpenTab()) return
+        applyTabSettingsToState()
+        reloadActiveVideo()
+    }
+
+    /** The speed the open tab's video last played at, or null when the tab follows YouTube's own. */
+    internal fun tabPlaybackSpeed(): Float? = preferences.getFloat(TAB_PLAYBACK_SPEED_PREFERENCE, 0f).takeIf { it > 0f }
+
+    /** Remembers [rate] for the open tab; the preference listener copies it into the tab's profile. */
+    internal fun recordTabPlaybackSpeed(rate: Float) = preferences.edit().putFloat(TAB_PLAYBACK_SPEED_PREFERENCE, rate).apply()
+
+    /** Copies the open tab's settings into the Default for new tabs. */
+    internal fun useCurrentTabAsDefault() = tabSettings.useOpenTabAsDefault()
+
+    /** What the "Default for New Tabs" editor shows. */
+    internal val defaultTabProfile: StateFlow<TabSettingsProfile> get() = tabSettings.defaultProfile
+
+    /** Edits the Default profile only: the open tab, its preferences and the playing video are not touched. */
+    internal fun updateDefaultTabProfile(change: (TabSettingsProfile) -> TabSettingsProfile) = tabSettings.updateDefault(change)
+
+    /**
+     * Opens the tab's page after its profile is in force: the settings are in the preferences and the state before
+     * the video loads, so captions and translation start with this tab's own configuration.
+     */
+    private fun showActiveTabWithSettings(outgoing: Long?) {
+        val changed = tabSettings.activate(outgoing, _state.value.browserTabs)
+        if (changed) applyTabSettingsToState()
+        val videoBefore = _state.value.activeVideoId
+        showActiveTab()
+        // openVideo ignores a video that is already open, so a tab on the same video reloads it itself.
+        if (reloadsSameVideoAfterSwitch(changed, videoBefore, _state.value.activeVideoId)) reloadActiveVideo()
+    }
+
+    /** Publishes the effective tab settings to the state and to the two holders that keep their own copy of the AI choice. */
+    private fun applyTabSettingsToState() {
+        googleFailedOnMobile = false
+        liveTranslationJob?.cancel()
+        liveTranslationGate.reset()
+        chatGpt.reloadChoice()
+        aiConfig.reloadChoice()
+        _state.update { it.withTabSettings(preferences).copy(liveTranslated = null) }
+    }
+
+    private fun reloadActiveVideo() {
+        val videoId = _state.value.activeVideoId ?: return
+        loadVideo(videoId, showPanel = _state.value.subtitlePanelVisible)
     }
 
     /** Just after a tab switch the page may still report the tab it is leaving. */
     private fun isLeftTabReport(url: String): Boolean = url == leftTabUrl && SystemClock.elapsedRealtime() < leftTabUrlUntil
 
     private fun changeTabs(change: (BrowserTabs) -> BrowserTabs) {
+        val previousIds = tabStore.value.tabs.map { it.id }.toSet()
         tabStore.update(change)
+        tabSettings.tabsChanged(previousIds, tabStore.value)
         if (_state.value.browserTabs != tabStore.value) _state.update { it.copy(browserTabs = tabStore.value) }
     }
 
@@ -1375,7 +1477,10 @@ class AppViewModel internal constructor(
 
     /** A page opened from outside the menu (a shared link, the assistant) needs a tab when all were closed. */
     private fun ensureOpenTab(url: String) {
-        if (_state.value.browserTabs.active == null) changeTabs { it.opened(url) ?: it }
+        if (_state.value.browserTabs.active == null) {
+            changeTabs { it.opened(url) ?: it }
+            if (tabSettings.activate(null, tabStore.value)) applyTabSettingsToState()
+        }
     }
 
     fun showSubtitlePanel() = _state.update { it.copy(subtitlePanelVisible = true) }
@@ -1869,6 +1974,19 @@ class AppViewModel internal constructor(
         if (fallback) launch { recheckGoogle(sourceLanguage, targetLanguage, soon) }
         val fromYouTube = if (fallback) async { youTubeTranslations(store, videoId, generation, source, targetLanguage) } else null
         val youTubeInTime = fromYouTube?.let { answer -> async { withTimeoutOrNull(YOUTUBE_TRANSLATION_WAIT_MS) { answer.await() } } }
+        if (!translator.supports(sourceLanguage, targetLanguage)) {
+            // No on-device model (Azerbaijani, Kazakh...): after a Google failure rows take YouTube's own
+            // translation, else ask Google again; "On this device only" cannot translate them at all.
+            if (fromYouTube == null || youTubeInTime == null) throw onlineOnlyError(sourceLanguage, targetLanguage)
+            follow { text ->
+                googleTranslator.cachedTranslation(sourceLanguage, targetLanguage, text)?.let { Translated(it, TranslationOrigin.GOOGLE) }
+                    ?: (if (fromYouTube.isCompleted) fromYouTube.await() else youTubeInTime.await())
+                        ?.get(text)
+                        ?.let { Translated(it, TranslationOrigin.YOUTUBE) }
+                    ?: Translated(googleTranslator.translate(sourceLanguage, targetLanguage, text).orEmpty(), TranslationOrigin.GOOGLE)
+            }
+            return@coroutineScope
+        }
         translator.withSession(sourceLanguage, targetLanguage, onDownloadingChange = { downloading ->
             showTranslationModelDownload(videoId, generation, downloading)
         }) { translate ->
@@ -1910,6 +2028,8 @@ class AppViewModel internal constructor(
         target: String,
         text: String,
     ): String {
+        // Without an on-device model the line Google left blank stays blank.
+        if (!translator.supports(source, target)) return ""
         val onDownloadingChange = { downloading: Boolean -> showTranslationModelDownload(videoId, generation, downloading) }
         return translator.withSession(source, target, onDownloadingChange) { translate -> translate(text) }
     }

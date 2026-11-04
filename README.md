@@ -22,6 +22,7 @@
 - **Use AI for language learning:** supported AI translation and assistant features depend on configured connections, credentials and build version.
 - **Send vocabulary to AnkiDroid and import/export your study data.**
 - **Open multiple YouTube tabs:** up to 10 tabs with device-dependent multi-account support.
+- **Use the app in your language:** English, Tiếng Việt, Español, Português (Brasil), 日本語, 한국어, 简体中文, Bahasa Indonesia and Azərbaycan dili (the Azerbaijani text for fork-only screens is machine-translated). It follows your phone's language; the globe button in the menu picks another.
 
 See the [illustrated user guide](docs/user-guide/README.md) for each workflow.
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="translation_source_setting_title">Tərcümə mənbəyini göstər (debaq)</string>
+    <string name="translation_source_setting_description">Hər tərcümə olunmuş altyazını mətnin haradan gəldiyini göstərən etiketlə işarələyir. Təfərrüat üçün etiketə toxunun.</string>
+    <string name="translation_source_chatgpt">ChatGPT abunəliyi</string>
+    <string name="translation_source_chatgpt_cached">ChatGPT abunəliyi (keşdən)</string>
+    <string name="translation_source_google">Google Tərcümə</string>
+    <string name="translation_source_on_device">Cihazda tərcümə</string>
+    <string name="translation_source_youtube">YouTube-un tərcümə olunmuş altyazıları</string>
+    <string name="translation_source_ai_provider">Sİ provayderi</string>
+    <string name="translation_source_ai_provider_cached">Sİ provayderi (keşdən)</string>
+    <string name="translation_source_unknown">Naməlum</string>
+    <string name="translation_source_dialog_title">Tərcümə mənbəyi</string>
+    <string name="translation_source_dialog_slot">%1$s · %2$s</string>
+    <string name="translation_source_dialog_model">Model: %1$s</string>
+    <string name="translation_source_dialog_events">Son Sİ və ehtiyat variant hadisələri</string>
+    <string name="translation_source_dialog_no_events">Bu dil üçün hələ heç nə qeyd olunmayıb.</string>
+    <string name="translation_source_event_request">Sİ sorğusu · cümlə sayı: %1$d</string>
+    <string name="translation_source_event_succeeded">Sİ cavab verdi · cümlə sayı: %1$d</string>
+    <string name="translation_source_event_failed">Sİ alınmadı · %1$s · saxlanan cümlə: %2$d</string>
+    <string name="translation_source_event_identical">%1$s göstərilən mətnlə eyni mətn verdi</string>
+    <string name="translation_source_event_fallback">Sİ əvəzinə %1$s göstərilir</string>
+    <string name="translation_source_close">Bağla</string>
+    <string name="translation_source_event_scheduled">Sİ-dən cümlələr istənildi: %1$d</string>
+    <string name="translation_source_event_upgraded">Sİ ekrandakı sətirləri əvəz etdi: %1$d</string>
+    <string name="translation_source_event_refresh_requested">Yenidən tərcümə istənildi · cümlə sayı: %1$d</string>
+    <string name="translation_source_event_cache_bypassed">Yeni sorğu üçün saxlanmış tərcümələr keçildi</string>
+    <string name="translation_source_event_refresh_succeeded">Yenidən tərcümə olundu · cümlə sayı: %1$d</string>
+    <string name="translation_source_event_refresh_failed">Yenidən tərcümə alınmadı · %1$s</string>
+</resources>

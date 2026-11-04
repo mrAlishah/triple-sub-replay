@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -21,6 +22,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -36,6 +39,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import kotlin.math.abs
 
 class SubtitleUiTest {
     @get:Rule
@@ -500,6 +504,59 @@ class SubtitleUiTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Original line 4").assertIsDisplayed()
         composeRule.onNodeWithTag("jump_back_pill").assertDoesNotExist()
+    }
+
+    @Test
+    fun inTheMiddleKeepsTheSpokenLineCenteredAsEachLineEnds() {
+        val segments =
+            (0 until 40).map { index ->
+                SubtitleSegment(
+                    id = index.toLong(),
+                    startMs = index * 2_000L,
+                    endMs = index * 2_000L + 1_900L,
+                    originalText = "Original line $index",
+                    translatedText = "Translated line $index",
+                )
+            }
+        var state by mutableStateOf(
+            DualSubUiState(
+                segments = segments,
+                currentIndex = 0,
+                transcriptFollow = TranscriptFollow.CENTER,
+                wordHighlightEnabled = false,
+                wordLearningEnabled = false,
+            ),
+        )
+        composeRule.setContent {
+            DualSubTheme {
+                Box(Modifier.fillMaxWidth().height(360.dp).testTag("timeline_viewport")) {
+                    SubtitleTimeline(state, onReplay = {})
+                }
+            }
+        }
+        val viewport = composeRule.onNodeWithTag("timeline_viewport").getUnclippedBoundsInRoot()
+        val middle = (viewport.top + viewport.bottom) / 2
+
+        fun offCenter(index: Int): Dp {
+            val row = composeRule.onNodeWithText("Original line $index").getUnclippedBoundsInRoot()
+            val translation = composeRule.onNodeWithText("Translated line $index").getUnclippedBoundsInRoot()
+            return abs(((row.top + translation.bottom) / 2 - middle).value).dp
+        }
+
+        // Each new line glides to the middle, one line at a time, as when a video plays.
+        for (index in 1..12) {
+            state = state.copy(currentIndex = index)
+            composeRule.waitForIdle()
+        }
+        assertTrue("line 12 is centered: ${offCenter(12)} off", offCenter(12) < 12.dp)
+        composeRule.onNodeWithText("Original line 9").assertIsDisplayed()
+        composeRule.onNodeWithText("Original line 15").assertIsDisplayed()
+        saveUiEvidence("transcript-in-the-middle", composeRule.onRoot().captureToImage())
+
+        // A far seek jumps straight there and centers that line too.
+        state = state.copy(currentIndex = 30)
+        composeRule.waitForIdle()
+        assertTrue("line 30 is centered: ${offCenter(30)} off", offCenter(30) < 12.dp)
     }
 
     @Test

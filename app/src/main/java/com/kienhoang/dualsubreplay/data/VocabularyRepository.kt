@@ -157,6 +157,12 @@ internal class VocabularyRepository internal constructor(
     suspend fun retitleVideo(
         videoId: String,
         title: String?,
+    ): Int = updateWhere({ it.videoId == videoId && it.sourceTitle != title }) { it.copy(sourceTitle = title) }
+
+    /** Changes every word [matches] picks in one transaction (moving words between decks), publishing once. */
+    suspend fun updateWhere(
+        matches: (SavedWord) -> Boolean,
+        change: (SavedWord) -> SavedWord,
     ): Int =
         withContext(Dispatchers.IO) {
             mutex.withLock {
@@ -164,9 +170,9 @@ internal class VocabularyRepository internal constructor(
                 var changed = 0
                 db.beginTransaction()
                 try {
-                    readAll().filter { it.videoId == videoId && it.sourceTitle != title }.forEach { word ->
-                        val values = ContentValues().apply { put("payload", encodeWord(word.copy(sourceTitle = title)).toString()) }
-                        check(db.update("words", values, "id = ?", arrayOf(word.id)) > 0) { "Could not update word" }
+                    readAll().filter(matches).forEach { old ->
+                        val values = ContentValues().apply { put("payload", encodeWord(change(old)).toString()) }
+                        check(db.update("words", values, "id = ?", arrayOf(old.id)) == 1) { "Could not update word" }
                         changed++
                     }
                     db.setTransactionSuccessful()
@@ -289,6 +295,7 @@ internal fun encodeWord(w: SavedWord): JSONObject =
         if (w.meanings.isNotEmpty()) put("meanings", JSONObject(w.meanings))
         if (w.personalNotes.isNotEmpty()) put("personalNotes", w.personalNotes)
         w.sourceTitle?.let { put("sourceTitle", it) }
+        w.deck?.let { put("deck", it) }
     }
 
 internal fun decodeWord(j: JSONObject): SavedWord =
@@ -308,11 +315,20 @@ internal fun decodeWord(j: JSONObject): SavedWord =
         online = j.optBoolean("online", false),
         dueAt = j.optLong("dueAt"),
         intervalMs = j.optLong("intervalMs"),
-        sentenceTranslations = decodeSentenceTranslations(j.optJSONObject("sentenceTranslations")),
+        sentenceTranslations = upstreamThirdLine(j) + decodeSentenceTranslations(j.optJSONObject("sentenceTranslations")),
         meanings = decodeSentenceTranslations(j.optJSONObject("meanings")),
-        personalNotes = j.optString("personalNotes"),
+        // "notes" is the name in upstream DualSub Replay's backups; they import into the same field.
+        personalNotes = j.optString("personalNotes").ifEmpty { j.optString("notes") },
         sourceTitle = normalizeSourceTitle(j.optString("sourceTitle")),
+        deck = if (j.isNull("deck")) null else cleanDeckName(j.optString("deck")),
     )
+
+/** An upstream DualSub Replay backup's single third line, as one more sentence translation; empty when it has none. */
+private fun upstreamThirdLine(j: JSONObject): Map<String, String> {
+    val text = j.optString("thirdSentence").trim()
+    val language = j.optString("thirdLanguage").trim()
+    return if (text.isNotEmpty() && language.matches(Regex("[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*"))) mapOf(language to text) else emptyMap()
+}
 
 private fun decodeSentenceTranslations(json: JSONObject?): Map<String, String> {
     val result = LinkedHashMap<String, String>()

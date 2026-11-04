@@ -21,6 +21,10 @@ In **Languages** settings, expand a slot and change its language, position/order
 
 For Persian and other RTL languages, check both alignment and RTL direction.
 
+## Settings per tab
+
+Every tab remembers its own subtitle languages, Subtitle 2 switch, translation mode, Translation AI Service (with its model and thinking), text size, alignment, RTL, order, caption format, colors, panel and button positions, playback speed and word-learning options, and restores them when you switch back and after a restart. A tab you have not changed the speed of follows YouTube's own speed. At the top of Settings choose **Current tab** to edit the open tab, or **Default for new tabs** to edit the settings each new tab starts with (existing tabs and the playing video do not change). **Reset this tab to the default** replaces only the open tab. **Use the settings of this tab as the default** (it asks first) copies everything about the open tab, including dragged positions, play modes and the AI model, into the Default for new tabs. If you switch tabs while Settings is open, Settings closes so nothing is saved to the wrong tab. Accounts, API keys, the ChatGPT sign-in, the Chat AI Service, saved words, Practice and Anki are shared by all tabs.
+
 ## Replay a sentence
 
 Use the **Play** button beside the segment you want to replay. The app seeks to that segment's start and plays the video.

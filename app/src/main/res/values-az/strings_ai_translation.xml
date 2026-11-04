@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Machine-translated, not native-reviewed. -->
+    <string name="ai_config_provider">Sİ provayderi</string>
+    <string name="ai_config_model">Sİ modeli</string>
+    <string name="ai_config_effort">Əsaslandırma səviyyəsi</string>
+    <string name="ai_config_model_replaced">“%1$s” artıq təklif olunmur. %2$s istifadə olunur.</string>
+    <string name="ai_config_models_loading">Modellər yüklənir…</string>
+    <string name="ai_config_models_failed">Model siyahısı yüklənmədi. Menyunu açın və Yenilə seçin.</string>
+    <string name="ai_config_models_empty">İstifadə oluna bilən model qaytarılmadı.</string>
+    <string name="ai_config_models_connect_chatgpt">Modellərinizi görmək üçün ChatGPT-ni qoşun.</string>
+    <string name="ai_config_models_connect_key">Tam model siyahısını yükləmək üçün açar əlavə edin.</string>
+    <string name="ai_config_models_refresh">Model siyahısını yenilə</string>
+    <string name="ai_config_effort_replaced">“%1$s” bu modeldə əlçatan deyil, ona görə Avtomatik istifadə olunur.</string>
+    <string name="ai_config_effort_fixed_chatgpt">ChatGPT abunəliyində tənzimlənən əsaslandırma səviyyəsi yoxdur.</string>
+    <string name="ai_config_effort_fixed">Bu modeldə tənzimlənən səviyyə yoxdur.</string>
+    <string name="ai_config_effort_unknown_claude">Bu modelin dəstəklədiyi səviyyələri görmək üçün model siyahısını yükləyin.</string>
+    <string name="ai_config_effort_auto_note">Model icazə verdikdə altyazılar üçün düşünməni qısa saxlayır.</string>
+    <string name="ai_config_key_saved">API açarı saxlanıldı</string>
+    <string name="ai_config_key_missing">Bu provayder üçün API açarı yoxdur. Siz açar əlavə edənə qədər Google tərcümə edir.</string>
+    <string name="ai_config_manage_keys">Açarları idarə et</string>
+    <string name="ai_access_chatgpt_subscription">ChatGPT abunəliyi</string>
+    <string name="ai_access_chatgpt_note">ChatGPT planınızdan istifadə edir, API açarı lazım deyil.</string>
+    <string name="ai_access_gemini_api">Gemini API (pulsuz səviyyə mövcuddur)</string>
+    <string name="ai_access_gemini_note">Gemini API açarı lazımdır. Pulsuz səviyyə yalnız Google-un açarınız və modeliniz üçün icazə verdiyi hallarda tətbiq olunur. Gemini AI Pro/Ultra planları ayrı məhsullardır və burada istifadə olunmur. Ödənişlər Google ödəniş ayarlarınızdan asılıdır.</string>
+    <string name="ai_access_claude_api">Claude API</string>
+    <string name="ai_access_claude_note">Anthropic Console-dan Claude API açarı lazımdır. İstifadə API tarifləri ilə və ya Console kreditləriniz varsa onlarla ödənilir. Claude Pro və Max abunəlikləri burada istifadə olunmur.</string>
+    <string name="ai_translation_effort_auto">Avtomatik (tövsiyə olunur)</string>
+    <string name="ai_translation_effort_off">Söndürülüb</string>
+    <string name="ai_translation_effort_minimal">Minimal</string>
+    <string name="ai_translation_effort_low">Aşağı</string>
+    <string name="ai_translation_effort_medium">Orta</string>
+    <string name="ai_translation_effort_high">Yüksək</string>
+    <string name="ai_translation_effort_xhigh">Çox yüksək</string>
+    <string name="ai_translation_effort_max">Maksimum</string>
+    <string name="ai_translation_test">Tərcüməni sına</string>
+    <string name="ai_translation_testing">Tərcümə olunur…</string>
+    <string name="ai_translation_test_setup">%1$s · %2$s · %3$s</string>
+    <string name="ai_translation_test_pair">Sınaq cümləsi: alman → fars</string>
+    <string name="ai_translation_test_result">Nəticə: %1$s</string>
+    <string name="ai_translation_test_origin">Cavab verən: %1$s</string>
+    <string name="ai_translation_test_no_key">Bu provayder üçün saxlanmış API açarı yoxdur.</string>
+    <string name="ai_translation_test_effort_refused">Bu model seçilmiş səviyyəni rədd etdi. Avtomatik və ya başqa səviyyə seçin.</string>
+</resources>

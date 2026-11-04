@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_settings_scope_current">Pestaña actual</string>
+    <string name="tab_settings_scope_default">Predeterminado para pestañas nuevas</string>
+    <string name="tab_settings_current_hint">El idioma, la traducción y el aspecto de los subtítulos se guardan solo para esta pestaña. Las cuentas, las claves de IA y el chat siguen compartidos.</string>
+    <string name="tab_settings_default_hint">Estos ajustes se copian en cada pestaña nueva. Las pestañas que ya tienes y el vídeo en reproducción no cambian.</string>
+    <string name="tab_settings_ai_service">Servicio de IA para traducir</string>
+    <string name="tab_settings_reset_tab">Restablecer esta pestaña al valor predeterminado</string>
+    <string name="tab_settings_reset_title">¿Restablecer esta pestaña?</string>
+    <string name="tab_settings_reset_message">El idioma, la traducción y el aspecto de los subtítulos de esta pestaña se sustituyen por los valores predeterminados para pestañas nuevas. Las demás pestañas no cambian.</string>
+    <string name="tab_settings_reset_confirm">Restablecer</string>
+    <string name="tab_settings_playback_speed">Velocidad de reproducción</string>
+    <string name="tab_settings_speed_follow">Como la recuerda YouTube</string>
+    <string name="tab_settings_use_as_default">Usar los ajustes de esta pestaña como predeterminados</string>
+    <string name="tab_settings_use_as_default_title">¿Reemplazar el valor predeterminado?</string>
+    <string name="tab_settings_use_as_default_message">El valor predeterminado para pestañas nuevas pasa a ser una copia de los ajustes de esta pestaña, incluidas las posiciones arrastradas, los modos de reproducción y el modelo de IA. Las pestañas que ya tienes no cambian.</string>
+    <string name="tab_settings_use_as_default_confirm">Reemplazar</string>
+    <string name="tab_settings_group_title">Ajustes por pestaña</string>
+    <string name="tab_settings_group_summary">Pestaña actual, valores para pestañas nuevas, restablecer</string>
+</resources>

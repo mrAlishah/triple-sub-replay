@@ -7,7 +7,9 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ## [Unreleased]
 
-No changes have been recorded after the published **v2.8.12** release. Future fork-specific work belongs here before the next APK release.
+### Added
+
+- **Per-tab settings.** Each YouTube tab now keeps its own subtitle languages, Subtitle 2 switch, translation mode (Google, AI with Google, AI only, on-device), Translation AI Service with its model and thinking, text size, per-subtitle size, alignment and RTL, subtitle order, caption format and visibility, subtitle colors and highlight, panel and subtitle-button positions, landscape split, playback speed and word-learning options, and restores them when you switch tabs and after a restart. Settings → Current tab | Default for new tabs: the Default is copied into each new tab at creation and never changes existing tabs or the playing video; "Reset this tab to the default" replaces only the open tab, and "Use the settings of this tab as the default" copies the open tab (positions, play modes, AI model included) into the Default. Accounts, API keys, the ChatGPT sign-in, the Chat AI Service, saved words, Practice, Anki, the app language and theme stay global. Existing users keep what they had: on the first start the Default and every tab begin with the current settings. Tab ids are never reused, even after a tab is closed or the saved tab list cannot be read. A Settings screen closes when the open tab changes, and the assistant's waiting cards and Undo buttons are dropped, so nothing can write to the wrong tab. Not tested on a device yet. See `docs/specs/2026-11-02-per-tab-settings-profiles.md`.
 
 ## [v2.8.12] - 2026-10-31
 

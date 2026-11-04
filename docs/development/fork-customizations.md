@@ -88,6 +88,17 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 - Integration files: `ui/SubtitleSettingsDialog.kt` (+227; Original, Subtitle 1, Subtitle 2 accordions are `mydevelop`-owned), `ui/DualSubApp.kt`, `ui/StudyTools.kt`, `ui/GoogleWaitSettings.kt`, `ui/GoogleTranslateLink.kt` (Google Translate hand-off is `mydevelop`-owned).
 - Invariants: the merge priorities in `AGENTS.md` ("Merge conflict priorities") apply; the app theme and string-resource rules apply to every added UI.
 
+## FC-09 Per-tab settings profiles
+
+- Ownership: Fork, Shared at several small seams. Status: Implemented (Stage 1 and Stage 2); device verification pending.
+- Purpose: each tab keeps its own subtitle, translation and appearance settings; one Default profile seeds new tabs by copy. `dual_sub_preferences` stays the effective settings of the open tab, so no reader changes.
+- Fork files: `ui/TabSettings.kt` (whitelist `TAB_SETTING_KEYS`, `TabSettingsStore`, `TabSettingsController`, `withTabSettings`, `ProfilePreferences`), `ui/TabSettingsEditor.kt`, `ui/TabPlaybackSpeed.kt`, `res/values*/strings_tab_settings.xml`, preferences file `tab_settings_profiles`, preference `browser_tab_id_floor`.
+- Integration files (Shared): `ui/AppViewModel.kt` (bootstrap, listener, `showActiveTabWithSettings`, `changeTabs`), `ui/BrowserTabs.kt` (`next_tab_id`), `ui/SubtitleSettingsDialog.kt` (scope selector hook, close-on-tab-change; `TranslatorOptionRow`, `SubtitleColorSwatchRow`, `WordLearningSettings` are `internal`), `ui/LearningPlayerRoot.kt` (`LocalTabSettings`, assistant `openTabChanged`), `ui/DualSubApp.kt` (speed binder, landscape-split listener), `chatgpt/ChatGptSubscription.reloadChoice`, `ui/AiTranslationConfig.reloadChoice`, `assistant/AiAssistantController.openTabChanged`.
+- Invariants: a new per-tab preference key is added only to `TAB_SETTING_KINDS`; profiles hold no secrets, no transcripts and no translated text; the write-through reads the current preferences and the current open tab (never a captured tab id); a tab switch saves the leaving tab, applies the entering one, then loads the video; tab ids only grow; keys, OAuth, Chat AI Service and the model catalog stay global.
+- Conflict sensitivity: medium (the ViewModel seams are small and additive).
+- Update guidance: upstream setters that write a whitelisted key keep working unchanged; a new upstream setting that should be per tab is one line in `TAB_SETTING_KINDS` plus its reader in `withTabSettings`.
+- Tests: `app/src/test/.../ui/TabSettingsTest.kt`, `BrowserTabsTest.kt`.
+
 ## Hotspots by remaining fork churn against `main` (Shared files)
 
 Measured 2026-10-30 after Stage 4, working tree vs `main` (`git diff --numstat main`, insertions/deletions): `ui/AppViewModel.kt` +297/-92, `ui/AiAssistantSettings.kt` +155/-44, `ui/SubtitleSettingsDialog.kt` +160/-67, `ui/DualSubApp.kt` +86/-103, `translation/AiSubtitleTranslator.kt` +202/-3, `assistant/AiAssistantController.kt` +134/-31, `ui/SavedWordsScreen.kt` +86/-20. Earlier figures in this file and the spec were insertions plus deletions or pre-stage values.

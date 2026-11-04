@@ -17,6 +17,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -226,6 +227,9 @@ internal class YouTubeWebController {
     private var pendingClip: com.kienhoang.dualsubreplay.data.SavedWord? = null
     private var playingClipVideo: String? = null
 
+    /** Told of each seek to a line that does not come from the play modes (a tapped line, the AI, the TV remote). */
+    var learnerSeekListener: ((Float) -> Unit)? = null
+
     fun bindScripts(action: (String) -> Unit) { scriptAction = action }
     fun pause() {
         pendingClip = null
@@ -265,9 +269,14 @@ internal class YouTubeWebController {
         playingClipVideo = null
     }
 
-    fun replayFrom(second: Float) {
+    fun replayFrom(
+        second: Float,
+        byPlayMode: Boolean = false,
+    ) {
         pause()
-        replayAction?.invoke(second.takeIf { it.isFinite() }?.coerceAtLeast(0f) ?: 0f)
+        val target = second.takeIf { it.isFinite() }?.coerceAtLeast(0f) ?: 0f
+        if (!byPlayMode) learnerSeekListener?.invoke(target)
+        replayAction?.invoke(target)
     }
 
     fun setPlaybackSpeed(rate: Float) {
@@ -842,9 +851,17 @@ internal fun SingleYouTubePage(
             RemeasureFullscreenInsets(fullscreenView = session.view, webView = webView)
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 AndroidView(
-                    factory = {
+                    factory = { frameContext ->
                         (session.view.parent as? ViewGroup)?.removeView(session.view)
-                        session.view
+                        OffScreenPlaybackFrame(frameContext) { WebVideoBridge.playback.value.isPlaying() }.apply {
+                            addView(
+                                session.view,
+                                FrameLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                ),
+                            )
+                        }
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

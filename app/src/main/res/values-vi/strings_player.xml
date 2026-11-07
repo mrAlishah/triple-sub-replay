@@ -42,4 +42,6 @@
     <string name="player_video_title_dialog">Tiêu đề video</string>
     <string name="player_video_title_save">Lưu</string>
     <string name="player_video_title_cancel">Hủy</string>
+    <string name="player_loop_line">Lặp lại dòng này</string>
+    <string name="player_stop_loop_line">Dừng lặp dòng này</string>
 </resources>

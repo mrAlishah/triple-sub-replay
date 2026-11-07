@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +33,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FastForward
@@ -66,6 +66,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,9 +82,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -99,6 +104,7 @@ import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import java.util.Locale
@@ -108,10 +114,20 @@ import kotlin.math.roundToInt
 internal enum class MoreSettingsSection(
     val key: String,
     @StringRes val titleRes: Int,
-    @StringRes val summaryRes: Int,
+    /** Null: the page writes the summary itself. */
+    @StringRes val summaryRes: Int?,
 ) {
+    /** Was an always-open card above More settings; closed until tapped like the others (owner request 2026-11-06). */
+    LANGUAGES("languages", R.string.settings_group_languages, null),
+
+    /** The old always-open Reading and Default view cards, merged and closed until tapped (owner request 2026-11-04). */
+    READING("reading", R.string.settings_section_reading_title, R.string.settings_section_reading_summary),
     LAYOUT("layout", R.string.settings_section_layout_title, R.string.settings_section_layout_summary),
-    COLORS("colors", R.string.settings_section_colors_title, R.string.settings_section_colors_summary),
+    TRANSLATION(
+        "translation",
+        R.string.settings_section_translation_title,
+        R.string.settings_section_translation_summary,
+    ),
     WORD_LEARNING(
         "word_learning",
         R.string.settings_section_word_learning_title,
@@ -119,11 +135,7 @@ internal enum class MoreSettingsSection(
     ),
     STUDY("study", R.string.settings_section_study_title, R.string.settings_section_study_summary),
     OVERLAY("overlay", R.string.settings_section_overlay_title, R.string.settings_section_overlay_summary),
-    TRANSLATION(
-        "translation",
-        R.string.settings_section_translation_title,
-        R.string.settings_section_translation_summary,
-    ),
+    COLORS("colors", R.string.settings_section_colors_title, R.string.settings_section_colors_summary),
     TABS("tabs", R.string.settings_section_tabs_title, R.string.settings_section_tabs_summary),
     ADS("ads", R.string.settings_section_ads_title, R.string.settings_section_ads_summary),
     UPDATES("updates", R.string.settings_section_updates_title, R.string.settings_section_updates_summary),
@@ -133,6 +145,70 @@ internal enum class MoreSettingsSection(
     AI_ASSISTANT("ai_assistant", R.string.settings_section_ai_title, R.string.settings_section_ai_summary),
 }
 
+/** A jump to a setting waits this long for its section to open before scrolling. */
+private const val SETTINGS_JUMP_SETTLE_MILLIS = 450L
+
+/** A setting a jump lands on sits this far below the top of the page. */
+private val SETTINGS_JUMP_MARGIN = 12.dp
+
+/**
+ * Carries out a jump from Search settings or Often changed: opens the setting's section, scrolls
+ * it to the top of the page (or the section's top while it is hidden) and lets it glow a moment.
+ */
+@Composable
+private fun SettingsJumpEffect(
+    jump: SettingsSearchEntry?,
+    scrollState: ScrollState,
+    anchors: SettingsAnchors,
+    sectionTops: Map<MoreSettingsSection, Int>,
+    viewportTop: FloatArray,
+    onOpenSection: (MoreSettingsSection) -> Unit,
+    onOpenAnchor: (String?) -> Unit,
+    onDone: () -> Unit,
+) {
+    val density = LocalDensity.current
+    LaunchedEffect(jump) {
+        val target = jump ?: return@LaunchedEffect
+        target.section?.let(onOpenSection)
+        onOpenAnchor(target.setting?.anchor)
+        // Lets the section open (and the one that was open close) before measuring.
+        delay(SETTINGS_JUMP_SETTLE_MILLIS)
+        val anchor = target.setting?.anchor
+        val anchorTop = anchor?.let { anchors.tops[it] }
+        val offset =
+            when {
+                anchorTop != null ->
+                    scrollState.value +
+                        (anchorTop - viewportTop[0] - with(density) { SETTINGS_JUMP_MARGIN.toPx() }).roundToInt()
+                target.section != null -> sectionTops[target.section] ?: 0
+                else -> 0
+            }
+        scrollState.animateScrollTo(offset.coerceIn(0, scrollState.maxValue))
+        if (anchorTop != null) {
+            anchors.flashing = anchor
+            delay(SETTINGS_FLASH_MILLIS)
+            anchors.flashing = null
+        }
+        onDone()
+    }
+}
+
+/** Every setting and section Search settings can find, named in the app's language. */
+@Composable
+private fun settingsSearchEntries(withAiAssistant: Boolean): List<SettingsSearchEntry> {
+    val moreSettings = stringResource(R.string.settings_more_settings)
+    val sectionTitles = MoreSettingsSection.entries.associateWith { stringResource(it.titleRes) }
+    val settings =
+        SearchableSetting.entries.map { setting ->
+            SettingsSearchEntry(stringResource(setting.titleRes), sectionTitles.getValue(setting.section), setting)
+        }
+    val sections =
+        MoreSettingsSection.entries
+            .filter { withAiAssistant || it != MoreSettingsSection.AI_ASSISTANT }
+            .map { SettingsSearchEntry(sectionTitles.getValue(it), moreSettings, section = it) }
+    return settings + sections
+}
+
 /** Opening a section closes the one that was open, so the page stays short. */
 internal fun toggleMoreSettingsSection(
     open: MoreSettingsSection?,
@@ -140,6 +216,14 @@ internal fun toggleMoreSettingsSection(
 ): MoreSettingsSection? = if (open == tapped) null else tapped
 
 internal enum class LanguagePickerMode { SOURCE, TARGET, THIRD }
+
+/** The Search settings anchor of each slot's language button (see `SubtitleSlotRow`'s tags). */
+private fun slotPickerAnchor(slot: SubtitleSlot): String =
+    when (slot) {
+        SubtitleSlot.ORIGINAL -> "source_language_picker"
+        SubtitleSlot.SECOND -> "target_language_picker"
+        SubtitleSlot.THIRD -> "third_language_picker"
+    }
 
 /** Which language list is open, shared by the full settings page and the quick languages popup. */
 internal class LanguagePickerState {
@@ -154,6 +238,12 @@ internal class LanguagePickerState {
 
     fun toggle(slot: SubtitleSlot) {
         expandedSlots[slot] = !isExpanded(slot)
+    }
+
+    /** Search settings opens the panel of the slot a result lives in, so the setting is on screen. */
+    fun expandForAnchor(anchor: String?) {
+        val slot = SubtitleSlot.entries.firstOrNull { slotPickerAnchor(it) == anchor } ?: return
+        expandedSlots[slot] = true
     }
 
     fun open(mode: LanguagePickerMode) {
@@ -309,7 +399,6 @@ private fun LanguagePickerButtons(
             languageHint = thirdLabel,
         )
     }
-    SettingsHint(stringResource(R.string.settings_model_download_hint))
 }
 
 /** One slot's controls in their own collapsible panel; the header names the slot's current language. */
@@ -351,6 +440,9 @@ internal fun QuickLanguageSettingsDialog(
 ) {
     DismissWhenOpenTabChanges(onDismiss)
     val languagePicker = remember { LanguagePickerState() }
+    // A language picked here counts for Often changed too.
+    val context = LocalContext.current
+    RecordSettingChanges(remember(context) { studyPreferences(context) }, remember(context) { SettingsUsage(context) })
     val autoLabel = stringResource(R.string.settings_source_language_auto)
     val interfaceLocale = currentInterfaceLocale()
     val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel)
@@ -485,6 +577,26 @@ internal fun SubtitleSettingsDialog(
     // Above the language picker's early return, so picking a language keeps the scroll position too.
     val scrollState = rememberScrollState(restoredPlace.scrollOffset)
     val sectionTops = remember { mutableStateMapOf<MoreSettingsSection, Int>() }
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    // Search settings and Often changed (owner request 2026-11-06).
+    val anchors = remember { SettingsAnchors() }
+    val usage = remember(context) { SettingsUsage(context) }
+    RecordSettingChanges(remember(context) { studyPreferences(context) }, usage)
+    var searchQuery by remember { mutableStateOf("") }
+    // Often changed shows under Search settings while it is tapped and empty (owner request 2026-11-06),
+    // read afresh each time, so the list does not move while the user changes things.
+    var searchFocused by remember { mutableStateOf(false) }
+    val oftenChanged = remember(usage, searchFocused) { if (searchFocused) usage.oftenChanged() else emptyList() }
+    var jump by remember { mutableStateOf<SettingsSearchEntry?>(null) }
+    // The scrolling page's top on the screen, where a jumped-to setting lines up.
+    val viewportTop = remember { FloatArray(1) }
+    SettingsJumpEffect(jump, scrollState, anchors, sectionTops, viewportTop, onOpenSection = { openSection = it }, onOpenAnchor = languagePicker::expandForAnchor) { jump = null }
+    val pickSetting: (SettingsSearchEntry) -> Unit = { entry ->
+        focusManager.clearFocus()
+        searchQuery = ""
+        jump = entry
+    }
     DisposableEffect(pageMemory) {
         onDispose { pageMemory.remember(SettingsPagePlace(openSection, scrollState.value), SystemClock.elapsedRealtime()) }
     }
@@ -503,9 +615,6 @@ internal fun SubtitleSettingsDialog(
     var tabSettingsScope by rememberSaveable { mutableStateOf(TabSettingsScope.CURRENT) }
     DismissWhenOpenTabChanges(onDismiss)
     var tabSettingsOpen by rememberSaveable { mutableStateOf(false) }
-    var languagesOpen by rememberSaveable { mutableStateOf(false) }
-    var readingOpen by rememberSaveable { mutableStateOf(false) }
-    var defaultViewOpen by rememberSaveable { mutableStateOf(false) }
     val autoLabel = stringResource(R.string.settings_source_language_auto)
     val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel)
     val pickerOpen =
@@ -521,17 +630,20 @@ internal fun SubtitleSettingsDialog(
     if (pickerOpen) return
     val sourceLabel =
         sourceLanguageLabel(sourcePreference, sourceChoices, autoLabel, currentInterfaceLocale())
+    val searchEntries = settingsSearchEntries(withAiAssistant = aiAssistant != null)
 
     @Composable
     fun Section(
         section: MoreSettingsSection,
         icon: ImageVector,
+        summary: String? = null,
         content: @Composable ColumnScope.() -> Unit,
     ) {
         Box(Modifier.fillMaxWidth().onPlaced { sectionTops[section] = it.positionInParent().y.roundToInt() }) {
             ExpandableSettingsSection(
                 section = section,
                 icon = icon,
+                summary = summary,
                 expanded = openSection == section,
                 onToggle = { openSection = toggleMoreSettingsSection(openSection, section) },
                 content = content,
@@ -540,7 +652,13 @@ internal fun SubtitleSettingsDialog(
     }
 
     Dialog(
-        onDismissRequest = { if (peek.locked) peek.locked = false else onDismiss() },
+        onDismissRequest = {
+            when {
+                peek.locked -> peek.locked = false
+                searchFocused -> focusManager.clearFocus()
+                else -> onDismiss()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         SeeThroughDialogWindow()
@@ -551,265 +669,281 @@ internal fun SubtitleSettingsDialog(
         ) {
             Column(Modifier.fillMaxSize().safeDrawingPadding()) {
                 SettingsTopBar(onDismiss, peek)
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .verticalScroll(scrollState)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    LocalTabSettings.current?.let { tabSettings ->
-                        SettingsExpandableCard(
-                            title = stringResource(R.string.tab_settings_group_title),
-                            summary = stringResource(R.string.tab_settings_group_summary),
-                            icon = Icons.Default.Tab,
-                            expanded = tabSettingsOpen,
-                            onToggle = { tabSettingsOpen = !tabSettingsOpen },
-                            testTag = "settings_group_tab_settings",
-                        ) {
-                            TabSettingsScopeBar(tabSettingsScope) { tabSettingsScope = it }
-                            if (tabSettingsScope == TabSettingsScope.DEFAULT) {
-                                DefaultTabProfileEditor(tabSettings)
-                            } else {
-                                CurrentTabSettingsNote(tabSettings)
-                            }
-                        }
-                        if (tabSettingsOpen && tabSettingsScope == TabSettingsScope.DEFAULT) return@Column
-                    }
-                    SettingsExpandableCard(
-                        title = stringResource(R.string.settings_group_languages),
-                        summary = stringResource(R.string.settings_group_languages_summary),
-                        icon = Icons.Default.Language,
-                        expanded = languagesOpen,
-                        onToggle = { languagesOpen = !languagesOpen },
-                        testTag = "settings_group_languages",
-                    ) {
-                        LanguagePickerButtons(sourceLabel, targetLanguage, languagePicker)
-                    }
-
-                    SettingsExpandableCard(
-                        title = stringResource(R.string.settings_group_reading),
-                        summary = stringResource(R.string.settings_group_reading_summary),
-                        icon = Icons.Default.TextFields,
-                        expanded = readingOpen,
-                        onToggle = { readingOpen = !readingOpen },
-                        testTag = "settings_group_reading",
-                    ) {
-                        val fontScaleLabel = stringResource(R.string.settings_text_size, (fontScale * 100).toInt())
-                        val fontScaleSteps = fontScaleSteps(LocalTvLayout.current)
-                        val fontScaleRange = MIN_FONT_SCALE..MAX_FONT_SCALE
-                        Text(fontScaleLabel)
-                        Slider(
-                            value = fontScale,
-                            onValueChange = onFontScaleChange,
+                CompositionLocalProvider(LocalSettingsAnchors provides anchors) {
+                    Box(Modifier.weight(1f).onGloballyPositioned { viewportTop[0] = it.positionInRoot().y }) {
+                        Column(
                             modifier =
                                 Modifier
-                                    .tvArrowsLeave()
-                                    .peekWhileHeld(peek.fontScaleSlider, fontScaleLabel, fontScale, fontScaleRange, fontScaleSteps)
-                                    .testTag("font_scale_slider"),
-                            interactionSource = peek.fontScaleSlider.interaction,
-                            valueRange = fontScaleRange,
-                            steps = fontScaleSteps,
-                        )
-                        CaptionVisibilitySettings()
-                        TranslationPositionSettings(
-                            LocalTripleSubtitleControls.current.order.translationPosition(),
-                            onTranslationPositionChange,
-                        )
-                        TranscriptFollowSettings(transcriptFollow, onTranscriptFollowChange)
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_highlight_spoken_words_title),
-                            description = stringResource(R.string.settings_highlight_spoken_words_description),
-                            checked = wordHighlightEnabled,
-                            onCheckedChange = onWordHighlightChange,
-                            testTag = "word_highlight_switch",
-                        )
-                    }
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            LocalTabSettings.current?.let { tabSettings ->
+                                SettingsExpandableCard(
+                                    title = stringResource(R.string.tab_settings_group_title),
+                                    summary = stringResource(R.string.tab_settings_group_summary),
+                                    icon = Icons.Default.Tab,
+                                    expanded = tabSettingsOpen,
+                                    onToggle = { tabSettingsOpen = !tabSettingsOpen },
+                                    testTag = "settings_group_tab_settings",
+                                ) {
+                                    TabSettingsScopeBar(tabSettingsScope) { tabSettingsScope = it }
+                                    if (tabSettingsScope == TabSettingsScope.DEFAULT) {
+                                        DefaultTabProfileEditor(tabSettings)
+                                    } else {
+                                        CurrentTabSettingsNote(tabSettings)
+                                    }
+                                }
+                                if (tabSettingsOpen && tabSettingsScope == TabSettingsScope.DEFAULT) return@Column
+                            }
+                            SettingsSearchField(searchQuery, onFocusChange = { searchFocused = it }) { searchQuery = it }
+                            if (searchQuery.isNotBlank()) {
+                                SettingsSearchResults(searchSettings(searchEntries, searchQuery), pickSetting)
+                            } else {
+                                if (searchFocused) {
+                                    OftenChangedSettings(
+                                        oftenChanged.mapNotNull { setting -> searchEntries.firstOrNull { it.setting == setting } },
+                                        pickSetting,
+                                    )
+                                }
+                                Text(
+                                    stringResource(R.string.settings_more_settings),
+                                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
 
-                    SettingsExpandableCard(
-                        title = stringResource(R.string.settings_group_default_view),
-                        summary = stringResource(R.string.settings_group_default_view_summary),
-                        icon = Icons.Default.Dashboard,
-                        expanded = defaultViewOpen,
-                        onToggle = { defaultViewOpen = !defaultViewOpen },
-                        testTag = "settings_group_default_view",
-                    ) {
-                        PlayerModeSettingsOption(
-                            mode = PlayerExperienceMode.TRANSCRIPT_PANEL,
-                            selectedMode = playerMode,
-                            title = stringResource(R.string.settings_transcript_panel_title),
-                            description = stringResource(R.string.settings_transcript_panel_description),
-                            onModeChange = onPlayerModeChange,
-                        )
-                        HorizontalDivider()
-                        PlayerModeSettingsOption(
-                            mode = PlayerExperienceMode.SCROLL_FRIENDLY_OVERLAY,
-                            selectedMode = playerMode,
-                            title = stringResource(R.string.settings_scroll_overlay_title),
-                            description = stringResource(R.string.settings_scroll_overlay_description),
-                            onModeChange = onPlayerModeChange,
-                        )
-                    }
+                                Section(
+                                    MoreSettingsSection.LANGUAGES,
+                                    Icons.Default.Language,
+                                    summary = "$sourceLabel → ${languageDisplayName(targetLanguage, currentInterfaceLocale())}",
+                                ) {
+                                    LanguagePickerButtons(sourceLabel, targetLanguage, languagePicker)
+                                }
 
-                    Text(
-                        stringResource(R.string.settings_more_settings),
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                                Section(MoreSettingsSection.READING, Icons.Default.TextFields) {
+                                    val fontScaleLabel = stringResource(R.string.settings_text_size, (fontScale * 100).toInt())
+                                    val fontScaleSteps = fontScaleSteps(LocalTvLayout.current)
+                                    val fontScaleRange = MIN_FONT_SCALE..MAX_FONT_SCALE
+                                    Column(Modifier.fillMaxWidth().settingAnchor("font_scale")) {
+                                        Text(fontScaleLabel)
+                                        Slider(
+                                            value = fontScale,
+                                            onValueChange = onFontScaleChange,
+                                            modifier =
+                                                Modifier
+                                                    .tvArrowsLeave()
+                                                    .peekWhileHeld(
+                                                        peek.fontScaleSlider,
+                                                        fontScaleLabel,
+                                                        fontScale,
+                                                        fontScaleRange,
+                                                        fontScaleSteps,
+                                                    ).testTag("font_scale_slider"),
+                                            interactionSource = peek.fontScaleSlider.interaction,
+                                            valueRange = fontScaleRange,
+                                            steps = fontScaleSteps,
+                                        )
+                                    }
+                                    CaptionVisibilitySettings()
+                                    Column(Modifier.fillMaxWidth().settingAnchor("translation_position")) {
+                                        TranslationPositionSettings(LocalTripleSubtitleControls.current.order.translationPosition(), onTranslationPositionChange)
+                                    }
+                                    Column(Modifier.fillMaxWidth().settingAnchor("transcript_follow")) {
+                                        TranscriptFollowSettings(transcriptFollow, onTranscriptFollowChange)
+                                    }
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_highlight_spoken_words_title),
+                                        description = stringResource(R.string.settings_highlight_spoken_words_description),
+                                        checked = wordHighlightEnabled,
+                                        onCheckedChange = onWordHighlightChange,
+                                        testTag = "word_highlight_switch",
+                                    )
+                                    SettingsSectionDivider()
+                                    Column(Modifier.fillMaxWidth().settingAnchor("default_view")) {
+                                        Text(
+                                            stringResource(R.string.settings_group_default_view),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                        )
+                                        PlayerModeSettingsOption(
+                                            mode = PlayerExperienceMode.TRANSCRIPT_PANEL,
+                                            selectedMode = playerMode,
+                                            title = stringResource(R.string.settings_transcript_panel_title),
+                                            description = stringResource(R.string.settings_transcript_panel_description),
+                                            onModeChange = onPlayerModeChange,
+                                        )
+                                        HorizontalDivider()
+                                        PlayerModeSettingsOption(
+                                            mode = PlayerExperienceMode.SCROLL_FRIENDLY_OVERLAY,
+                                            selectedMode = playerMode,
+                                            title = stringResource(R.string.settings_scroll_overlay_title),
+                                            description = stringResource(R.string.settings_scroll_overlay_description),
+                                            onModeChange = onPlayerModeChange,
+                                        )
+                                    }
+                                }
 
-                    Section(MoreSettingsSection.LAYOUT, Icons.Default.ViewDay) {
-                        PortraitPanelPositionSettings(
-                            offsetFraction = portraitPanelOffsetFraction,
-                            onOffsetFractionChange = onPortraitPanelOffsetFractionChange,
-                            onReset = onResetPortraitPanelPosition,
-                            peekSlider = peek.panelPositionSlider,
-                        )
-                        SettingsSectionDivider()
-                        CaptionFormatSettings(captionFormat, onCaptionFormatChange)
-                        SettingsSectionDivider()
-                        SettingsSectionDivider()
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_landscape_split_title),
-                            description = stringResource(R.string.settings_landscape_split_description),
-                            checked = landscapeSplitEnabled,
-                            onCheckedChange = onLandscapeSplitChange,
-                            testTag = "landscape_split_switch",
-                        )
-                        SettingsHint(
-                            stringResource(R.string.settings_hide_transcript_hint),
-                        )
-                    }
+                                Section(MoreSettingsSection.LAYOUT, Icons.Default.ViewDay) {
+                                    Column(Modifier.fillMaxWidth().settingAnchor("portrait_panel_position")) {
+                                        PortraitPanelPositionSettings(
+                                            offsetFraction = portraitPanelOffsetFraction,
+                                            onOffsetFractionChange = onPortraitPanelOffsetFractionChange,
+                                            onReset = onResetPortraitPanelPosition,
+                                            peekSlider = peek.panelPositionSlider,
+                                        )
+                                    }
+                                    SettingsSectionDivider()
+                                    Column(Modifier.fillMaxWidth().settingAnchor("caption_format")) {
+                                        CaptionFormatSettings(captionFormat, onCaptionFormatChange)
+                                    }
+                                    SettingsSectionDivider()
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_landscape_split_title),
+                                        description = stringResource(R.string.settings_landscape_split_description),
+                                        checked = landscapeSplitEnabled,
+                                        onCheckedChange = onLandscapeSplitChange,
+                                        testTag = "landscape_split_switch",
+                                    )
+                                    SettingsHint(
+                                        stringResource(R.string.settings_hide_transcript_hint),
+                                    )
+                                }
 
-                    Section(MoreSettingsSection.COLORS, Icons.Default.Palette) {
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_custom_colors_title),
-                            description = stringResource(R.string.settings_custom_colors_description),
-                            checked = customColorsEnabled,
-                            onCheckedChange = onCustomColorsChange,
-                            testTag = "custom_colors_switch",
-                        )
-                        if (customColorsEnabled) {
-                            SubtitleColorSwatchRow(
-                                title = stringResource(R.string.settings_original_color_title),
-                                selectedKey = originalColorKey,
-                                enabled = true,
-                                onColorChange = onOriginalColorChange,
-                                testTagPrefix = "original_color",
-                            )
-                            SubtitleColorSwatchRow(
-                                title = stringResource(R.string.settings_translated_color_title),
-                                selectedKey = translatedColorKey,
-                                enabled = true,
-                                onColorChange = onTranslatedColorChange,
-                                testTagPrefix = "translated_color",
-                            )
-                            SubtitleColorSwatchRow(
-                                title = stringResource(R.string.settings_highlight_color_title),
-                                selectedKey = highlightColorKey,
-                                enabled = wordHighlightEnabled,
-                                onColorChange = onHighlightColorChange,
-                                testTagPrefix = "highlight_color",
-                            )
-                        }
-                        SettingsSectionDivider()
-                        AdvancedAppearanceSettings()
-                    }
-
-                    Section(MoreSettingsSection.WORD_LEARNING, Icons.Default.School) {
-                        WordLearningSettings(
-                            autoPronounce = autoPronounce,
-                            onAutoPronounceChange = onAutoPronounceChange,
-                            wordLearningEnabled = wordLearningEnabled,
-                            onWordLearningChange = onWordLearningChange,
-                            wordLearningTarget = wordLearningTarget,
-                            onWordLearningTargetChange = onWordLearningTargetChange,
-                            tapToLearnEnabled = tapToLearnEnabled,
-                            onTapToLearnChange = onTapToLearnChange,
-                            wordLearningActiveOnly = wordLearningActiveOnly,
-                            onWordLearningActiveOnlyChange = onWordLearningActiveOnlyChange,
-                        )
-                    }
-
-                    Section(MoreSettingsSection.STUDY, Icons.Default.AutoStories) {
-                        StudyToolsSettingsSection()
-                    }
-
-                    Section(MoreSettingsSection.OVERLAY, Icons.Default.Fullscreen) {
-                        OverlaySettings(lockOverlayToVideo, onLockOverlayToVideoChange)
-                    }
-
-                    Section(MoreSettingsSection.TRANSLATION, Icons.Default.Translate) {
-                        if (translationEngineActions != null) {
-                            OnlineTranslationSettingsRows(
-                                onlineTranslation,
-                                translationEngineActions,
-                                onOpenAiConnection =
-                                    aiAssistant?.let {
-                                        { target ->
-                                            aiConnectionTarget = target
-                                            openSection = MoreSettingsSection.AI_ASSISTANT
+                                Section(MoreSettingsSection.TRANSLATION, Icons.Default.Translate) {
+                                    if (translationEngineActions != null) {
+                                        OnlineTranslationSettingsRows(
+                                            onlineTranslation,
+                                            translationEngineActions,
+                                            onOpenAiConnection =
+                                                aiAssistant?.let {
+                                                    { target ->
+                                                        aiConnectionTarget = target
+                                                        openSection = MoreSettingsSection.AI_ASSISTANT
+                                                    }
+                                                },
+                                        )
+                                    }
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_natural_flow_title),
+                                        description = stringResource(R.string.settings_natural_flow_description),
+                                        checked = naturalSubtitlesEnabled,
+                                        onCheckedChange = onNaturalSubtitlesChange,
+                                        testTag = "natural_subtitles_switch",
+                                    )
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_hide_sound_cues_title),
+                                        description = stringResource(R.string.settings_hide_sound_cues_description),
+                                        checked = hideSoundCues,
+                                        onCheckedChange = onHideSoundCuesChange,
+                                        testTag = "hide_sound_cues_switch",
+                                    )
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_preload_models_title),
+                                        description = stringResource(R.string.settings_preload_models_description),
+                                        checked = preloadModelsEnabled,
+                                        onCheckedChange = onPreloadModelsChange,
+                                        testTag = "preload_models_switch",
+                                    )
+                                    if (languageDownloads != null) {
+                                        SettingsSectionDivider()
+                                        Column(Modifier.fillMaxWidth().settingAnchor("language_downloads")) {
+                                            LanguageDownloadsSettingsRow(onOpen = { showLanguageDownloads = true })
                                         }
-                                    },
-                            )
+                                    }
+                                }
+
+                                Section(MoreSettingsSection.WORD_LEARNING, Icons.Default.School) {
+                                    WordLearningSettings(
+                                        autoPronounce = autoPronounce,
+                                        onAutoPronounceChange = onAutoPronounceChange,
+                                        wordLearningEnabled = wordLearningEnabled,
+                                        onWordLearningChange = onWordLearningChange,
+                                        wordLearningTarget = wordLearningTarget,
+                                        onWordLearningTargetChange = onWordLearningTargetChange,
+                                        tapToLearnEnabled = tapToLearnEnabled,
+                                        onTapToLearnChange = onTapToLearnChange,
+                                        wordLearningActiveOnly = wordLearningActiveOnly,
+                                        onWordLearningActiveOnlyChange = onWordLearningActiveOnlyChange,
+                                    )
+                                }
+
+                                Section(MoreSettingsSection.STUDY, Icons.Default.AutoStories) {
+                                    StudyToolsSettingsSection()
+                                }
+
+                                Section(MoreSettingsSection.OVERLAY, Icons.Default.Fullscreen) {
+                                    OverlaySettings(lockOverlayToVideo, onLockOverlayToVideoChange)
+                                }
+
+                                Section(MoreSettingsSection.COLORS, Icons.Default.Palette) {
+                                    SettingsSwitchRow(
+                                        title = stringResource(R.string.settings_custom_colors_title),
+                                        description = stringResource(R.string.settings_custom_colors_description),
+                                        checked = customColorsEnabled,
+                                        onCheckedChange = onCustomColorsChange,
+                                        testTag = "custom_colors_switch",
+                                    )
+                                    if (customColorsEnabled) {
+                                        SubtitleColorSwatchRow(
+                                            title = stringResource(R.string.settings_original_color_title),
+                                            selectedKey = originalColorKey,
+                                            enabled = true,
+                                            onColorChange = onOriginalColorChange,
+                                            testTagPrefix = "original_color",
+                                        )
+                                        SubtitleColorSwatchRow(
+                                            title = stringResource(R.string.settings_translated_color_title),
+                                            selectedKey = translatedColorKey,
+                                            enabled = true,
+                                            onColorChange = onTranslatedColorChange,
+                                            testTagPrefix = "translated_color",
+                                        )
+                                        SubtitleColorSwatchRow(
+                                            title = stringResource(R.string.settings_highlight_color_title),
+                                            selectedKey = highlightColorKey,
+                                            enabled = wordHighlightEnabled,
+                                            onColorChange = onHighlightColorChange,
+                                            testTagPrefix = "highlight_color",
+                                        )
+                                    }
+                                    SettingsSectionDivider()
+                                    AdvancedAppearanceSettings()
+                                }
+
+                                Section(MoreSettingsSection.TABS, Icons.Default.Tab) {
+                                    YouTubeTabsSettingsSection()
+                                }
+
+                                Section(MoreSettingsSection.ADS, Icons.Default.FastForward) {
+                                    AdSkipSettingsSection()
+                                }
+
+                                Section(MoreSettingsSection.UPDATES, Icons.Default.SystemUpdate) {
+                                    AppUpdateSettingsSection()
+                                }
+
+                                Section(MoreSettingsSection.TV, Icons.Default.Tv) {
+                                    TvLayoutSettingsSection()
+                                }
+
+                                if (aiAssistant != null) {
+                                    Section(MoreSettingsSection.AI_ASSISTANT, Icons.Default.AutoAwesome) {
+                                        AiAssistantSettingsSection(aiAssistant, nested = true, connectionTarget = aiConnectionTarget)
+                                    }
+                                }
+
+                                OutlinedButton(
+                                    onClick = { showResetConfirmation = true },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("reset_all_settings"),
+                                ) {
+                                    Text(stringResource(R.string.settings_reset_all_button), color = MaterialTheme.colorScheme.error)
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
                         }
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_natural_flow_title),
-                            description = stringResource(R.string.settings_natural_flow_description),
-                            checked = naturalSubtitlesEnabled,
-                            onCheckedChange = onNaturalSubtitlesChange,
-                            testTag = "natural_subtitles_switch",
-                        )
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_hide_sound_cues_title),
-                            description = stringResource(R.string.settings_hide_sound_cues_description),
-                            checked = hideSoundCues,
-                            onCheckedChange = onHideSoundCuesChange,
-                            testTag = "hide_sound_cues_switch",
-                        )
-                        SettingsSwitchRow(
-                            title = stringResource(R.string.settings_preload_models_title),
-                            description = stringResource(R.string.settings_preload_models_description),
-                            checked = preloadModelsEnabled,
-                            onCheckedChange = onPreloadModelsChange,
-                            testTag = "preload_models_switch",
-                        )
-                        if (languageDownloads != null) {
-                            SettingsSectionDivider()
-                            LanguageDownloadsSettingsRow(onOpen = { showLanguageDownloads = true })
-                        }
                     }
-
-                    Section(MoreSettingsSection.TABS, Icons.Default.Tab) {
-                        YouTubeTabsSettingsSection()
-                    }
-
-                    Section(MoreSettingsSection.ADS, Icons.Default.FastForward) {
-                        AdSkipSettingsSection()
-                    }
-
-                    Section(MoreSettingsSection.UPDATES, Icons.Default.SystemUpdate) {
-                        AppUpdateSettingsSection()
-                    }
-
-                    Section(MoreSettingsSection.TV, Icons.Default.Tv) {
-                        TvLayoutSettingsSection()
-                    }
-
-                    if (aiAssistant != null) {
-                        Section(MoreSettingsSection.AI_ASSISTANT, Icons.Default.AutoAwesome) {
-                            AiAssistantSettingsSection(aiAssistant, nested = true, connectionTarget = aiConnectionTarget)
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = { showResetConfirmation = true },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("reset_all_settings"),
-                    ) {
-                        Text(stringResource(R.string.settings_reset_all_button), color = MaterialTheme.colorScheme.error)
-                    }
-                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
@@ -831,6 +965,7 @@ internal fun SubtitleSettingsDialog(
                     TextButton(
                         onClick = {
                             showResetConfirmation = false
+                            usage.clear()
                             onResetSettings()
                         },
                         modifier = Modifier.testTag("confirm_reset_settings"),
@@ -878,13 +1013,14 @@ private fun SettingsTopBar(
 private fun ExpandableSettingsSection(
     section: MoreSettingsSection,
     icon: ImageVector,
+    summary: String?,
     expanded: Boolean,
     onToggle: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     SettingsExpandableCard(
         title = stringResource(section.titleRes),
-        summary = stringResource(section.summaryRes),
+        summary = summary ?: section.summaryRes?.let { stringResource(it) }.orEmpty(),
         icon = icon,
         expanded = expanded,
         onToggle = onToggle,
@@ -995,21 +1131,27 @@ internal fun WordLearningSettings(
     )
     if (!wordLearningEnabled) return
     Spacer(Modifier.height(8.dp))
-    Text(stringResource(R.string.settings_colored_lines_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        listOf(
-            "original" to R.string.settings_colored_lines_original,
-            "translation" to R.string.settings_colored_lines_translation,
-            "both" to R.string.settings_colored_lines_both,
-        ).forEach { (targetKey, targetLabelRes) ->
-            FilterChip(
-                selected = wordLearningTarget == targetKey,
-                onClick = { onWordLearningTargetChange(targetKey) },
-                label = { Text(stringResource(targetLabelRes)) },
-            )
+    Column(Modifier.fillMaxWidth().settingAnchor("colored_lines")) {
+        Text(
+            stringResource(R.string.settings_colored_lines_title),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf(
+                "original" to R.string.settings_colored_lines_original,
+                "translation" to R.string.settings_colored_lines_translation,
+                "both" to R.string.settings_colored_lines_both,
+            ).forEach { (targetKey, targetLabelRes) ->
+                FilterChip(
+                    selected = wordLearningTarget == targetKey,
+                    onClick = { onWordLearningTargetChange(targetKey) },
+                    label = { Text(stringResource(targetLabelRes)) },
+                )
+            }
         }
     }
     SettingsSwitchRow(
@@ -1043,7 +1185,7 @@ private fun PronunciationVolumeSetting() {
         preferences.registerOnSharedPreferenceChangeListener(listener)
         onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().settingAnchor("pronunciation_volume").padding(vertical = 6.dp)) {
         Text(stringResource(R.string.settings_pronunciation_volume_title, (volume * 100).roundToInt()))
         Text(
             stringResource(R.string.settings_pronunciation_volume_description, (DEFAULT_PRONUNCIATION_VOLUME * 100).roundToInt()),
@@ -1264,13 +1406,15 @@ private fun OnlineTranslationSettingsRows(
     onOpenAiConnection: ((AiConnectionTarget) -> Unit)?,
 ) {
     val translator = settings.translator
-    Text(
-        stringResource(R.string.settings_translator_title),
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.padding(top = 6.dp),
-    )
-    SubtitleTranslator.entries.forEach { option ->
-        TranslatorOptionRow(option, translator, actions.selectTranslator)
+    Column(Modifier.fillMaxWidth().settingAnchor("translator")) {
+        Text(
+            stringResource(R.string.settings_translator_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        SubtitleTranslator.entries.forEach { option ->
+            TranslatorOptionRow(option, translator, actions.selectTranslator)
+        }
     }
     if (translator.usesAi) {
         actions.aiConfig?.let { AiConfigurationSection(it, onOpenAiConnection) }
@@ -1325,7 +1469,7 @@ internal fun SettingsSwitchRow(
     enabled: Boolean = true,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().settingAnchor(testTag).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f).padding(end = 12.dp)) {

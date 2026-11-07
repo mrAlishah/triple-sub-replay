@@ -452,7 +452,7 @@ internal fun SubtitleSlotRow(
     }
     OutlinedButton(
         onClick = onPickLanguage,
-        modifier = Modifier.fillMaxWidth().testTag("${tag}_picker"),
+        modifier = Modifier.fillMaxWidth().settingAnchor("${tag}_picker").testTag("${tag}_picker"),
     ) {
         Text(languageLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }

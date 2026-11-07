@@ -73,7 +73,8 @@
     <string name="settings_peek">Ver el vídeo. Mantén pulsado para echar un vistazo o toca para dejarlo a la vista</string>
     <string name="settings_peek_back">Volver a los ajustes</string>
     <string name="settings_group_languages">Idiomas</string>
-    <string name="settings_group_reading">Lectura</string>
+    <string name="settings_section_reading_title">Lectura y vista</string>
+    <string name="settings_section_reading_summary">Tamaño del texto, subtítulos, transcripción, vista predeterminada</string>
     <string name="settings_text_size">Tamaño del texto: %1$d%%</string>
     <string name="settings_highlight_spoken_words_title">Resaltar las palabras habladas</string>
     <string name="settings_highlight_spoken_words_description">Colorea la palabra que se está diciendo para que puedas seguir el ritmo.</string>
@@ -174,4 +175,13 @@
     <string name="settings_group_reading_summary">Tamaño del texto, visibilidad, posición y resaltado</string>
     <string name="settings_group_default_view_summary">Cómo se muestran por defecto el vídeo y los subtítulos</string>
     <string name="settings_source_language_auto_short">Automático</string>
+    <string name="settings_search_hint">Buscar ajustes</string>
+    <string name="settings_search_clear">Borrar búsqueda</string>
+    <string name="settings_search_no_results">No se encontraron ajustes</string>
+    <string name="settings_often_changed">Cambiados a menudo</string>
+    <string name="settings_often_changed_empty">Aquí aparecen los ajustes que cambias dos veces en una semana.</string>
+    <string name="settings_text_size_name">Tamaño del texto</string>
+    <string name="settings_pronunciation_volume_name">Volumen de pronunciación</string>
+    <string name="settings_original_captions_name">Subtítulos originales</string>
+    <string name="settings_translated_captions_name">Subtítulos traducidos</string>
 </resources>

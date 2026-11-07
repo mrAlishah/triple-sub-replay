@@ -132,7 +132,10 @@ fun DualSubApp(
             DailyGoalSetupScreen(onFinish = viewModel::completeDailyGoalPrompt)
         } else {
             val titleEditor: (String, String) -> Unit = remember(viewModel) { viewModel::setVideoTitle }
-            CompositionLocalProvider(LocalVideoTitleEditor provides titleEditor) {
+            CompositionLocalProvider(
+                LocalVideoTitleEditor provides titleEditor,
+                LocalLineLoop provides studyRunner.lineLoop,
+            ) {
                 DualSubExperience(
                     state = state,
                     webController = webController,
@@ -943,6 +946,8 @@ internal fun SubtitleTimeline(
     // TV layout: OK on a line opens its words (no touch to select them), and text is larger.
     val tvLayout = LocalTvLayout.current
     var tvLine by remember { mutableStateOf<SubtitleSegment?>(null) }
+    // Study tools → Loop button on the playing line (off by default); not on TV, where OK opens a line's words.
+    val lineLoop = LocalLineLoop.current?.takeIf { !tvLayout && rememberStudySettings().value.loopButton }
     val activeRowFocus = remember { FocusRequester() }
     val fontScale = if (tvLayout) state.fontScale * TV_TEXT_SCALE else state.fontScale
     BindTvPanelFocus(tvLayout, activeRowFocus, state.currentIndex)
@@ -986,6 +991,11 @@ internal fun SubtitleTimeline(
                     onWordClick = onWordClick,
                     thirdText = state.thirdLineFor(segment.id)?.takeIf { state.showThird() },
                     thirdOrigin = state.thirdOriginFor(segment.id),
+                    loop =
+                        lineLoop?.let { loop ->
+                            val looping = loop.lineId == segment.id
+                            if (active || looping) LineLoopButton(looping) { loop.toggle(segment.id) } else null
+                        },
                 )
             }
         }

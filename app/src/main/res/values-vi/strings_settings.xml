@@ -73,7 +73,8 @@
     <string name="settings_peek">Xem video. Giữ để xem nhanh, hoặc chạm để video hiện cho đến khi quay lại</string>
     <string name="settings_peek_back">Quay lại cài đặt</string>
     <string name="settings_group_languages">Ngôn ngữ</string>
-    <string name="settings_group_reading">Đọc</string>
+    <string name="settings_section_reading_title">Đọc &amp; chế độ xem</string>
+    <string name="settings_section_reading_summary">Cỡ chữ, phụ đề, bảng chép lời, chế độ xem mặc định</string>
     <string name="settings_text_size">Cỡ chữ: %1$d%%</string>
     <string name="settings_highlight_spoken_words_title">Tô sáng từ đang nói</string>
     <string name="settings_highlight_spoken_words_description">Tô màu từ đang được nói để bạn dễ theo dõi.</string>
@@ -174,4 +175,13 @@
     <string name="settings_group_reading_summary">Cỡ chữ, hiển thị, vị trí và tô sáng</string>
     <string name="settings_group_default_view_summary">Cách hiển thị video và phụ đề mặc định</string>
     <string name="settings_source_language_auto_short">Tự động</string>
+    <string name="settings_search_hint">Tìm cài đặt</string>
+    <string name="settings_search_clear">Xoá tìm kiếm</string>
+    <string name="settings_search_no_results">Không tìm thấy cài đặt nào</string>
+    <string name="settings_often_changed">Hay thay đổi</string>
+    <string name="settings_often_changed_empty">Các cài đặt bạn đổi từ 2 lần trong một tuần sẽ hiện ở đây.</string>
+    <string name="settings_text_size_name">Cỡ chữ</string>
+    <string name="settings_pronunciation_volume_name">Âm lượng phát âm</string>
+    <string name="settings_original_captions_name">Phụ đề gốc</string>
+    <string name="settings_translated_captions_name">Phụ đề dịch</string>
 </resources>

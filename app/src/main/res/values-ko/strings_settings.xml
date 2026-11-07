@@ -73,7 +73,8 @@
     <string name="settings_peek">영상 보기. 길게 누르면 잠시 보이고, 탭하면 계속 보입니다</string>
     <string name="settings_peek_back">설정으로 돌아가기</string>
     <string name="settings_group_languages">언어</string>
-    <string name="settings_group_reading">읽기</string>
+    <string name="settings_section_reading_title">읽기 및 보기</string>
+    <string name="settings_section_reading_summary">글자 크기, 자막, 스크립트, 기본 보기</string>
     <string name="settings_text_size">글자 크기: %1$d%%</string>
     <string name="settings_highlight_spoken_words_title">말하는 단어 강조</string>
     <string name="settings_highlight_spoken_words_description">지금 말하는 단어에 색을 입혀 따라가기 쉽게 해요.</string>
@@ -174,4 +175,13 @@
     <string name="settings_group_reading_summary">글자 크기, 표시, 위치, 강조</string>
     <string name="settings_group_default_view_summary">영상과 자막의 기본 표시 방식</string>
     <string name="settings_source_language_auto_short">자동</string>
+    <string name="settings_search_hint">설정 검색</string>
+    <string name="settings_search_clear">검색어 지우기</string>
+    <string name="settings_search_no_results">일치하는 설정이 없습니다</string>
+    <string name="settings_often_changed">자주 바꾸는 설정</string>
+    <string name="settings_often_changed_empty">일주일에 두 번 바꾼 설정이 여기에 표시됩니다.</string>
+    <string name="settings_text_size_name">글자 크기</string>
+    <string name="settings_pronunciation_volume_name">발음 음량</string>
+    <string name="settings_original_captions_name">원본 자막</string>
+    <string name="settings_translated_captions_name">번역 자막</string>
 </resources>

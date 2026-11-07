@@ -73,7 +73,8 @@
     <string name="settings_peek">動画を見る。長押しで一時的に表示、タップで表示したままにします</string>
     <string name="settings_peek_back">設定に戻る</string>
     <string name="settings_group_languages">言語</string>
-    <string name="settings_group_reading">読みやすさ</string>
+    <string name="settings_section_reading_title">読みやすさと表示</string>
+    <string name="settings_section_reading_summary">文字サイズ、字幕、トランスクリプト、デフォルトの表示</string>
     <string name="settings_text_size">文字サイズ: %1$d%%</string>
     <string name="settings_highlight_spoken_words_title">発話中の単語をハイライト</string>
     <string name="settings_highlight_spoken_words_description">話されている単語に色を付けて、聞きながら追えるようにします。</string>
@@ -174,4 +175,13 @@
     <string name="settings_group_reading_summary">文字サイズ、表示、位置、ハイライト</string>
     <string name="settings_group_default_view_summary">動画と字幕の標準の表示方法</string>
     <string name="settings_source_language_auto_short">自動</string>
+    <string name="settings_search_hint">設定を検索</string>
+    <string name="settings_search_clear">検索をクリア</string>
+    <string name="settings_search_no_results">該当する設定がありません</string>
+    <string name="settings_often_changed">よく変更する設定</string>
+    <string name="settings_often_changed_empty">1週間に2回変更した設定がここに表示されます。</string>
+    <string name="settings_text_size_name">文字サイズ</string>
+    <string name="settings_pronunciation_volume_name">発音の音量</string>
+    <string name="settings_original_captions_name">元の字幕</string>
+    <string name="settings_translated_captions_name">翻訳字幕</string>
 </resources>

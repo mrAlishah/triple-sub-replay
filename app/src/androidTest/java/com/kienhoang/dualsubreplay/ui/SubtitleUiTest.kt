@@ -70,7 +70,9 @@ class SubtitleUiTest {
             }
         }
 
-        composeRule.onNodeWithTag("settings_group_languages").performClick()
+        // Languages is a closed section like the others (owner request 2026-11-06).
+        composeRule.onNodeWithText("Original language").assertDoesNotExist()
+        composeRule.onNodeWithTag("settings_section_languages").performClick()
         composeRule.onNodeWithText("Original language").assertIsDisplayed()
         composeRule.onNodeWithText("Translate to").assertIsDisplayed()
         composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()

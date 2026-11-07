@@ -104,4 +104,6 @@
     <string name="study_anki_note_type_conflict">AnkiDroid-də artıq fərqli sahələri olan TripleSub Replay v3 adlı qeyd növü var, ona görə heç nə göndərilmədi. AnkiDroid-də həmin qeyd növünün adını dəyişin və ya silin, sonra yenidən cəhd edin.</string>
     <string name="study_anki_insert_failed">AnkiDroid yeni kartı təsdiqləmədi, ona görə göndərilmiş kimi qeyd olunmadı. Yenidən cəhd edin.</string>
     <string name="study_anki_wrong_deck">Kart AnkiDroid-ə əlavə olundu, lakin AnkiDroid onu TripleSub Replay kolodasına köçürmədi. Onu qeyd növünün öz kolodasında axtarın.</string>
+    <string name="study_loop_button_title">Oynayan sətirdə dövr düyməsi</string>
+    <string name="study_loop_button_description">Transkriptdə oynayan sətirdə kiçik dövr işarəsi göstərir. Həmin sətri təkrarlamaq üçün ona toxunun; yenidən toxunana qədər təkrarlanır. Başqa sətrə toxunsanız və ya videonu irəli-geri çəksəniz, həmin sətir təkrarlanır.</string>
 </resources>

@@ -37,7 +37,7 @@ internal fun GoogleWaitSettings(
     wait: GoogleWait,
     onChange: (GoogleWait) -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Column(Modifier.fillMaxWidth().settingAnchor("google_wait").padding(vertical = 6.dp)) {
         Text(stringResource(R.string.settings_google_wait_title))
         Text(
             stringResource(R.string.settings_google_wait_description),

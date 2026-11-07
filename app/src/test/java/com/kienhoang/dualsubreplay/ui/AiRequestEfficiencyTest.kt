@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -35,6 +37,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Request-count audit of AI subtitle translation (upstream PR #205 integrated into the fork), with fake models that count
@@ -197,17 +200,25 @@ class AiRequestEfficiencyTest {
             translationTexts(store.read(indices))
         }
         val windows = lines.map { target -> AiWindowTranslation(this, translator, model, "en" to target, ahead = fill) }
+        // Where the background loop is idle: the playing time (and seek) of the step it last found nothing to send for. The loop
+        // runs without a pause of its own, so the test waits for this signal instead of for time to pass.
+        val idleAt = AtomicReference<Pair<Long, Long>?>(null)
         // Only Subtitle 1 has a background loop; Subtitle 2's work is its window (see ThirdLineTranslation.start).
         val background =
             launch {
-                prefetchInBackground(store, requests, pauseMs = { 1 }, restMs = 1) { texts ->
-                    if (backgroundGuard) {
-                        translator.translateNextBatch(model, "en", lines.first(), texts)
-                    } else {
-                        // The pre-optimization behavior, approximately: whatever is missing is sent at once.
-                        translator.translateAll(model, "en", lines.first(), texts)
-                        texts
-                    }
+                prefetchInBackground(store, requests, pauseMs = { 0 }, restMs = 1) { texts ->
+                    val seen = requests.value
+                    idleAt.set(null)
+                    val covered =
+                        if (backgroundGuard) {
+                            translator.translateNextBatch(model, "en", lines.first(), texts)
+                        } else {
+                            // The pre-optimization behavior, approximately: whatever is missing is sent at once.
+                            translator.translateAll(model, "en", lines.first(), texts)
+                            texts
+                        }
+                    if (covered.isEmpty()) idleAt.set(seen.timeMs to seen.seekGeneration)
+                    covered
                 }
             }
         try {
@@ -216,7 +227,10 @@ class AiRequestEfficiencyTest {
                 val texts = windowTexts(timeMs)
                 windows.forEach { it.ask(texts) }
                 windows.forEach { window -> aiSentencesFirst(texts)?.let { window.await(it) } }
-                delay(3)
+                waitUntil {
+                    val now = requests.value
+                    idleAt.get()?.let { (time, seek) -> now.seekGeneration == seek && now.timeMs in time until time + BACKGROUND_PREFETCH_STEP_MS } == true
+                }
             }
         } finally {
             background.cancelAndJoin()
@@ -224,6 +238,9 @@ class AiRequestEfficiencyTest {
     }
 
     private fun aiSentencesFirst(texts: List<String>) = texts.firstOrNull()
+
+    /** Waits for [condition] to become true; polls, so a slow machine only waits longer (the timeout is a failure, not a pass). */
+    private suspend fun waitUntil(condition: () -> Boolean) = withTimeout(60_000) { while (!condition()) delay(1) }
 
     private fun <T> withStore(block: suspend (SubtitleStore, File) -> T): T {
         val directory = Files.createTempDirectory("ai-request-efficiency").toFile()
@@ -319,15 +336,21 @@ class AiRequestEfficiencyTest {
                 val log = RequestLog()
                 val translator = AiSubtitleTranslator(null)
                 val model = FakeModel(log)
+                val steps = AtomicInteger()
                 val requests = MutableStateFlow(CaptionPlaybackRequest(0, paused = true, enabled = true))
                 val job: Job =
                     launch {
-                        prefetchInBackground(store, requests, pauseMs = { 1 }, restMs = 1) { texts ->
+                        prefetchInBackground(store, requests, pauseMs = { 0 }, restMs = 1) { texts ->
+                            steps.incrementAndGet()
                             translator.translateNextBatch(model, "en", "vi", texts)
                         }
                     }
-                delay(150)
+                repeat(200) { yield() }
+                assertEquals("the loop did not step while paused", 0, steps.get())
                 assertEquals(0, log.total())
+                // The same loop does step once the video plays, so the zero above is not a loop that never ran.
+                requests.value = requests.value.copy(paused = false)
+                waitUntil { steps.get() > 0 }
                 job.cancelAndJoin()
                 audit("paused", log, "vi")
             }

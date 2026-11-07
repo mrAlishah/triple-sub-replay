@@ -522,7 +522,7 @@ internal class AiSubtitleTranslator(
     private val notOnDisk: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     /** How long a failed request still keeps new requests away; 0 when asking is allowed. */
-    fun restMs(): Long = (restUntil - now()).coerceAtLeast(0)
+    fun restMs(): Long = now().let { time -> if (time >= restUntil) 0 else restUntil - time }
 
     suspend fun cachedTranslation(
         model: AiTranslationModel,

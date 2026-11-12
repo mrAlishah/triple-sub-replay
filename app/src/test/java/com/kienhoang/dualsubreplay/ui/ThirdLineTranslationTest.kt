@@ -127,7 +127,12 @@ class ThirdLineTranslationTest {
     fun withoutAnAiModelSubtitle2KeepsTheDeviceTranslationAndAsksNoAi() {
         runThird(null, { base(aiOnly = false) }) { state ->
             waitFor(state) { it == "D:Line number 0 is spoken here." }
-            assertEquals(null, state.value.thirdLines.originFor("v", 0L)?.takeIf { it.provider.name == "AI_PROVIDER" })
+            assertEquals(
+                null,
+                state.value.thirdLines
+                    .originFor("v", 0L)
+                    ?.takeIf { it.provider.name == "AI_PROVIDER" },
+            )
         }
     }
 

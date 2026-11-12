@@ -182,7 +182,8 @@ class AiRequestEfficiencyTest {
         return ChatGptTranslationModel("gpt-x", credentials.cacheScope("gpt-x"), ChatGptSession(store, api), api, ChatGptGate())
     }
 
-    private fun windowTexts(timeMs: Long) = translationTexts(rows.filter { it.startMs >= timeMs && it.startMs < timeMs + PREFETCH_AHEAD_MS })
+    private fun windowTexts(timeMs: Long) =
+        translationTexts(rows.filter { it.startMs >= timeMs && it.startMs < timeMs + PREFETCH_AHEAD_MS })
 
     /** Plays [fromMs]..[toMs] in 3 s steps like the app: the window asks for the playing minute, the background loop for minutes 2 to 5. */
     private suspend fun play(
@@ -229,7 +230,11 @@ class AiRequestEfficiencyTest {
                 windows.forEach { window -> aiSentencesFirst(texts)?.let { window.await(it) } }
                 waitUntil {
                     val now = requests.value
-                    idleAt.get()?.let { (time, seek) -> now.seekGeneration == seek && now.timeMs in time until time + BACKGROUND_PREFETCH_STEP_MS } == true
+                    idleAt.get()?.let { (time, seek) ->
+                        now.seekGeneration == seek &&
+                            now.timeMs in time until time + BACKGROUND_PREFETCH_STEP_MS
+                    } ==
+                        true
                 }
             }
         } finally {
@@ -445,7 +450,8 @@ class AiRequestEfficiencyTest {
             val model = FakeModel(log)
             val texts = windowTexts(0)
             coroutineScope {
-                val jobs: List<Job> = List(8) { launch(kotlinx.coroutines.Dispatchers.Default) { translator.translateAll(model, "en", "vi", texts) } }
+                val jobs: List<Job> =
+                    List(8) { launch(kotlinx.coroutines.Dispatchers.Default) { translator.translateAll(model, "en", "vi", texts) } }
                 jobs.joinAll()
             }
             audit("concurrent.parallel", log, "vi")

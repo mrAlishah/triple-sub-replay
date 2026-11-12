@@ -714,7 +714,12 @@ internal fun SubtitleSettingsDialog(
     var jump by remember { mutableStateOf<SettingsSearchEntry?>(null) }
     // The scrolling page's top on the screen, where a jumped-to setting lines up.
     val viewportTop = remember { FloatArray(1) }
-    SettingsJumpEffect(jump, scrollState, anchors, sectionTops, viewportTop, onOpenSection = { openSection = it }, onOpenAnchor = languagePicker::expandForAnchor) { jump = null }
+    SettingsJumpEffect(jump, scrollState, anchors, sectionTops, viewportTop, onOpenSection = {
+        openSection = it
+    }, onOpenAnchor = languagePicker::expandForAnchor) {
+        jump =
+            null
+    }
     val pickSetting: (SettingsSearchEntry) -> Unit = { entry ->
         focusManager.clearFocus()
         searchQuery = ""
@@ -862,7 +867,10 @@ internal fun SubtitleSettingsDialog(
                 }
                 CaptionVisibilitySettings()
                 Column(Modifier.fillMaxWidth().settingAnchor("translation_position")) {
-                    TranslationPositionSettings(LocalTripleSubtitleControls.current.order.translationPosition(), onTranslationPositionChange)
+                    TranslationPositionSettings(
+                        LocalTripleSubtitleControls.current.order.translationPosition(),
+                        onTranslationPositionChange,
+                    )
                 }
                 SettingsSwitchRow(
                     title = stringResource(R.string.settings_highlight_spoken_words_title),
@@ -1163,7 +1171,10 @@ private fun ColumnScope.SectionSettings(
         MoreSettingsSection.ADS -> AdSkipSettingsSection()
         MoreSettingsSection.TABS -> YouTubeTabsSettingsSection()
         MoreSettingsSection.COLORS -> page.colors(this)
-        MoreSettingsSection.AI_ASSISTANT -> LocalAiAssistant.current?.let { AiAssistantSettingsSection(it, nested = true, connectionTarget = page.aiConnectionTarget) }
+        MoreSettingsSection.AI_ASSISTANT ->
+            LocalAiAssistant.current?.let {
+                AiAssistantSettingsSection(it, nested = true, connectionTarget = page.aiConnectionTarget)
+            }
         MoreSettingsSection.UPDATES -> AppUpdateSettingsSection()
         MoreSettingsSection.TV -> TvLayoutSettingsSection()
         MoreSettingsSection.BACKUP -> BackupSharingSettingsSection()

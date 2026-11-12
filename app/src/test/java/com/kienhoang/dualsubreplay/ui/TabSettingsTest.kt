@@ -24,17 +24,35 @@ class TabSettingsTest {
 
         override fun getAll(): MutableMap<String, *> = data.toMutableMap()
 
-        override fun getString(key: String?, defValue: String?) = data[key] as? String ?: defValue
+        override fun getString(
+            key: String?,
+            defValue: String?,
+        ) = data[key] as? String ?: defValue
 
-        override fun getStringSet(key: String?, defValues: MutableSet<String>?) = defValues
+        override fun getStringSet(
+            key: String?,
+            defValues: MutableSet<String>?,
+        ) = defValues
 
-        override fun getInt(key: String?, defValue: Int) = data[key] as? Int ?: defValue
+        override fun getInt(
+            key: String?,
+            defValue: Int,
+        ) = data[key] as? Int ?: defValue
 
-        override fun getLong(key: String?, defValue: Long) = data[key] as? Long ?: defValue
+        override fun getLong(
+            key: String?,
+            defValue: Long,
+        ) = data[key] as? Long ?: defValue
 
-        override fun getFloat(key: String?, defValue: Float) = data[key] as? Float ?: defValue
+        override fun getFloat(
+            key: String?,
+            defValue: Float,
+        ) = data[key] as? Float ?: defValue
 
-        override fun getBoolean(key: String?, defValue: Boolean) = data[key] as? Boolean ?: defValue
+        override fun getBoolean(
+            key: String?,
+            defValue: Boolean,
+        ) = data[key] as? Boolean ?: defValue
 
         override fun contains(key: String?) = data.containsKey(key)
 
@@ -47,17 +65,35 @@ class TabSettingsTest {
                 val puts = mutableMapOf<String, Any>()
                 val removes = mutableSetOf<String>()
 
-                override fun putString(key: String, value: String?) = apply { puts[key] = value!! }
+                override fun putString(
+                    key: String,
+                    value: String?,
+                ) = apply { puts[key] = value!! }
 
-                override fun putStringSet(key: String, values: MutableSet<String>?) = this
+                override fun putStringSet(
+                    key: String,
+                    values: MutableSet<String>?,
+                ) = this
 
-                override fun putInt(key: String, value: Int) = apply { puts[key] = value }
+                override fun putInt(
+                    key: String,
+                    value: Int,
+                ) = apply { puts[key] = value }
 
-                override fun putLong(key: String, value: Long) = apply { puts[key] = value }
+                override fun putLong(
+                    key: String,
+                    value: Long,
+                ) = apply { puts[key] = value }
 
-                override fun putFloat(key: String, value: Float) = apply { puts[key] = value }
+                override fun putFloat(
+                    key: String,
+                    value: Float,
+                ) = apply { puts[key] = value }
 
-                override fun putBoolean(key: String, value: Boolean) = apply { puts[key] = value }
+                override fun putBoolean(
+                    key: String,
+                    value: Boolean,
+                ) = apply { puts[key] = value }
 
                 override fun remove(key: String) = apply { removes += key }
 
@@ -115,7 +151,8 @@ class TabSettingsTest {
         }
     }
 
-    private fun twoTabs() = BrowserTabs().opened("https://m.youtube.com/")!!.opened("https://m.youtube.com/", activate = false)!!.switchedTo(1)
+    private fun twoTabs() =
+        BrowserTabs().opened("https://m.youtube.com/")!!.opened("https://m.youtube.com/", activate = false)!!.switchedTo(1)
 
     private fun started(tabs: BrowserTabs = twoTabs()) = Setup(tabs).also { it.controller.bootstrap(tabs) }
 
@@ -251,7 +288,10 @@ class TabSettingsTest {
     fun aTabOpenedInTheBackgroundCopiesTheDefaultAtThatMoment() {
         val setup = started()
         setup.controller.updateDefault { it.with("target_language", "es") }
-        val before = setup.tabs.tabs.map { it.id }.toSet()
+        val before =
+            setup.tabs.tabs
+                .map { it.id }
+                .toSet()
         setup.tabs = setup.tabs.opened("https://m.youtube.com/", activate = false)!!
         setup.controller.tabsChanged(before, setup.tabs)
         setup.controller.updateDefault { it.with("target_language", "ja") }
@@ -452,8 +492,14 @@ class TabSettingsTest {
     @Test
     fun aTabSpeedIsRecordedOnlyWhenStableAndNeverFromAnotherTabsVideo() {
         val tracker = TabSpeedTracker()
-        fun sample(rate: Float, saved: Float? = null, video: String = "v", open: String? = "v", allowed: Boolean = true) =
-            tracker.onSample(1L, open, video, rate, saved, allowed)
+
+        fun sample(
+            rate: Float,
+            saved: Float? = null,
+            video: String = "v",
+            open: String? = "v",
+            allowed: Boolean = true,
+        ) = tracker.onSample(1L, open, video, rate, saved, allowed)
         assertEquals(TabSpeedAction.None, sample(1.5f))
         assertEquals(TabSpeedAction.None, sample(1.5f))
         assertEquals(TabSpeedAction.Record(1.5f), sample(1.5f))
@@ -538,7 +584,10 @@ class TabSettingsTest {
     ) : com.kienhoang.dualsubreplay.assistant.AiTranslationPrefs {
         override fun get(key: String): String? = prefs.data[key] as? String
 
-        override fun put(key: String, value: String?) {
+        override fun put(
+            key: String,
+            value: String?,
+        ) {
             if (value == null) prefs.data.remove(key) else prefs.data[key] = value
         }
     }
@@ -546,7 +595,9 @@ class TabSettingsTest {
     @Test
     fun aTabWithoutASavedServiceFollowsTheAssistantOnceAndThenStaysIndependentOfChat() {
         val setup = started()
-        val choices = com.kienhoang.dualsubreplay.assistant.AiTranslationChoices(MapChoicePrefs(setup.prefs)) { false }
+        val choices =
+            com.kienhoang.dualsubreplay.assistant
+                .AiTranslationChoices(MapChoicePrefs(setup.prefs)) { false }
         val gemini = com.kienhoang.dualsubreplay.assistant.AiProvider.GEMINI
         val openAi = com.kienhoang.dualsubreplay.assistant.AiProvider.OPENAI
         // Tab 1 has no saved service: it takes the chat's service (Gemini) and keeps it, as before this feature.

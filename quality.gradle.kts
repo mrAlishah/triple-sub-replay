@@ -50,8 +50,20 @@ tasks.register<JavaExec>("recordComplexityBaseline") {
         "--create-baseline", "--baseline", rootProject.file("config/quality/detekt-baseline.xml").path)
 }
 
+// macOS and some Linux installs have only `python3`, Windows may have only `python` or the `py` launcher; the first that runs Python 3 is used.
+fun findPython3(): List<String> =
+    listOf(listOf("python3"), listOf("python"), listOf("py", "-3")).firstOrNull { candidate ->
+        runCatching {
+            val process = ProcessBuilder(candidate + listOf("-c", "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)"))
+                .redirectErrorStream(true)
+                .start()
+            process.inputStream.readBytes()
+            process.waitFor() == 0
+        }.getOrDefault(false)
+    } ?: throw GradleException("formatCheck needs Python 3 on PATH (tried python3, python and py -3); it never skips the check.")
+
 tasks.register<Exec>("formatCheck") {
     group = "verification"
     dependsOn("formatReport")
-    commandLine("python", "tools/check_format_ratchet.py")
+    doFirst { commandLine(findPython3() + "tools/check_format_ratchet.py") }
 }

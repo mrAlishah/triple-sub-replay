@@ -172,12 +172,19 @@ internal fun CompactSubtitleCard(
                                             tapToLearnEnabled,
                                             resolvedSourceLanguage,
                                             targetLanguage,
-                                            stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
+                                            stringResource(
+                                                pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable),
+                                            ),
                                             onWordClick,
                                         )
                                     }
                                     if (segment.translatedText != null) {
-                                        TranslationSourceTag(segment.translationOrigin, SubtitleSlot.SECOND, targetLanguage, translatedColor)
+                                        TranslationSourceTag(
+                                            segment.translationOrigin,
+                                            SubtitleSlot.SECOND,
+                                            targetLanguage,
+                                            translatedColor,
+                                        )
                                     }
                                 }
                             SubtitleSlot.THIRD ->

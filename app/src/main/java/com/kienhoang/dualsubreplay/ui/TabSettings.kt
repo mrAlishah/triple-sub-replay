@@ -1,10 +1,10 @@
 package com.kienhoang.dualsubreplay.ui
 
 import android.content.SharedPreferences
+import com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_METHOD_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.GOOGLE_WAIT_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.storedGoogleWait
 import com.kienhoang.dualsubreplay.translation.storedTranslationMode
-import com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_METHOD_PREFERENCE
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -134,17 +134,18 @@ internal fun decodeTabSettings(stored: String?): TabSettingsProfile? {
     return runCatching {
         val json = JSONObject(stored).getJSONObject("values")
         val values =
-            TAB_SETTING_KINDS.mapNotNull { (key, kind) ->
-                if (!json.has(key)) return@mapNotNull null
-                val value: Any =
-                    when (kind) {
-                        Kind.STRING -> json.getString(key)
-                        Kind.BOOLEAN -> json.getBoolean(key)
-                        Kind.INT -> json.getInt(key)
-                        Kind.FLOAT -> json.getDouble(key).toFloat()
-                    }
-                key to value
-            }.toMap()
+            TAB_SETTING_KINDS
+                .mapNotNull { (key, kind) ->
+                    if (!json.has(key)) return@mapNotNull null
+                    val value: Any =
+                        when (kind) {
+                            Kind.STRING -> json.getString(key)
+                            Kind.BOOLEAN -> json.getBoolean(key)
+                            Kind.INT -> json.getInt(key)
+                            Kind.FLOAT -> json.getDouble(key).toFloat()
+                        }
+                    key to value
+                }.toMap()
         TabSettingsProfile(values)
     }.getOrNull()
 }
@@ -210,7 +211,9 @@ internal class TabSettingsStore(
             val seed = if (id in previousIds && id == tabs.activeId) effective else default
             changes[tabKey(id)] = encodeTabSettings(seed)
         }
-        storage.keys().filter { it.startsWith(TAB_PROFILE_PREFIX) && it.removePrefix(TAB_PROFILE_PREFIX).toLongOrNull() !in ids }
+        storage
+            .keys()
+            .filter { it.startsWith(TAB_PROFILE_PREFIX) && it.removePrefix(TAB_PROFILE_PREFIX).toLongOrNull() !in ids }
             .forEach { changes[it] = null }
         storage.write(changes)
     }
@@ -369,7 +372,11 @@ internal fun DualSubUiState.withTabSettings(preferences: SharedPreferences): Dua
         subtitleOrder = storedSubtitleOrder(preferences.getString(SUBTITLE_ORDER_PREFERENCE, null), position),
         slotFontScale = storedSlotFontScale(preferences),
         slotAlignment = storedSlotAlignment(preferences),
-        originalColorKey = storedSubtitleColorKey(preferences.getString(SUBTITLE_ORIGINAL_COLOR_PREFERENCE, null), DEFAULT_ORIGINAL_COLOR_KEY),
+        originalColorKey =
+            storedSubtitleColorKey(
+                preferences.getString(SUBTITLE_ORIGINAL_COLOR_PREFERENCE, null),
+                DEFAULT_ORIGINAL_COLOR_KEY,
+            ),
         translatedColorKey =
             storedSubtitleColorKey(preferences.getString(SUBTITLE_TRANSLATED_COLOR_PREFERENCE, null), DEFAULT_TRANSLATED_COLOR_KEY),
         highlightColorKey =

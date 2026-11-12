@@ -72,7 +72,9 @@ internal class TabSpeedTracker {
             candidateCount = 0
             return TabSpeedAction.None
         }
-        if (candidate?.let { abs(it - rate) < SAME_SPEED_EPSILON } == true) candidateCount++ else {
+        if (candidate?.let { abs(it - rate) < SAME_SPEED_EPSILON } == true) {
+            candidateCount++
+        } else {
             candidate = rate
             candidateCount = 1
         }

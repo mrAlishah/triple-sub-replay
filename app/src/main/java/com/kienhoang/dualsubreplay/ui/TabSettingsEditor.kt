@@ -38,8 +38,8 @@ import com.kienhoang.dualsubreplay.assistant.aiAccessOptions
 import com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_CHATGPT
 import com.kienhoang.dualsubreplay.chatgpt.AI_ACCESS_METHOD_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE
-import com.kienhoang.dualsubreplay.translation.GOOGLE_WAIT_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE
+import com.kienhoang.dualsubreplay.translation.GOOGLE_WAIT_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TRANSLATION_ENGINE_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
@@ -149,22 +149,38 @@ internal fun CurrentTabSettingsNote(actions: TabSettingsActions) {
     }
 }
 
+private typealias DefaultEdit = ((TabSettingsProfile) -> TabSettingsProfile) -> Unit
+
 /**
  * Edits the Default profile that new tabs copy. It reads and writes only the stored Default, never the open tab's
- * preferences, so nothing here reaches the playing video.
+ * preferences, so nothing here reaches the playing video. The sections below are emitted in order into the caller's column.
  */
 @Composable
 internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
     val profile by actions.defaultProfile.collectAsState()
     val view = remember(profile) { DualSubUiState().withTabSettings(ProfilePreferences(profile.values)) }
     val edit = actions.updateDefault
-    val autoLabel = stringResource(R.string.settings_source_language_auto)
-    val languages = remember { TranslationLanguages.all.map { it.name to it.code } }
     Text(
         stringResource(R.string.tab_settings_default_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    DefaultLanguageRows(view, edit)
+    val translator = view.onlineTranslationSettings().translator
+    DefaultTranslatorRows(profile, translator, edit)
+    DefaultTextRows(view, edit)
+    DefaultOrderRows(view, translator, edit)
+    DefaultColorRows(view, edit)
+    DefaultLearningAndSpeedRows(view, profile, edit)
+}
+
+@Composable
+private fun DefaultLanguageRows(
+    view: DualSubUiState,
+    edit: DefaultEdit,
+) {
+    val autoLabel = stringResource(R.string.settings_source_language_auto)
+    val languages = remember { TranslationLanguages.all.map { it.name to it.code } }
     ChoiceRow(
         slotRoleLabel(SubtitleSlot.ORIGINAL, null),
         if (view.sourcePreference == "auto") autoLabel else TranslationLanguages.displayName(view.sourcePreference),
@@ -191,9 +207,19 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
         languages,
         "default_third_language",
     ) { code -> edit { it.with(THIRD_LANGUAGE_PREFERENCE, code) } }
+}
 
-    val translator = view.onlineTranslationSettings().translator
-    Text(stringResource(R.string.settings_translator_title), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp))
+@Composable
+private fun DefaultTranslatorRows(
+    profile: TabSettingsProfile,
+    translator: SubtitleTranslator,
+    edit: DefaultEdit,
+) {
+    Text(
+        stringResource(R.string.settings_translator_title),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(top = 6.dp),
+    )
     SubtitleTranslator.entries.forEach { option ->
         TranslatorOptionRow(option, translator) { choice ->
             edit {
@@ -210,7 +236,7 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
         val options = aiAccessOptions().map { stringResource(it.labelRes) to it.id }
         ChoiceRow(
             stringResource(R.string.tab_settings_ai_service),
-            options.firstOrNull { it.second == savedId }?.first ?: autoLabel,
+            options.firstOrNull { it.second == savedId }?.first ?: stringResource(R.string.settings_source_language_auto),
             options,
             "default_ai_service",
         ) { id ->
@@ -223,7 +249,13 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
             }
         }
     }
+}
 
+@Composable
+private fun DefaultTextRows(
+    view: DualSubUiState,
+    edit: DefaultEdit,
+) {
     Text(stringResource(R.string.settings_text_size, (view.fontScale * 100).toInt()))
     Slider(
         value = view.fontScale,
@@ -262,8 +294,15 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
             "default_visibility_$original",
         ) { value -> edit { it.with(if (original) ORIGINAL_VISIBILITY else TRANSLATED_VISIBILITY, value) } }
     }
+}
 
-    // Order and placement: the same two controls as the open tab's page, writing the Default only.
+/** Order and placement: the same two controls as the open tab's page, writing the Default only. */
+@Composable
+private fun DefaultOrderRows(
+    view: DualSubUiState,
+    translator: SubtitleTranslator,
+    edit: DefaultEdit,
+) {
     view.subtitleOrder.forEach { slot ->
         val label = slotRoleLabel(slot, null)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -285,8 +324,14 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
     if (translator == SubtitleTranslator.GOOGLE || translator == SubtitleTranslator.AI_WITH_GOOGLE) {
         GoogleWaitSettings(view.googleWait) { wait -> edit { it.with(GOOGLE_WAIT_PREFERENCE, wait.storageValue) } }
     }
+}
 
-    // Colors and word learning (Stage 2).
+/** Colors (Stage 2). */
+@Composable
+private fun DefaultColorRows(
+    view: DualSubUiState,
+    edit: DefaultEdit,
+) {
     SettingsSwitchRow(
         title = stringResource(R.string.settings_custom_colors_title),
         description = stringResource(R.string.settings_custom_colors_description),
@@ -318,6 +363,15 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
             testTagPrefix = "default_highlight_color",
         )
     }
+}
+
+/** Word highlight, word learning and the tab playback speed (Stage 2). */
+@Composable
+private fun DefaultLearningAndSpeedRows(
+    view: DualSubUiState,
+    profile: TabSettingsProfile,
+    edit: DefaultEdit,
+) {
     SettingsSwitchRow(
         title = stringResource(R.string.settings_highlight_spoken_words_title),
         description = stringResource(R.string.settings_highlight_spoken_words_description),
@@ -338,7 +392,6 @@ internal fun DefaultTabProfileEditor(actions: TabSettingsActions) {
         wordLearningActiveOnly = view.wordLearningActiveOnly,
         onWordLearningActiveOnlyChange = { on -> edit { it.with(WORD_LEARNING_ACTIVE_ONLY_PREFERENCE, on) } },
     )
-
     val follow = stringResource(R.string.tab_settings_speed_follow)
     val speed = profile.values[TAB_PLAYBACK_SPEED_PREFERENCE] as? Float
     ChoiceRow(

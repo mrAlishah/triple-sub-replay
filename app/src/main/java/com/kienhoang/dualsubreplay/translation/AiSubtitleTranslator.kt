@@ -679,7 +679,6 @@ internal class AiSubtitleTranslator(
         return sentences
     }
 
-
     /**
      * The background step: sends one request at most, for the first sentences of [texts] not
      * translated yet, and only when they fill most of a request (see [MIN_AI_BACKGROUND_SENTENCES]);

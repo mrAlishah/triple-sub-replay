@@ -151,7 +151,10 @@ class AnkiTripleNoteTest {
         CardFront.entries.forEach { front ->
             val answer = tripleCardTemplate(front).answer
             assertFalse(front.name, answer.contains("{{Meaning}}"))
-            assertTrue(front.name, answer.contains("{{Subtitle 1}}") && answer.contains("{{#Source Title}}") && answer.contains("{{Source}}"))
+            assertTrue(
+                front.name,
+                answer.contains("{{Subtitle 1}}") && answer.contains("{{#Source Title}}") && answer.contains("{{Source}}"),
+            )
         }
     }
 

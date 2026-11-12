@@ -322,7 +322,17 @@ class AiTranslationBehaviorTest {
         runBlocking {
             val api = UsageLimitApi()
             val credentials =
-                ChatGptCredentials("oaiapp_1", "sub-1", null, "id", "access", "refresh", Long.MAX_VALUE / 2, setOf(CHATGPT_PLAN_SCOPE), null)
+                ChatGptCredentials(
+                    "oaiapp_1",
+                    "sub-1",
+                    null,
+                    "id",
+                    "access",
+                    "refresh",
+                    Long.MAX_VALUE / 2,
+                    setOf(CHATGPT_PLAN_SCOPE),
+                    null,
+                )
             val store = ChatGptCredentialStore(MemoryStorage(), PlainCipher).also { it.save(credentials) }
             val model = ChatGptTranslationModel("gpt-x", credentials.cacheScope("gpt-x"), ChatGptSession(store, api), api, ChatGptGate())
             var clock = 1_000_000L
@@ -375,7 +385,14 @@ class AiTranslationBehaviorTest {
             }
             println("AUDIT contention windowFirst=${windowFirst.requests.size} interleaved=${interleaved.requests.size}")
             assertEquals(listOf(60, 20), interleaved.requests.map { it.size })
-            assertEquals("no sentence is sent twice", 80, interleaved.requests.flatten().toSet().size)
+            assertEquals(
+                "no sentence is sent twice",
+                80,
+                interleaved.requests
+                    .flatten()
+                    .toSet()
+                    .size,
+            )
         }
 
     private fun answer(

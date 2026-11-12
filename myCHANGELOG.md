@@ -9,6 +9,7 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Added
 
+- **Quality checks pass again.** `formatCheck` now finds `python3`, `python` or `py -3` (and says so clearly if none exists), the Default-tab settings editor is split into smaller parts (no change in what it shows or saves), and formatting findings in fork files are fixed. See `docs/specs/2026-11-12-quality-gates-green.md`.
 - **Subtitle 2 uses the selected Translation AI Service.** Gemini API and the other keyed services now translate Subtitle 2 too (before, only ChatGPT Subscription did), straight from the Original, with the same mode rules (Google only, AI with Google, AI only, on-device). Subtitle 2's language picker also shows a Recent group of its own (kept separately from Subtitle 1's, saved in backups). Not tested on a device or with real AI services yet. See `docs/specs/2026-11-12-subtitle2-ai-service-and-recent-languages.md`.
 - **Upstream sync (2026-11-12).** Adopted upstream's backup and shared setups, settings groups with current values and Search entries, Flashcards section, Hide while playing in the quick language popup, Dictation play mode, AI subtitles for videos without captions, Meaning in this sentence (AI), card sound, picture and card front, smaller and retried app updates. Cards for Anki now use the new note type `TripleSub Replay v5` (v4 plus word and sentence sound); older cards are untouched. The fork keeps its three subtitle slots instead of upstream's third line.
 

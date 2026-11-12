@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_section_updates_title">アプリの更新</string>
-    <string name="settings_section_updates_summary">自動で更新</string>
     <string name="updates_check">アップデートを確認</string>
     <string name="updates_version">バージョン %1$s</string>
     <string name="updates_available_short">バージョン %1$s があります</string>
@@ -20,7 +19,9 @@
     <string name="updates_try_again">再試行</string>
     <string name="updates_open_github">GitHub を開く</string>
     <string name="updates_unsupported">このアプリはパソコンでビルドされたため、自動で更新できません。最新バージョンは GitHub から入手してください。</string>
+    <string name="updates_unsupported_device">新しいバージョンは ARM プロセッサのスマートフォン向けで、この端末では動きません。今のバージョンはそのまま使えます。すべてのバージョンは GitHub にあります。</string>
     <string name="updates_problem_offline">GitHub に接続できません。接続を確認して、もう一度お試しください。</string>
+    <string name="updates_problem_interrupted">ダウンロードが途中で止まりました。もう一度お試しいただくと、止まったところから再開します。</string>
     <string name="updates_problem_busy">GitHub が混み合っています。数分後にもう一度お試しください。</string>
     <string name="updates_problem_github">GitHub から予期しない応答がありました。後でもう一度お試しください。</string>
     <string name="updates_problem_checksum">ダウンロードしたファイルが GitHub のチェックサムと一致しなかったため、削除しました。</string>

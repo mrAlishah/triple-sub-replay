@@ -11,7 +11,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AI_REPEAT_FOREVER
+import com.kienhoang.dualsubreplay.data.CardFront
+import com.kienhoang.dualsubreplay.data.CardOptions
 import com.kienhoang.dualsubreplay.data.PageTokenMode
+import com.kienhoang.dualsubreplay.data.storedCardFront
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 
 internal const val STUDY_PLAY_MODE_PREFERENCE = "study_play_mode"
@@ -28,6 +31,18 @@ internal const val SEND_TO_APP_PREFERENCE = "send_to_app"
 /** The AnkiConnect deck picked in Settings, or absent for Automatic. */
 internal const val ANKICONNECT_DECK_PREFERENCE = "ankiconnect_deck"
 internal const val BLUR_BOX_PREFERENCE = "blur_box_enabled"
+
+/** Study tools → Send to → Add audio to cards (owner pick 2026-11-09), on by default. */
+internal const val CARD_AUDIO_PREFERENCE = "anki_card_audio"
+
+/** Flashcards & Anki → Add a picture to cards (owner pick 2026-11-10), on by default. */
+internal const val CARD_PICTURE_PREFERENCE = "anki_card_picture"
+
+/** Flashcards & Anki → Card front (owner pick 2026-11-10): a [CardFront] storage value. */
+internal const val CARD_FRONT_PREFERENCE = "anki_card_front"
+
+/** Flashcards & Anki → Card front → Sentence sound on the front (lion737, #81, 2026-11-11), off by default. */
+internal const val CARD_FRONT_SOUND_PREFERENCE = "anki_card_front_sound"
 
 /** The word card's Kanji section for Japanese words (owner request 2026-10-24), on by default. */
 internal const val KANJI_DETAILS_PREFERENCE = "kanji_details"
@@ -54,6 +69,10 @@ internal val STUDY_SETTING_KEYS =
         ANKIDROID_PREFERENCE,
         SEND_TO_APP_PREFERENCE,
         ANKICONNECT_DECK_PREFERENCE,
+        CARD_AUDIO_PREFERENCE,
+        CARD_PICTURE_PREFERENCE,
+        CARD_FRONT_PREFERENCE,
+        CARD_FRONT_SOUND_PREFERENCE,
         BLUR_BOX_PREFERENCE,
         LOOP_BUTTON_PREFERENCE,
         KANJI_DETAILS_PREFERENCE,
@@ -72,6 +91,9 @@ enum class StudyPlayMode(
     PAUSE_AFTER_LINE("pause_after_line", R.string.study_play_mode_pause_after, R.string.study_play_mode_pause_after_description),
     READ_FIRST("read_first", R.string.study_play_mode_read_first, R.string.study_play_mode_read_first_description),
     LISTEN_FIRST("listen_first", R.string.study_play_mode_listen_first, R.string.study_play_mode_listen_first_description),
+
+    /** Lines stay hidden until the learner checks what they typed (owner pick 2026-11-09); see `Dictation.kt`. */
+    DICTATION("dictation", R.string.study_play_mode_dictation, R.string.study_play_mode_dictation_description),
     REPEAT_LINE("repeat_line", R.string.study_play_mode_repeat, R.string.study_play_mode_repeat_description),
     NEW_WORD_LINES("new_word_lines", R.string.study_play_mode_new_word, R.string.study_play_mode_new_word_description),
 }
@@ -148,12 +170,28 @@ internal data class StudySettings(
     val ankiDroid: Boolean = true,
     val sendTo: FlashcardApp = FlashcardApp.ANKIDROID,
     val ankiConnectDeck: String? = null,
+    /** Cards carry the word's voice and the line's real sound from the video. */
+    val cardAudio: Boolean = true,
+    /** Cards carry a still of the line from the video, else the video's thumbnail. */
+    val cardPicture: Boolean = false,
+    val cardFront: CardFront = CardFront.WORD_AND_SENTENCE,
+    /** The line's sound plays with the card's front, not only on the back. */
+    val cardFrontSound: Boolean = false,
     val blurBox: Boolean = false,
     val kanjiDetails: Boolean = true,
     val pageTokenCaptions: PageTokenMode = PageTokenMode.AUTO,
 ) {
     /** Known words is on (Automatic or Manual): the score, new-word marks and "I know this word" show. */
     val knownWords: Boolean get() = knownWordsMode != KnownWordsMode.OFF
+
+    /** What Send to puts on each card. */
+    val cardOptions: CardOptions get() =
+        CardOptions(
+            audio = cardAudio,
+            picture = cardPicture,
+            front = cardFront,
+            frontSound = cardFrontSound,
+        )
 
     /** Pause on lines with one new word needs the known-word list; without it the video plays normally. */
     val effectivePlayMode: StudyPlayMode
@@ -188,6 +226,10 @@ internal fun readStudySettings(preferences: SharedPreferences): StudySettings =
         ankiDroid = preferences.getBoolean(ANKIDROID_PREFERENCE, true),
         sendTo = storedFlashcardApp(preferences.getString(SEND_TO_APP_PREFERENCE, null)),
         ankiConnectDeck = preferences.getString(ANKICONNECT_DECK_PREFERENCE, null)?.takeIf { it.isNotBlank() },
+        cardAudio = preferences.getBoolean(CARD_AUDIO_PREFERENCE, true),
+        cardPicture = preferences.getBoolean(CARD_PICTURE_PREFERENCE, false),
+        cardFront = storedCardFront(preferences.getString(CARD_FRONT_PREFERENCE, null)),
+        cardFrontSound = preferences.getBoolean(CARD_FRONT_SOUND_PREFERENCE, false),
         blurBox = preferences.getBoolean(BLUR_BOX_PREFERENCE, false),
         kanjiDetails = preferences.getBoolean(KANJI_DETAILS_PREFERENCE, true),
         pageTokenCaptions = storedPageTokenMode(preferences.all[PAGE_TOKEN_CAPTIONS_PREFERENCE]),
@@ -197,12 +239,17 @@ internal fun studyPreferences(context: Context): SharedPreferences = context.get
 
 /**
  * Listen first hides subtitles while the video plays: a line set to show always shows only while
- * paused. Never stays never.
+ * paused. Never stays never. Dictation does the same outside the subtitle panel (full screen, the
+ * overlay); the panel hides each line until it is revealed.
  */
 internal fun studyCaptionVisibility(
     stored: CaptionVisibility,
     mode: StudyPlayMode,
-): CaptionVisibility = if (mode == StudyPlayMode.LISTEN_FIRST && stored == CaptionVisibility.ALWAYS) CaptionVisibility.PAUSED else stored
+): CaptionVisibility = if (mode.hidesWhilePlaying && stored == CaptionVisibility.ALWAYS) CaptionVisibility.PAUSED else stored
+
+/** Listen first and Dictation keep subtitles (and YouTube's own captions) hidden while the video plays. */
+internal val StudyPlayMode.hidesWhilePlaying: Boolean
+    get() = this == StudyPlayMode.LISTEN_FIRST || this == StudyPlayMode.DICTATION
 
 /** The Study tools settings, following every change to them (from the settings page or the assistant). */
 @Composable

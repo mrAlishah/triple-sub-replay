@@ -2,7 +2,7 @@
 <resources>
     <!-- Study tools (2026-10-20): play modes, skip silence, known words, AnkiDroid, blur box, page token -->
     <string name="settings_section_study_title">Alat belajar</string>
-    <string name="settings_section_study_summary">Mode putar, lewati jeda sunyi, kata yang dikenal, Kirim ke, kotak buram</string>
+    <string name="settings_section_flashcards_title">Kartu hafalan &amp; Anki</string>
     <string name="study_play_mode_title">Mode putar</string>
     <string name="study_play_mode_normal">Normal</string>
     <string name="study_play_mode_normal_description">Video diputar seperti biasa.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">Berhenti di awal setiap baris agar Anda bisa membacanya sebelum mendengarnya.</string>
     <string name="study_play_mode_listen_first">Dengar dulu</string>
     <string name="study_play_mode_listen_first_description">Menyembunyikan subtitle saat video diputar, lalu berhenti setelah setiap baris dan menampilkannya.</string>
+    <string name="study_play_mode_dictation">Dikte</string>
+    <string name="study_play_mode_dictation_description">Menyembunyikan setiap baris sampai kamu mengetik apa yang kamu dengar. Video berhenti setelah setiap baris; ketuk Periksa untuk melihat yang terlewat. Paling baik dengan subtitle buatan manusia: subtitle otomatis bisa berisi kesalahan.</string>
     <string name="study_play_mode_repeat">Ulangi setiap baris</string>
     <string name="study_play_mode_repeat_description">Memutar setiap baris beberapa kali sebelum lanjut. Terus-menerus mengulang baris itu sampai kamu mengetuk baris lain atau menggeser video.</string>
     <string name="study_repeat_forever">Terus-menerus</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">Hapus</string>
     <string name="study_anki_title">Kirim ke aplikasi kartu hafalan</string>
     <string name="study_anki_description">Menampilkan tombol Kirim ke di kartu kata dan di Latihan → Ekspor. Tombol ini mengirim ke AnkiDroid kecuali Anda memilih aplikasi lain dengan ▾ di tombol atau di bawah; tombol lalu menampilkan aplikasi itu.</string>
+    <string name="study_card_audio_title">Tambahkan audio ke kartu</string>
+    <string name="study_card_audio_description">Kartu mendapat kata dengan suara yang dipakai kartu kata, dan suara asli kalimat dari video. Kalimat direkam saat diputar, jadi kartu yang dikirim sebelum kalimat selesai mendapat suaranya setelah kalimat selesai.</string>
+    <string name="study_card_picture_title">Tambahkan gambar ke kartu</string>
+    <string name="study_card_picture_description">Kartu mendapat gambar dari video, diambil saat kalimat kata itu tampil di layar. Jika tidak ada, gambar mini video yang dipakai.</string>
+    <string name="study_card_front_title">Sisi depan kartu</string>
+    <string name="study_card_front_sound_title">Suara kalimat di sisi depan</string>
+    <string name="study_card_front_sound_description">Sisi depan juga memutar suara kalimat dari video, tidak hanya sisi belakang.</string>
+    <string name="study_card_front_word_sentence">Kata dan kalimat</string>
+    <string name="study_card_front_word">Kata</string>
+    <string name="study_card_front_sentence">Kalimat</string>
+    <string name="study_card_front_listening">Mendengarkan</string>
+    <string name="study_card_front_word_sentence_description">Sisi depan menampilkan kata dengan kalimatnya.</string>
+    <string name="study_card_front_word_description">Sisi depan hanya menampilkan kata; kalimat ada di belakang.</string>
+    <string name="study_card_front_sentence_description">Sisi depan menampilkan kalimat dengan kata dicetak tebal; kata dan artinya ada di belakang.</string>
+    <string name="study_card_front_listening_description">Sisi depan hanya memutar suara kalimat; kalimat dan kata ada di belakang.</string>
+    <string name="study_card_front_note">Mengubah ini juga mengubah kartu yang sudah Anda kirim.</string>
+    <string name="study_card_sound_waits">Suara kalimat ditambahkan setelah kalimat selesai diputar.</string>
+    <string name="study_card_sound_replaying">Memutar kalimat sekali agar suaranya masuk ke kartu.</string>
     <string name="study_blur_box_title">Kotak buram</string>
     <string name="study_blur_box_description">Menaruh kotak buram di atas video untuk menutupi subtitle yang menempel di gambar. Seret untuk memindahkan, dan seret sudutnya untuk mengubah ukuran.</string>
     <string name="study_page_token_title">Muat subtitle dengan token halaman (beta)</string>
@@ -48,6 +68,9 @@
     <string name="study_send_to_anki">Kirim ke %1$s</string>
     <string name="study_sending_to_anki">Mengirim…</string>
     <string name="study_sent_to_anki">Terkirim ke %1$s</string>
+    <string name="study_send_again_title">Kirim kartu ini lagi?</string>
+    <string name="study_send_again_text">%1$s sudah punya kartu untuk kata ini. Satu kartu lagi ditambahkan, dan Anda bisa menghapus yang lama di sana.</string>
+    <string name="study_send_again">Kirim lagi</string>
     <string name="study_anki_not_installed">AnkiDroid tidak terpasang di ponsel ini.</string>
     <string name="study_anki_permission_denied">Izin AnkiDroid tidak diberikan, jadi tidak ada kartu yang ditambahkan.</string>
     <string name="study_anki_failed">AnkiDroid tidak menerima kartu. Buka AnkiDroid, biarkan berjalan di latar belakang, lalu kembali dan coba lagi.</string>
@@ -68,6 +91,9 @@
     <plurals name="study_anki_sent_count">
         <item quantity="other">%1$d kata dikirim ke %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="other">%1$d kartu mendapat suara kalimatnya setelah kalimatnya diputar.</item>
+    </plurals>
     <string name="study_page_token_auto">Otomatis</string>
     <string name="study_page_token_on">Nyala</string>
     <string name="study_page_token_off">Mati</string>
@@ -78,7 +104,7 @@
     <string name="study_known_words_after_title">Hitung sebagai dikenal setelah dilihat</string>
     <string name="study_word_seen">Dilihat %1$d dari %2$d kali</string>
     <string name="study_known_words_offer_title">Nyalakan Kata yang dikenal?</string>
-    <string name="study_known_words_offer_message">Panel subtitle lalu menunjukkan seberapa banyak isi tiap video yang sudah kamu kenal, dan kata yang sering kamu lihat otomatis dihitung sebagai dikenal. Kamu bisa mengubahnya nanti di Setelan → Alat belajar.</string>
+    <string name="study_known_words_offer_message">Panel subtitle lalu menunjukkan seberapa banyak isi tiap video yang sudah kamu kenal, dan kata yang sering kamu lihat otomatis dihitung sebagai dikenal. Kamu bisa mengubahnya nanti di Setelan → Belajar kata.</string>
     <string name="study_known_words_offer_confirm">Nyalakan</string>
     <string name="study_known_words_offer_dismiss">Nanti saja</string>
     <string name="study_send_to_app_title">Kirim kata ke</string>
@@ -101,4 +127,12 @@
     <string name="study_ankiconnect_open">Buka AnkiConnect Android</string>
     <string name="study_loop_button_title">Tombol ulang di baris yang diputar</string>
     <string name="study_loop_button_description">Menampilkan ikon ulang kecil di baris yang sedang diputar di transkrip. Ketuk untuk mengulang baris itu sampai Anda mengetuknya lagi. Mengetuk baris lain atau menggeser video akan mengulang baris itu.</string>
+    <string name="dictation_type_what_you_heard">Ketik apa yang kamu dengar</string>
+    <string name="dictation_replay">Putar ulang</string>
+    <string name="dictation_show">Tampilkan</string>
+    <string name="dictation_check">Periksa</string>
+    <string name="dictation_next">Berikutnya</string>
+    <string name="dictation_perfect">Sempurna!</string>
+    <string name="dictation_score">%1$d dari %2$d benar</string>
+    <string name="dictation_hidden_line">Baris tersembunyi</string>
 </resources>

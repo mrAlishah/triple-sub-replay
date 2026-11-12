@@ -3,6 +3,7 @@ package com.kienhoang.dualsubreplay.ui
 import android.app.Application
 import android.content.Context
 import android.os.SystemClock
+import android.util.LruCache
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,11 +15,15 @@ import com.kienhoang.dualsubreplay.assistant.AiKeyPacer
 import com.kienhoang.dualsubreplay.assistant.AiKeyStore
 import com.kienhoang.dualsubreplay.assistant.AiModelLister
 import com.kienhoang.dualsubreplay.assistant.AiTranslationChoices
+import com.kienhoang.dualsubreplay.assistant.AiVideoSubtitleMaker
 import com.kienhoang.dualsubreplay.assistant.KeystoreSecretCipher
 import com.kienhoang.dualsubreplay.assistant.SharedPreferencesSecretStorage
+import com.kienhoang.dualsubreplay.assistant.StoredGeminiKeys
 import com.kienhoang.dualsubreplay.assistant.aiTranslationModelFor
 import com.kienhoang.dualsubreplay.assistant.readAiAssistantSettings
 import com.kienhoang.dualsubreplay.chatgpt.ChatGptSubscription
+import com.kienhoang.dualsubreplay.data.AI_SUBTITLE_TRACK_ID
+import com.kienhoang.dualsubreplay.data.AiSubtitleStore
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.CaptionProvider
@@ -52,6 +57,7 @@ import com.kienhoang.dualsubreplay.data.YouTubeUrlParser
 import com.kienhoang.dualsubreplay.data.immersionLanguage
 import com.kienhoang.dualsubreplay.data.initialDailyGoalPromptCompleted
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
+import com.kienhoang.dualsubreplay.data.meansNoCaptionsAtAll
 import com.kienhoang.dualsubreplay.data.normalizeSourceTitle
 import com.kienhoang.dualsubreplay.data.retireLegacyDownloadJobs
 import com.kienhoang.dualsubreplay.data.savedWordFrom
@@ -123,6 +129,12 @@ private const val YOUTUBE_TRANSLATION_WAIT_MS = 1_000L
 /** Rows read to fill an AI request; 60 sentences need far fewer. */
 private const val AI_FILL_MAX_ROWS = 240
 
+/** Words in sentences whose meaning in context is kept for this app run. */
+private const val CONTEXT_MEANING_CACHE_SIZE = 200
+
+/** A word card waits this long for the AI before showing only the dictionary meaning. */
+private const val CONTEXT_MEANING_TIMEOUT_MS = 20_000L
+
 class AppViewModel internal constructor(
     application: Application,
     private val captionProvider: CaptionProvider,
@@ -182,6 +194,33 @@ class AppViewModel internal constructor(
                 application.aiTranslationModelFor(provider, model, effort, aiTransport, dropRefused)
             },
         ) { reloadAfterAiAccessChange() }
+
+    /** Subtitles Gemini made for videos without captions (owner pick 2026-11-08). */
+    private val aiSubtitleStore = AiSubtitleStore(File(application.cacheDir, "ai-subtitles"))
+    private val geminiSubtitles by lazy {
+        AiVideoSubtitleMaker(
+            StoredGeminiKeys(
+                AiKeyStore(
+                    SharedPreferencesSecretStorage(application.getSharedPreferences(AI_KEYS_PREFERENCES, 0)),
+                    KeystoreSecretCipher(),
+                ),
+            ),
+            aiTransport,
+        )
+    }
+    private val aiSubtitles =
+        AiSubtitleRunner(
+            scope = viewModelScope,
+            store = aiSubtitleStore,
+            askPart = { videoId, startMs, endMs -> geminiSubtitles.part(videoId, startMs, endMs) },
+            durationOf = { videoId ->
+                WebVideoBridge.playback.value
+                    ?.takeIf { it.videoId == videoId }
+                    ?.durationMs
+            },
+            onStatus = { status -> _state.update { it.copy(aiSubtitles = status) } },
+            onReady = { videoId -> if (_state.value.activeVideoId == videoId) loadVideo(videoId, showPanel = true) },
+        )
 
     /** Google failed or was too slow on mobile data and has not answered since. */
     @Volatile private var googleFailedOnMobile = false
@@ -411,6 +450,7 @@ class AppViewModel internal constructor(
     override fun onCleared() {
         flushImmersion()
         loadingJob?.cancel()
+        aiSubtitles.stop()
         preferences.unregisterOnSharedPreferenceChangeListener(visibilityListener)
         preferences.unregisterOnSharedPreferenceChangeListener(tabSettings.listener)
         tabSettings.writeThrough()
@@ -747,13 +787,28 @@ class AppViewModel internal constructor(
     }
 
     /** Fetches [videoId]'s captions in the picked track or chosen original language, or Auto's pick when none is chosen. */
-    private suspend fun fetchCaptionTrack(videoId: String): CaptionTrackResult =
-        captionProvider.fetch(
+    private suspend fun fetchCaptionTrack(videoId: String): CaptionTrackResult {
+        // Subtitles Gemini made for this video earlier: YouTube had none for it.
+        aiSubtitleStore.read(videoId)?.takeIf { it.cues().isNotEmpty() }?.let { return it.asCaptionTrack(aiSubtitleLanguage(it.language)) }
+        return captionProvider.fetch(
             videoId,
             preferredCaptionLanguages(_state.value.sourcePreference),
             learningLanguage(),
             _state.value.pickedTrack,
         )
+    }
+
+    /** The language Gemini named, or the learning language when it named none the app knows. */
+    private fun aiSubtitleLanguage(named: String): String =
+        TranslationLanguages.normalize(named).takeIf { named.isNotBlank() && TranslationLanguages.isSupported(it) }
+            ?: learningLanguage()
+            ?: "en"
+
+    /** The no-captions card's button: Gemini makes subtitles for the open video, starting with the playing part. */
+    fun makeAiSubtitles() {
+        val videoId = _state.value.activeVideoId ?: return
+        aiSubtitles.start(videoId, latestPlaybackSecondMs)
+    }
 
     private fun learningLanguage(): String? =
         storedLearningLanguage(
@@ -995,26 +1050,30 @@ class AppViewModel internal constructor(
     }
 
     fun selectLearningWord(tap: WordTap?) {
+        _state.update { it.copy(selectedLearningWord = tap?.let(::learningSelectionOf)) }
+    }
+
+    /** The word card's selection for [tap], in the languages and video now playing. */
+    private fun learningSelectionOf(tap: WordTap): LearningWordSelection {
         val current = _state.value
         val source =
             com.kienhoang.dualsubreplay.data
                 .learningSourceLanguage(current.resolvedSourceLanguage, current.sourcePreference)
         val selection =
-            tap?.let { selected ->
-                com.kienhoang.dualsubreplay.data.learningSelection(
-                    if (current.liveFallback) selected.copy(segment = null) else selected,
-                    source,
-                    current.targetLanguage,
-                    current.activeVideoId.takeUnless { current.liveFallback },
-                )
-            }
-        val withMeanings =
-            selection?.copy(
-                extraMeaningLanguages = current.extraMeaningLanguagesFor(selection),
-                sourceTitle = current.titleOf(selection.videoId),
+            com.kienhoang.dualsubreplay.data.learningSelection(
+                if (current.liveFallback) tap.copy(segment = null) else tap,
+                source,
+                current.targetLanguage,
+                current.activeVideoId.takeUnless { current.liveFallback },
             )
-        _state.update { it.copy(selectedLearningWord = withMeanings) }
+        return selection.copy(
+            extraMeaningLanguages = current.extraMeaningLanguagesFor(selection),
+            sourceTitle = current.titleOf(selection.videoId),
+        )
     }
+
+    /** [meaningInContext] for a selection in the bar above a subtitle line, before any word card opens. */
+    internal suspend fun meaningInContext(tap: WordTap): ContextMeaning = meaningInContext(learningSelectionOf(tap))
 
     fun setAutoPronounce(enabled: Boolean) {
         preferences.edit().putBoolean("auto_pronounce", enabled).apply()
@@ -1051,6 +1110,58 @@ class AppViewModel internal constructor(
         selection: LearningWordSelection,
         language: String = selection.meaningLanguage,
     ): String = translateText(selection.wordLanguage, language, selection.token.text)
+
+    /** Answers already given for a word in a sentence, so tapping it again costs no request. */
+    private val contextMeanings = LruCache<String, String>(CONTEXT_MEANING_CACHE_SIZE)
+
+    /**
+     * The tapped word's meaning in its sentence, from the AI assistant's service, while Settings →
+     * Word learning → Meaning in this sentence (AI) is on (see WordMeaningInContext.kt).
+     */
+    internal suspend fun meaningInContext(selection: LearningWordSelection): ContextMeaning {
+        val application = getApplication<Application>()
+        if (!readMeaningInContext(application)) return ContextMeaning.None
+        val context = meaningContext(selection, _state.value.segments) ?: return ContextMeaning.None
+        val word = selection.token.text.trim()
+        val key =
+            listOf(selection.wordLanguage, selection.meaningLanguage, word, context.sentence, context.translation.orEmpty())
+                .joinToString("\u0000")
+        contextMeanings.get(key)?.let { return ContextMeaning.Found(it) }
+        // The bar above the line and the word card ask for the same selection: one request serves both,
+        // and it finishes even when the bar closes first.
+        val request =
+            contextMeaningRequests[key] ?: viewModelScope
+                .async {
+                    try {
+                        askMeaningInContext(selection, context)
+                    } finally {
+                        contextMeaningRequests.remove(key)
+                    }
+                }.also { contextMeaningRequests[key] = it }
+        val found = request.await()
+        if (found is ContextMeaning.Found) contextMeanings.put(key, found.text)
+        return found
+    }
+
+    /** Requests for the meaning in a sentence still waiting for their answer, by [contextMeanings] key (main thread only). */
+    private val contextMeaningRequests = HashMap<String, kotlinx.coroutines.Deferred<ContextMeaning>>()
+
+    private suspend fun askMeaningInContext(
+        selection: LearningWordSelection,
+        context: MeaningContext,
+    ): ContextMeaning {
+        // The model the subtitles are translated with (the AI provider chosen in Captions & translation); none: no key or session.
+        val model = withContext(Dispatchers.IO) { aiConfig.translationModel() } ?: return ContextMeaning.NoKey
+        val word = selection.token.text.trim()
+        val (system, user) = contextMeaningRequest(word, context, selection.wordLanguage, selection.meaningLanguage, selection.isPhrase)
+        val reply =
+            try {
+                withTimeoutOrNull(CONTEXT_MEANING_TIMEOUT_MS) { model.ask(system, user) }
+            } catch (_: java.io.IOException) {
+                null
+            }
+        return cleanContextMeaning(reply, selection.isPhrase)?.let(ContextMeaning::Found) ?: ContextMeaning.None
+    }
 
     internal suspend fun saveWord(
         selection: LearningWordSelection,
@@ -1532,20 +1643,9 @@ class AppViewModel internal constructor(
         }
     }
 
-    private fun loadVideo(
-        videoId: String,
-        showPanel: Boolean,
-    ) {
-        val generation = ++loadGeneration
-        loadingJob?.cancel()
-        liveCaptionTracker.reset()
-        liveCaptionProgress = null
-        val preserveLive = _state.value.liveFallback && _state.value.activeVideoId == videoId
-        if (!preserveLive) {
-            rejectedLiveRevision = null
-            liveTranslationGate.reset()
-            liveTranslationJob?.cancel()
-        }
+    /** Before [videoId] loads: another video's AI subtitles stop, and its playback position is forgotten. */
+    private fun leaveOtherVideo(videoId: String) {
+        if (aiSubtitles.videoId != null && aiSubtitles.videoId != videoId) aiSubtitles.stop()
         // Reloading the same video (language change, retry) keeps tracking the
         // current position so subtitles resume exactly where playback is.
         if (shouldResetPlaybackClock(_state.value.activeVideoId, videoId)) {
@@ -1553,6 +1653,23 @@ class AppViewModel internal constructor(
             playbackKnown = false
             playbackSessionId = null
             captionHighlightResolver.reset()
+        }
+    }
+
+    private fun loadVideo(
+        videoId: String,
+        showPanel: Boolean,
+    ) {
+        val generation = ++loadGeneration
+        loadingJob?.cancel()
+        leaveOtherVideo(videoId)
+        liveCaptionTracker.reset()
+        liveCaptionProgress = null
+        val preserveLive = _state.value.liveFallback && _state.value.activeVideoId == videoId
+        if (!preserveLive) {
+            rejectedLiveRevision = null
+            liveTranslationGate.reset()
+            liveTranslationJob?.cancel()
         }
         playbackRequests.value = CaptionPlaybackRequest()
         _state.update {
@@ -1562,6 +1679,7 @@ class AppViewModel internal constructor(
                 liveTranslated = if (preserveLive) it.liveTranslated else null,
                 retryingTranscript = preserveLive,
                 fullTranscriptProblem = if (preserveLive) it.fullTranscriptProblem else null,
+                noCaptions = preserveLive && it.noCaptions,
                 activeVideoId = videoId,
                 playbackPaused = if (playbackKnown) it.playbackPaused else true,
                 subtitlePanelVisible = showPanel,
@@ -1597,6 +1715,7 @@ class AppViewModel internal constructor(
                             liveTranslated = null,
                             retryingTranscript = false,
                             fullTranscriptProblem = null,
+                            noCaptions = false,
                             resolvedSourceLanguage = track.languageCode,
                             sourcePreference =
                                 resolvedSourcePreference(
@@ -1612,6 +1731,7 @@ class AppViewModel internal constructor(
                         )
                     }
 
+                    if (track.trackId == AI_SUBTITLE_TRACK_ID) aiSubtitles.resumeIfUnfinished(videoId, latestPlaybackSecondMs)
                     followStoredTranslation(checkNotNull(rawStore), videoId, generation, track.languageCode, track.isGenerated, natural)
                 } catch (error: Exception) {
                     if (error is CancellationException) throw error
@@ -1622,6 +1742,7 @@ class AppViewModel internal constructor(
                             liveFallback = true,
                             retryingTranscript = false,
                             fullTranscriptProblem = fullTranscriptProblem(videoId, error),
+                            noCaptions = meansNoCaptionsAtAll(error, pageTranscripts.problem(videoId)),
                             statusMessage =
                                 if (current.liveOriginal !=
                                     null

@@ -23,6 +23,11 @@
     <string name="practice_pronounce_item">朗读 %1$s</string>
     <string name="practice_speech_settings">语音设置</string>
     <string name="practice_show_meaning">显示释义</string>
+    <string name="practice_meaning_in_sentence_label">在这句话中（%1$s）</string>
+    <string name="practice_meaning_dictionary">词典：%1$s</string>
+    <string name="practice_meaning_in_sentence_under">在这句话中：%1$s</string>
+    <string name="practice_meaning_in_sentence_loading">正在向 AI 询问在这句话中的意思…</string>
+    <string name="practice_meaning_in_sentence_no_key">“在这句话中的意思”需要 AI 密钥：设置 → AI 助手。</string>
     <string name="practice_meaning_retry">重试</string>
     <string name="practice_save_meaning">保存释义</string>
     <string name="practice_notes_label">文本</string>

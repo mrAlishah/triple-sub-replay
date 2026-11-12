@@ -50,6 +50,7 @@ import com.kienhoang.dualsubreplay.update.AppUpdater
 import com.kienhoang.dualsubreplay.update.UPDATE_REMINDERS_PREFERENCE
 import com.kienhoang.dualsubreplay.update.UpdateProblem
 import com.kienhoang.dualsubreplay.update.UpdateState
+import com.kienhoang.dualsubreplay.update.canUpdateItself
 
 /** The drawer's Check for updates row: it asks GitHub only when tapped. */
 @Composable
@@ -112,11 +113,12 @@ internal fun AppUpdateDialogHost(
     var noBrowser by remember { mutableStateOf(false) }
     val close = { AppUpdater.hideDialog() }
     val open = { url: String -> noBrowser = !openPage(context, url) }
-    if (channel == UpdateChannel.None) {
+    if (!canUpdateItself(channel)) {
+        val why = if (channel == UpdateChannel.UnsupportedDevice) R.string.updates_unsupported_device else R.string.updates_unsupported
         AlertDialog(
             onDismissRequest = close,
             title = { DialogTitle(stringResource(R.string.updates_check), onClose = close) },
-            text = { UpdateDialogBody(noBrowser, open) { UpdateMessage(stringResource(R.string.updates_unsupported)) } },
+            text = { UpdateDialogBody(noBrowser, open) { UpdateMessage(stringResource(why)) } },
             confirmButton = { UpdateButton(R.string.updates_open_github, "update_open_github") { open(UPDATE_RELEASES_PAGE_URL) } },
         )
         return
@@ -164,7 +166,7 @@ private fun UpdateDialogText(current: UpdateState) {
         is UpdateState.Available ->
             UpdateMessage(
                 stringResource(R.string.updates_available, current.update.versionName, BuildConfig.VERSION_NAME) +
-                    sizeLine(context, current.update.sizeBytes) + "\n\n" + stringResource(R.string.updates_first_time_note),
+                    sizeLine(context, current.update.downloadBytes) + "\n\n" + stringResource(R.string.updates_first_time_note),
             )
         is UpdateState.Downloading ->
             Busy(stringResource(R.string.updates_downloading, current.update.versionName), current.progress ?: -1f)
@@ -189,7 +191,8 @@ private fun UpdateConfirmButton(
             UpdateButton(R.string.updates_try_again, "update_try_again") {
                 when {
                     current.file != null && current.update != null -> AppUpdater.install(context, current.update, current.file)
-                    current.update != null -> AppUpdater.download(context, current.update)
+                    // GitHub first: a newer version replaces a half download of an older one.
+                    current.update != null -> AppUpdater.retryDownload(context)
                     else -> AppUpdater.check(context)
                 }
             }
@@ -209,6 +212,7 @@ private val UpdateProblem.messageRes: Int
     get() =
         when (this) {
             UpdateProblem.OFFLINE -> R.string.updates_problem_offline
+            UpdateProblem.INTERRUPTED -> R.string.updates_problem_interrupted
             UpdateProblem.GITHUB_BUSY -> R.string.updates_problem_busy
             UpdateProblem.GITHUB_ERROR -> R.string.updates_problem_github
             UpdateProblem.CHECKSUM -> R.string.updates_problem_checksum
@@ -284,7 +288,7 @@ private fun Busy(
     }
 }
 
-/** More settings → App updates. */
+/** Settings → App updates. */
 @Composable
 internal fun AppUpdateSettingsSection() {
     val context = LocalContext.current
@@ -314,5 +318,5 @@ internal fun AppUpdateSettingsSection() {
         },
         testTag = "auto_update_switch",
     )
-    if (channel == UpdateChannel.None) SettingsHint(stringResource(R.string.updates_auto_unavailable))
+    if (!canUpdateItself(channel)) SettingsHint(stringResource(R.string.updates_auto_unavailable))
 }

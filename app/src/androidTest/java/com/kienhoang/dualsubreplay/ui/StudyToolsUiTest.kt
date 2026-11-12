@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.AnkiConnectNotes
 import com.kienhoang.dualsubreplay.data.AnkiDroidNotes
@@ -54,7 +56,7 @@ class StudyToolsUiTest {
             .commit()
     }
 
-    private fun showSettings() {
+    private fun showSettings(section: String = "settings_section_study") {
         composeRule.setContent {
             DualSubTheme {
                 SubtitleSettingsDialog(
@@ -71,7 +73,7 @@ class StudyToolsUiTest {
                 )
             }
         }
-        composeRule.onNodeWithTag("settings_section_study").performScrollTo().performClick()
+        composeRule.onNodeWithTag(section).performScrollTo().performClick()
     }
 
     @Test
@@ -86,44 +88,117 @@ class StudyToolsUiTest {
     }
 
     @Test
+    fun pageTokensSitWithTheCaptionSettings() {
+        showSettings("settings_section_translation")
+        // Automatic by default, then On.
+        composeRule.onNodeWithTag("page_token_on").performScrollTo().performClick()
+        composeRule.runOnIdle { assertEquals("on", preferences.getString(PAGE_TOKEN_CAPTIONS_PREFERENCE, null)) }
+        saveUiEvidence("settings-captions-page-token")
+    }
+
+    @Test
     fun theStudyToolsSectionTurnsEachToolOnAndOff() {
         showSettings()
         composeRule.onNodeWithTag("study_play_mode_repeat_line").performScrollTo().performClick()
         composeRule.onNodeWithTag("study_repeat_3").performScrollTo().performClick()
         composeRule.onNodeWithTag("skip_silence_2x").performScrollTo().performClick()
         composeRule.onNodeWithTag("blur_box_switch").performScrollTo().performClick()
-        composeRule.onNodeWithTag("kanji_details_switch").performScrollTo().performClick()
         composeRule.runOnIdle {
             assertEquals("repeat_line", preferences.getString(STUDY_PLAY_MODE_PREFERENCE, null))
             assertEquals(3, preferences.getInt(STUDY_REPEAT_COUNT_PREFERENCE, 0))
             assertEquals("2x", preferences.getString(SKIP_SILENCE_PREFERENCE, null))
             assertTrue(preferences.getBoolean(BLUR_BOX_PREFERENCE, false))
-            assertFalse("Kanji details is on until turned off", preferences.getBoolean(KANJI_DETAILS_PREFERENCE, true))
         }
         composeRule.onNodeWithTag("study_play_mode_repeat_line").performScrollTo()
         saveUiEvidence("study-tools-settings")
+        composeRule.onNodeWithTag("blur_box_switch").performScrollTo()
+        saveUiEvidence("study-tools-settings-lower")
+        // The section's line follows the stored value.
+        composeRule.onNodeWithTag("settings_section_study").assertTextContains("Play mode: Repeat each line")
+        // Page tokens are about loading captions, so they sit in Captions & translation (owner pick 2026-11-11).
+        assertTrue(composeRule.onAllNodes(hasTestTag("page_token_on")).fetchSemanticsNodes().isEmpty())
+        // Send to and card audio moved to their own section (owner pick 2026-11-09).
+        assertTrue(composeRule.onAllNodes(hasTestTag("ankidroid_switch")).fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodes(hasTestTag("known_words_off")).fetchSemanticsNodes().isEmpty())
+    }
 
+    @Test
+    fun wordLearningHoldsKnownWordsAndCharacterDetails() {
+        showSettings("settings_section_word_learning")
+        composeRule.onNodeWithTag("kanji_details_switch").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertFalse("Kanji details is on until turned off", preferences.getBoolean(KANJI_DETAILS_PREFERENCE, true))
+        }
         // Known words is off at first; Automatic shows its count, and Mark new words goes with Known words.
         assertTrue(composeRule.onAllNodes(hasTestTag("mark_new_words_switch")).fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithTag("known_words_auto").performScrollTo().performClick()
         composeRule.onNodeWithTag("known_words_after_10").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("known_words_after_20").performScrollTo().performClick()
         composeRule.onNodeWithTag("mark_new_words_switch").performScrollTo().assertIsDisplayed()
+        saveUiEvidence("word-learning-known-words")
         composeRule.onNodeWithTag("known_words_off").performScrollTo().performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodes(hasTestTag("mark_new_words_switch")).fetchSemanticsNodes().isEmpty() }
         composeRule.runOnIdle {
             assertEquals("off", preferences.getString(KNOWN_WORDS_PREFERENCE, null))
             assertEquals(20, preferences.getInt(KNOWN_WORDS_AFTER_PREFERENCE, 0))
         }
+    }
+
+    @Test
+    fun flashcardsAndAnkiHoldsSendToAndCardAudio() {
+        showSettings("settings_section_flashcards")
         // Send to: AnkiDroid by default; AnkiConnect adds its deck choice.
         composeRule.onNodeWithTag("send_to_app_ankiconnect").performScrollTo().performClick()
         composeRule.onNodeWithTag("ankiconnect_choose_deck").performScrollTo().assertIsDisplayed()
         composeRule.runOnIdle { assertEquals("ankiconnect", preferences.getString(SEND_TO_APP_PREFERENCE, null)) }
+        // Add audio to cards is on until turned off.
+        composeRule.onNodeWithTag("card_audio_switch").performScrollTo().assertIsDisplayed()
         saveUiEvidence("study-tools-send-to-settings")
-        // Page tokens: Automatic by default, then On.
-        composeRule.onNodeWithTag("page_token_on").performScrollTo().performClick()
-        composeRule.runOnIdle { assertEquals("on", preferences.getString(PAGE_TOKEN_CAPTIONS_PREFERENCE, null)) }
-        saveUiEvidence("study-tools-settings-lower")
+        composeRule.onNodeWithTag("card_audio_switch").performClick()
+        composeRule.runOnIdle { assertFalse(preferences.getBoolean(CARD_AUDIO_PREFERENCE, true)) }
+    }
+
+    @Test
+    fun flashcardsAndAnkiPicksThePictureAndTheCardFront() {
+        showSettings("settings_section_flashcards")
+        // Add a picture to cards is off, and the front is the word with its sentence, until changed.
+        composeRule.onNodeWithTag("card_picture_switch").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("card_front_listening").performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText(
+                context.getString(R.string.study_card_front_word_sentence_description),
+                substring = true,
+            ).performScrollTo()
+            .assertIsDisplayed()
+        saveUiEvidence("flashcards-picture-and-card-front")
+        composeRule.onNodeWithTag("card_front_listening").performClick()
+        composeRule
+            .onNodeWithText(
+                context.getString(R.string.study_card_front_listening_description),
+                substring = true,
+            ).performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("card_picture_switch").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertEquals("listening", preferences.getString(CARD_FRONT_PREFERENCE, null))
+            assertTrue(preferences.getBoolean(CARD_PICTURE_PREFERENCE, false))
+        }
+        saveUiEvidence("flashcards-card-front-listening")
+        // Listening has only the line's sound on the front already, so the switch goes away.
+        composeRule.onNodeWithTag("card_front_sound_switch").assertDoesNotExist()
+    }
+
+    @Test
+    fun sentenceSoundOnTheFrontIsOffUntilTurnedOn() {
+        showSettings("settings_section_flashcards")
+        composeRule.onNodeWithTag("card_front_word").performScrollTo().performClick()
+        composeRule.onNodeWithTag("card_front_sound_switch").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { assertFalse(preferences.getBoolean(CARD_FRONT_SOUND_PREFERENCE, false)) }
+        composeRule.onNodeWithTag("card_front_sound_switch").performClick()
+        composeRule.runOnIdle { assertTrue(preferences.getBoolean(CARD_FRONT_SOUND_PREFERENCE, false)) }
+        composeRule.onNodeWithTag("card_front_sound_switch").performScrollTo()
+        composeRule.waitForIdle()
+        saveUiEvidence("flashcards-sentence-sound-on-front")
     }
 
     @Test

@@ -2,7 +2,7 @@
 <resources>
     <!-- Study tools (2026-10-20): play modes, skip silence, known words, AnkiDroid, blur box, page token -->
     <string name="settings_section_study_title">Herramientas de estudio</string>
-    <string name="settings_section_study_summary">Modos de reproducción, saltar silencios, palabras conocidas, Enviar a, recuadro difuminado</string>
+    <string name="settings_section_flashcards_title">Tarjetas y Anki</string>
     <string name="study_play_mode_title">Modo de reproducción</string>
     <string name="study_play_mode_normal">Normal</string>
     <string name="study_play_mode_normal_description">El video se reproduce como siempre.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">Se detiene al inicio de cada línea para que la leas antes de oírla.</string>
     <string name="study_play_mode_listen_first">Escuchar primero</string>
     <string name="study_play_mode_listen_first_description">Oculta los subtítulos mientras el video se reproduce y luego pausa después de cada línea y los muestra.</string>
+    <string name="study_play_mode_dictation">Dictado</string>
+    <string name="study_play_mode_dictation_description">Oculta cada línea hasta que escribas lo que oíste. El video se pausa después de cada línea; toca Comprobar para ver lo que se te escapó. Funciona mejor con subtítulos hechos por personas: los automáticos pueden tener errores.</string>
     <string name="study_play_mode_repeat">Repetir cada línea</string>
     <string name="study_play_mode_repeat_description">Reproduce cada línea varias veces antes de seguir. Siempre la repite hasta que tocas otra línea o adelantas o retrocedes el video.</string>
     <string name="study_repeat_forever">Siempre</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">Borrar</string>
     <string name="study_anki_title">Enviar a apps de tarjetas</string>
     <string name="study_anki_description">Muestra un botón Enviar a en la tarjeta de palabra y en Práctica → Exportar. Envía a AnkiDroid salvo que elijas otra app con ▾ en el botón o aquí abajo; entonces el botón muestra esa app.</string>
+    <string name="study_card_audio_title">Añadir audio a las tarjetas</string>
+    <string name="study_card_audio_description">Las tarjetas llevan la palabra con la voz que usa la tarjeta de palabra y el sonido real de la frase del vídeo. La frase se graba mientras suena, así que una tarjeta enviada antes de que termine recibe el sonido cuando termina.</string>
+    <string name="study_card_picture_title">Añadir una imagen a las tarjetas</string>
+    <string name="study_card_picture_description">Las tarjetas llevan una imagen del vídeo, tomada mientras la frase de la palabra está en pantalla. Si no hay ninguna, se usa la miniatura del vídeo.</string>
+    <string name="study_card_front_title">Anverso de la tarjeta</string>
+    <string name="study_card_front_sound_title">Sonido de la frase en el anverso</string>
+    <string name="study_card_front_sound_description">El anverso también reproduce el sonido de la frase del vídeo, no solo el reverso.</string>
+    <string name="study_card_front_word_sentence">Palabra y frase</string>
+    <string name="study_card_front_word">Palabra</string>
+    <string name="study_card_front_sentence">Frase</string>
+    <string name="study_card_front_listening">Escucha</string>
+    <string name="study_card_front_word_sentence_description">El anverso muestra la palabra con su frase.</string>
+    <string name="study_card_front_word_description">El anverso muestra solo la palabra; la frase está en el reverso.</string>
+    <string name="study_card_front_sentence_description">El anverso muestra la frase con la palabra en negrita; la palabra y su significado están en el reverso.</string>
+    <string name="study_card_front_listening_description">El anverso solo reproduce el sonido de la frase; la frase y la palabra están en el reverso.</string>
+    <string name="study_card_front_note">Cambiarlo también cambia las tarjetas que enviaste antes.</string>
+    <string name="study_card_sound_waits">El sonido de la frase se añade cuando la frase termina de reproducirse.</string>
+    <string name="study_card_sound_replaying">Reproduciendo la frase una vez para añadir su sonido a la tarjeta.</string>
     <string name="study_blur_box_title">Recuadro difuminado</string>
     <string name="study_blur_box_description">Pone un recuadro difuminado sobre el video para ocultar los subtítulos incrustados en la imagen. Arrástralo para moverlo y arrastra su esquina para cambiar su tamaño.</string>
     <string name="study_page_token_title">Cargar subtítulos con un token de la página (beta)</string>
@@ -48,6 +68,9 @@
     <string name="study_send_to_anki">Enviar a %1$s</string>
     <string name="study_sending_to_anki">Enviando…</string>
     <string name="study_sent_to_anki">Enviada a %1$s</string>
+    <string name="study_send_again_title">¿Enviar esta tarjeta otra vez?</string>
+    <string name="study_send_again_text">%1$s ya tiene una tarjeta de esta palabra. Se añade otra y puedes borrar la antigua allí.</string>
+    <string name="study_send_again">Enviar otra vez</string>
     <string name="study_anki_not_installed">AnkiDroid no está instalado en este teléfono.</string>
     <string name="study_anki_permission_denied">No se dio el permiso de AnkiDroid, así que no se añadió ninguna tarjeta.</string>
     <string name="study_anki_failed">AnkiDroid no aceptó la tarjeta. Abre AnkiDroid, déjalo en segundo plano, vuelve y inténtalo de nuevo.</string>
@@ -78,6 +101,11 @@
         <item quantity="many">%1$d palabras enviadas a %2$s.</item>
         <item quantity="other">%1$d palabras enviadas a %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="one">%1$d tarjeta recibe el sonido de su frase cuando esta se reproduce.</item>
+        <item quantity="many">%1$d tarjetas reciben el sonido de sus frases cuando estas se reproducen.</item>
+        <item quantity="other">%1$d tarjetas reciben el sonido de sus frases cuando estas se reproducen.</item>
+    </plurals>
     <string name="study_page_token_auto">Automático</string>
     <string name="study_page_token_on">Sí</string>
     <string name="study_page_token_off">No</string>
@@ -88,7 +116,7 @@
     <string name="study_known_words_after_title">Contar como conocida después de verla</string>
     <string name="study_word_seen">Vista %1$d de %2$d veces</string>
     <string name="study_known_words_offer_title">¿Activar Palabras conocidas?</string>
-    <string name="study_known_words_offer_message">El panel de subtítulos mostrará cuánto de cada video ya conoces, y las palabras que ves a menudo contarán como conocidas por sí solas. Puedes cambiarlo luego en Ajustes → Herramientas de estudio.</string>
+    <string name="study_known_words_offer_message">El panel de subtítulos mostrará cuánto de cada video ya conoces, y las palabras que ves a menudo contarán como conocidas por sí solas. Puedes cambiarlo luego en Ajustes → Aprendizaje de palabras.</string>
     <string name="study_known_words_offer_confirm">Activar</string>
     <string name="study_known_words_offer_dismiss">Ahora no</string>
     <string name="study_send_to_app_title">Enviar palabras a</string>
@@ -111,4 +139,12 @@
     <string name="study_ankiconnect_open">Abrir AnkiConnect Android</string>
     <string name="study_loop_button_title">Botón de bucle en la línea que suena</string>
     <string name="study_loop_button_description">Muestra un pequeño icono de bucle en la línea que se está reproduciendo en la transcripción. Tócalo para repetir esa línea hasta que lo vuelvas a tocar. Si tocas otra línea o mueves el video, se repite esa línea.</string>
+    <string name="dictation_type_what_you_heard">Escribe lo que oíste</string>
+    <string name="dictation_replay">Repetir</string>
+    <string name="dictation_show">Mostrar</string>
+    <string name="dictation_check">Comprobar</string>
+    <string name="dictation_next">Siguiente</string>
+    <string name="dictation_perfect">¡Perfecto!</string>
+    <string name="dictation_score">%1$d de %2$d bien</string>
+    <string name="dictation_hidden_line">Línea oculta</string>
 </resources>

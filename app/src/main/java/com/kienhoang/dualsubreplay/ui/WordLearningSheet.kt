@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,10 +52,10 @@ internal fun WordLearningDialog(
     deck: String? = null,
     namedDecks: List<String> = emptyList(),
     onDeckChange: ((String?) -> Unit)? = null,
+    onMeaningInContext: suspend () -> ContextMeaning = { ContextMeaning.None },
 ) {
-    var meaning by remember(selection) { mutableStateOf(existingWord?.meaning.orEmpty()) }
-    var loading by remember(selection) { mutableStateOf(true) }
-    var error by remember(selection) { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    val word = remember(selection) { WordMeaningState(existingWord?.meaning.orEmpty(), readMeaningInContextFirst(context)) }
     var saved by remember(selection) { mutableStateOf(existingWord != null) }
     val extras = remember(selection) { ExtraMeanings(existingWord?.meanings.orEmpty(), onTranslateMeaning) { saved = false } }
     var saving by remember(selection) { mutableStateOf(false) }
@@ -68,15 +69,7 @@ internal fun WordLearningDialog(
     }
     LaunchedEffect(selection) {
         if (autoPronounce) onSpeak()
-        try {
-            if (existingWord == null) meaning = onTranslateWord()
-        } catch (cancel: CancellationException) {
-            throw cancel
-        } catch (_: Exception) {
-            error = R.string.practice_word_translation_unavailable
-        } finally {
-            loading = false
-        }
+        if (existingWord == null) word.load(onTranslateWord, onMeaningInContext) else word.loading = false
     }
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -100,17 +93,7 @@ internal fun WordLearningDialog(
                         CharacterPage(openCharacter, selection, onBack = { characterPage = null }, onAskedAi = onDismiss)
                         return@Column
                     }
-                    MeaningPanel(
-                        meaning = meaning,
-                        language = languageDisplayName(selection.meaningLanguage, currentInterfaceLocale()),
-                        loading = loading,
-                        enabled = !loading && !saving,
-                        onChange = {
-                            meaning = it
-                            saved = false
-                        },
-                    )
-                    error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+                    WordMeaningSection(word, selection, enabled = !saving) { saved = false }
                     ExtraMeaningPanels(extras, selection.extraMeaningLanguages, enabled = !saving)
                     WordCardDetails(selection, speechMessage, onSpeechSettings)
                     CharacterSection(selection) { characterPage = it }
@@ -130,24 +113,28 @@ internal fun WordLearningDialog(
                     onDeckChange?.let { change ->
                         DeckChip(deck, selection.wordLanguage, namedDecks, { change(it).also { saved = false } }, enabled = !saving)
                     }
-                    SaveWordButton(saving = saving, saved = saved, enabled = !saving && !loading && extras.loading.isEmpty() && !saved) {
+                    SaveWordButton(
+                        saving = saving,
+                        saved = saved,
+                        enabled = !saving && !word.loading && extras.loading.isEmpty() && !saved,
+                    ) {
                         saving = true
                         scope.launch {
                             try {
-                                onSave(meaning, online && canClip, extras.texts.toMap())
+                                onSave(word.saved, online && canClip, extras.texts.toMap())
                                 saved = true
-                                error = null
+                                word.error = null
                             } catch (cancel: CancellationException) {
                                 throw cancel
                             } catch (_: Exception) {
-                                error = R.string.practice_save_failed
+                                word.error = R.string.practice_save_failed
                             } finally {
                                 saving = false
                             }
                         }
                     }
                     if (saved) Text(stringResource(R.string.practice_saved_to_vocabulary), modifier = Modifier.testTag("word_saved"))
-                    StudyWordActions(selection, meaning, extras.activeTexts(selection), online && canClip, extras.loading.isNotEmpty())
+                    StudyWordActions(selection, word.saved, extras.activeTexts(selection), online && canClip, extras.loading.isNotEmpty())
                     if (selection.isPhrase) WordByWord(selection.parts, onSpeakPart)
                 }
             }
@@ -209,6 +196,55 @@ private class ExtraMeanings(
     }
 }
 
+/** The word card's meaning: the dictionary meaning, the AI's meaning in the sentence, and what is saved. */
+@Stable
+private class WordMeaningState(
+    existing: String,
+    /** Settings → Word learning → Show first: the meaning in the sentence (default) or the dictionary meaning. */
+    val contextFirst: Boolean = true,
+) {
+    var meaning by mutableStateOf(existing)
+
+    /** The meaning in the sentence (see WordMeaningInContext.kt); cleared once the learner edits the meaning. */
+    var inContext by mutableStateOf<String?>(null)
+    var contextLoading by mutableStateOf(false)
+    var contextNoKey by mutableStateOf(false)
+    var loading by mutableStateOf(true)
+    var error by mutableStateOf<Int?>(null)
+
+    val saved: String get() = combinedMeaning(inContext, meaning, contextFirst)
+
+    fun edit(text: String) {
+        meaning = text
+        inContext = null
+    }
+
+    /** The dictionary meaning shows as soon as it arrives; the AI's meaning in the sentence follows. */
+    suspend fun load(
+        translate: suspend () -> String,
+        meaningInContext: suspend () -> ContextMeaning,
+    ) = coroutineScope {
+        launch {
+            contextLoading = true
+            when (val found = meaningInContext()) {
+                is ContextMeaning.Found -> inContext = found.text
+                ContextMeaning.NoKey -> contextNoKey = true
+                ContextMeaning.None -> Unit
+            }
+            contextLoading = false
+        }
+        try {
+            meaning = translate()
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (_: Exception) {
+            error = R.string.practice_word_translation_unavailable
+        } finally {
+            loading = false
+        }
+    }
+}
+
 @Composable
 private fun ExtraMeaningPanels(
     extras: ExtraMeanings,
@@ -241,6 +277,36 @@ private fun ExtraMeaningPanels(
     }
 }
 
+@Composable
+private fun WordMeaningSection(
+    word: WordMeaningState,
+    selection: LearningWordSelection,
+    enabled: Boolean,
+    onEdited: () -> Unit,
+) {
+    MeaningPanel(
+        meaning = word.meaning,
+        language = languageDisplayName(selection.meaningLanguage, currentInterfaceLocale()),
+        loading = word.loading,
+        enabled = !word.loading && enabled,
+        onChange = {
+            word.edit(it)
+            onEdited()
+        },
+        inContext = word.inContext,
+        contextLoading = word.contextLoading,
+        contextFirst = word.contextFirst,
+    )
+    if (word.contextNoKey) {
+        Text(
+            stringResource(R.string.practice_meaning_in_sentence_no_key),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.testTag("meaning_in_context_no_key"),
+        )
+    }
+    word.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+}
+
 /**
  * The meaning, the answer the learner opened the card for: a tinted panel with an accent bar and
  * large bold text right under the word (owner request 2026-10-24). The pencil turns it into a
@@ -257,8 +323,14 @@ internal fun MeaningPanel(
     tagSuffix: String = "",
     editable: Boolean = true,
     onDone: () -> Unit = {},
+    textTag: String = "word_meaning_text",
+    inContext: String? = null,
+    contextLoading: Boolean = false,
+    contextFirst: Boolean = true,
 ) {
     var editing by remember { mutableStateOf(false) }
+    val differs = differsFromDictionary(inContext, meaning)
+    val showsContext = !editing && differs && contextFirst
     val colors = MaterialTheme.colorScheme
     // Content direction so a Persian or Arabic meaning is laid out right-to-left whatever the interface language.
     val direction = androidx.compose.ui.text.style.TextDirection.Content
@@ -272,11 +344,16 @@ internal fun MeaningPanel(
             Box(Modifier.width(6.dp).fillMaxHeight().background(colors.primary))
             Column(Modifier.weight(1f).padding(start = 14.dp, top = 10.dp, bottom = 12.dp)) {
                 Text(
-                    slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(language, currentInterfaceLocale())),
+                    if (showsContext) {
+                        stringResource(R.string.practice_meaning_in_sentence_label, language)
+                    } else {
+                        slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(language, currentInterfaceLocale()))
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     color = colors.primary,
                 )
                 when {
+                    showsContext -> MeaningInContextText(inContext.orEmpty(), meaning.takeUnless { loading })
                     loading -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp, end = 14.dp))
                     editing ->
                         OutlinedTextField(
@@ -294,10 +371,27 @@ internal fun MeaningPanel(
                             modifier = Modifier.fillMaxWidth().padding(top = 2.dp, end = 4.dp).testTag("word_meaning_text$tagSuffix"),
                         )
                 }
+                // Show first → Dictionary meaning: the meaning in the sentence goes under it, smaller.
+                if (!contextFirst && differs && !editing && !loading) {
+                    Text(
+                        stringResource(R.string.practice_meaning_in_sentence_under, inContext.orEmpty()),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 2.dp, end = 14.dp).testTag("meaning_in_context_under"),
+                    )
+                }
+                if (contextLoading && !showsContext && !editing) {
+                    Text(
+                        stringResource(R.string.practice_meaning_in_sentence_loading),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp, end = 14.dp).testTag("meaning_in_context_loading"),
+                    )
+                }
             }
             if (editable) {
                 IconButton(onClick = {
                     if (editing) onDone()
+                    // The field holds what is saved: the meaning in the sentence with the dictionary meaning.
+                    if (!editing && differs) onChange(combinedMeaning(inContext, meaning, contextFirst))
                     editing = !editing
                 }, enabled = enabled, modifier = Modifier.testTag("edit_meaning$tagSuffix")) {
                     Icon(
@@ -308,6 +402,27 @@ internal fun MeaningPanel(
                 }
             }
         }
+    }
+}
+
+/** The meaning in the sentence in large bold text, and the dictionary meaning under it once it is there. */
+@Composable
+private fun MeaningInContextText(
+    inContext: String,
+    dictionary: String?,
+) {
+    Text(
+        inContext,
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 2.dp).testTag("meaning_in_context_text"),
+    )
+    dictionary?.takeIf { it.isNotBlank() }?.let {
+        Text(
+            stringResource(R.string.practice_meaning_dictionary, it),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 2.dp, end = 14.dp).testTag("dictionary_meaning_text"),
+        )
     }
 }
 

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Study tools (2026-10-20): play modes, skip silence, known words, Send to (AnkiDroid, AnkiConnect), blur box, page token -->
+    <!-- Study tools (2026-10-20): play modes, skip silence, blur box, page token. Known words and character details sit in Word learning, Send to and card audio in Flashcards &amp; Anki (2026-11-09). -->
     <string name="settings_section_study_title">Study tools</string>
-    <string name="settings_section_study_summary">Play modes, skip silence, known words, Send to, blur box</string>
+    <string name="settings_section_flashcards_title">Flashcards &amp; Anki</string>
     <string name="study_play_mode_title">Play mode</string>
     <string name="study_play_mode_normal">Normal</string>
     <string name="study_play_mode_normal_description">The video plays as usual.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">Stops at the start of each line so you can read it before you hear it.</string>
     <string name="study_play_mode_listen_first">Listen first</string>
     <string name="study_play_mode_listen_first_description">Hides subtitles while the video plays, then pauses after each line and shows them.</string>
+    <string name="study_play_mode_dictation">Dictation</string>
+    <string name="study_play_mode_dictation_description">Hides each line until you type what you heard. The video pauses after each line; tap Check to see what you missed. Works best with subtitles made by people: automatic ones can contain mistakes.</string>
     <string name="study_play_mode_repeat">Repeat each line</string>
     <string name="study_play_mode_repeat_description">Plays each line several times before going on. Forever loops it until you tap another line or seek.</string>
     <string name="study_repeat_forever">Forever</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">Clear</string>
     <string name="study_anki_title">Send to flashcard apps</string>
     <string name="study_anki_description">Shows a Send to button on the word card and in Practice → Export. It sends to AnkiDroid unless you pick another app with ▾ on the button or below; the button then shows that app.</string>
+    <string name="study_card_audio_title">Add audio to cards</string>
+    <string name="study_card_audio_description">Cards get the word in the voice the word card uses, and the line\'s real sound from the video. The line is recorded while it plays, so a card sent before the line ends gets its sound when it does.</string>
+    <string name="study_card_picture_title">Add a picture to cards</string>
+    <string name="study_card_picture_description">Cards get a picture from the video, taken while the word\'s line is on screen. When there is none, the video\'s thumbnail is used.</string>
+    <string name="study_card_front_title">Card front</string>
+    <string name="study_card_front_sound_title">Sentence sound on the front</string>
+    <string name="study_card_front_sound_description">The front also plays the line\'s sound from the video, not only the back.</string>
+    <string name="study_card_front_word_sentence">Word and sentence</string>
+    <string name="study_card_front_word">Word</string>
+    <string name="study_card_front_sentence">Sentence</string>
+    <string name="study_card_front_listening">Listening</string>
+    <string name="study_card_front_word_sentence_description">The front shows the word with its sentence.</string>
+    <string name="study_card_front_word_description">The front shows only the word; the sentence is on the back.</string>
+    <string name="study_card_front_sentence_description">The front shows the sentence with the word in bold; the word and its meaning are on the back.</string>
+    <string name="study_card_front_listening_description">The front only plays the line\'s sound; the sentence and the word are on the back.</string>
+    <string name="study_card_front_note">Changing this also changes cards you sent before.</string>
+    <string name="study_card_sound_waits">The sentence\'s sound is added once the line has played to the end.</string>
+    <string name="study_card_sound_replaying">Playing the line once so its sound goes on the card.</string>
     <string name="study_send_to_app_title">Send words to</string>
     <string name="study_app_ankidroid" translatable="false">AnkiDroid</string>
     <string name="study_app_ankiconnect" translatable="false">AnkiConnect</string>
@@ -64,6 +84,9 @@
     <string name="study_send_to_choose">Choose where to send</string>
     <string name="study_sending_to_anki">Sending…</string>
     <string name="study_sent_to_anki">Sent to %1$s</string>
+    <string name="study_send_again_title">Send this card again?</string>
+    <string name="study_send_again_text">%1$s already has a card for this word. Another one is added, and you can delete the old one there.</string>
+    <string name="study_send_again">Send again</string>
     <string name="study_anki_not_installed">AnkiDroid is not installed on this phone.</string>
     <string name="study_anki_permission_denied">AnkiDroid\'s permission was not given, so no card was added.</string>
     <string name="study_anki_failed">AnkiDroid did not accept the card. Open AnkiDroid, leave it running in the background, then come back and try again.</string>
@@ -93,6 +116,10 @@
         <item quantity="one">%1$d word sent to %2$s.</item>
         <item quantity="other">%1$d words sent to %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="one">%1$d card gets its sentence\'s sound once its line has played.</item>
+        <item quantity="other">%1$d cards get their sentence\'s sound once their lines have played.</item>
+    </plurals>
     <string name="study_page_token_auto">Automatic</string>
     <string name="study_page_token_on">On</string>
     <string name="study_page_token_off">Off</string>
@@ -103,9 +130,17 @@
     <string name="study_known_words_after_title">Count a word as known after seeing it</string>
     <string name="study_word_seen">Seen %1$d of %2$d times</string>
     <string name="study_known_words_offer_title">Turn on Known words?</string>
-    <string name="study_known_words_offer_message">The subtitle panel then shows how much of each video you already know, and words you see often count as known by themselves. You can change this later in Settings → Study tools.</string>
+    <string name="study_known_words_offer_message">The subtitle panel then shows how much of each video you already know, and words you see often count as known by themselves. You can change this later in Settings → Word learning.</string>
     <string name="study_known_words_offer_confirm">Turn on</string>
     <string name="study_known_words_offer_dismiss">Not now</string>
     <string name="study_loop_button_title">Loop button on the playing line</string>
     <string name="study_loop_button_description">Shows a small loop icon on the line that is playing in the transcript. Tap it to repeat that line until you tap it again. Tapping another line or moving the video loops that line instead.</string>
+    <string name="dictation_type_what_you_heard">Type what you heard</string>
+    <string name="dictation_replay">Replay</string>
+    <string name="dictation_show">Show</string>
+    <string name="dictation_check">Check</string>
+    <string name="dictation_next">Next</string>
+    <string name="dictation_perfect">Perfect!</string>
+    <string name="dictation_score">%1$d of %2$d right</string>
+    <string name="dictation_hidden_line">Hidden line</string>
 </resources>

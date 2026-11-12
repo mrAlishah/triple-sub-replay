@@ -23,6 +23,11 @@
     <string name="practice_pronounce_item">%1$s を発音</string>
     <string name="practice_speech_settings">音声設定</string>
     <string name="practice_show_meaning">意味を表示</string>
+    <string name="practice_meaning_in_sentence_label">この文では（%1$s）</string>
+    <string name="practice_meaning_dictionary">辞書: %1$s</string>
+    <string name="practice_meaning_in_sentence_under">この文では: %1$s</string>
+    <string name="practice_meaning_in_sentence_loading">この文での意味を AI に問い合わせています…</string>
+    <string name="practice_meaning_in_sentence_no_key">この文での意味には AI キーが必要です: 設定 → AI アシスタント。</string>
     <string name="practice_meaning_retry">再試行</string>
     <string name="practice_save_meaning">意味を保存</string>
     <string name="practice_notes_label">テキスト</string>

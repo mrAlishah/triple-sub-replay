@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_section_updates_title">Actualizaciones de la app</string>
-    <string name="settings_section_updates_summary">Actualizar automáticamente</string>
     <string name="updates_check">Buscar actualizaciones</string>
     <string name="updates_version">Versión %1$s</string>
     <string name="updates_available_short">Versión %1$s disponible</string>
@@ -20,7 +19,9 @@
     <string name="updates_try_again">Reintentar</string>
     <string name="updates_open_github">Abrir GitHub</string>
     <string name="updates_unsupported">Esta copia de la app se compiló en un ordenador, así que no puede actualizarse sola. Descarga la versión más reciente en GitHub.</string>
+    <string name="updates_unsupported_device">Las nuevas versiones están hechas para teléfonos con procesador ARM, y este dispositivo no puede ejecutarlas. La versión que tienes sigue funcionando, y GitHub tiene todas las versiones.</string>
     <string name="updates_problem_offline">No se pudo conectar con GitHub. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="updates_problem_interrupted">La descarga se detuvo antes de terminar. Inténtalo de nuevo para seguir desde donde se quedó.</string>
     <string name="updates_problem_busy">GitHub está ocupado ahora mismo. Inténtalo de nuevo en unos minutos.</string>
     <string name="updates_problem_github">GitHub envió una respuesta inesperada. Inténtalo más tarde.</string>
     <string name="updates_problem_checksum">La descarga no coincidía con la suma de comprobación de GitHub, así que se eliminó.</string>

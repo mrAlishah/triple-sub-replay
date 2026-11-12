@@ -1,10 +1,12 @@
 package com.kienhoang.dualsubreplay.data
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class AnkiDroidSenderTest {
     /** A pretend AnkiDroid: nothing here touches a real collection. */
@@ -43,7 +45,12 @@ class AnkiDroidSenderTest {
             return (next++).also { typeList += AnkiNoteType(it, name, fields) }
         }
 
-        override fun styleNoteType(id: Long) = Unit
+        override fun styleNoteType(
+            id: Long,
+            template: AnkiCardTemplate,
+        ) = Unit
+
+        override fun addMedia(file: File): String? = file.name
 
         override fun insertNote(
             noteType: Long,
@@ -65,6 +72,28 @@ class AnkiDroidSenderTest {
             moves += noteId to deck
         }
     }
+
+    /** A pretend media maker: the files it hands out, and the cards it was asked to finish later. */
+    private class FakeMedia(
+        private val files: AnkiCardFiles,
+    ) : AnkiCardMedia {
+        val waiting = mutableListOf<PendingCardAudio>()
+
+        override suspend fun files(
+            word: SavedWord,
+            options: CardOptions,
+        ) = files
+
+        override fun awaitSentence(item: PendingCardAudio) {
+            waiting += item
+        }
+    }
+
+    private fun AnkiDroidSender.sendNow(
+        words: List<SavedWord>,
+        media: AnkiCardMedia? = null,
+        options: CardOptions = CardOptions(),
+    ) = runBlocking { send(words, media, options) }
 
     private val sentIds = mutableSetOf<String>()
     private var marks = 0
@@ -106,7 +135,7 @@ class AnkiDroidSenderTest {
     @Test
     fun aMissingDeckAndNoteTypeAreCreatedThenTheNoteIsAddedToThatDeck() {
         val anki = FakeAnki()
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiSendResult(sent = 1), result)
         assertEquals(listOf(TRIPLE_DECK_NAME), anki.deckList.map { it.second })
         assertEquals(listOf(TRIPLE_NOTE_TYPE_NAME to TRIPLE_FIELDS), anki.typeList.map { it.name to it.fields })
@@ -117,7 +146,7 @@ class AnkiDroidSenderTest {
     @Test
     fun theSourceTitleGoesIntoItsOwnFieldAndTheVideoBecomesATag() {
         val anki = FakeAnki().also(::ready)
-        sender(anki).send(listOf(word().copy(sourceTitle = "Learn <German> & more")))
+        sender(anki).sendNow(listOf(word().copy(sourceTitle = "Learn <German> & more")))
         val fields = anki.notes.single().second
         assertEquals(TRIPLE_FIELDS.size, fields.size)
         assertEquals("Learn &lt;German&gt; &amp; more", fields[TRIPLE_FIELDS.indexOf("Source Title")])
@@ -127,25 +156,50 @@ class AnkiDroidSenderTest {
     @Test
     fun aWordWithoutATitleLeavesTheFieldEmpty() {
         val anki = FakeAnki().also(::ready)
-        sender(anki).send(listOf(word()))
+        sender(anki).sendNow(listOf(word()))
         assertEquals("", anki.notes.single().second[TRIPLE_FIELDS.indexOf("Source Title")])
     }
 
     @Test
-    fun anExistingV3TypeIsLeftAloneWhenV4IsCreated() {
+    fun existingV3AndV4TypesAreLeftAloneWhenV5IsCreated() {
         val anki = FakeAnki()
         anki.deckList += 5L to TRIPLE_DECK_NAME
         anki.typeList += AnkiNoteType(7, TRIPLE_V3_NOTE_TYPE_NAME, TRIPLE_V3_FIELDS)
-        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        anki.typeList += AnkiNoteType(8, TRIPLE_V4_NOTE_TYPE_NAME, TRIPLE_V4_FIELDS)
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).sendNow(listOf(word())))
         assertEquals(1, anki.typeCreates)
-        assertEquals(AnkiNoteType(7, TRIPLE_V3_NOTE_TYPE_NAME, TRIPLE_V3_FIELDS), anki.typeList.first())
+        assertEquals(AnkiNoteType(7, TRIPLE_V3_NOTE_TYPE_NAME, TRIPLE_V3_FIELDS), anki.typeList[0])
+        assertEquals(AnkiNoteType(8, TRIPLE_V4_NOTE_TYPE_NAME, TRIPLE_V4_FIELDS), anki.typeList[1])
         assertEquals(TRIPLE_NOTE_TYPE_NAME, anki.typeList.last().name)
+    }
+
+    @Test
+    fun soundsAndThePictureGoIntoTheV5FieldsAndSourceKeepsTheLink() {
+        val anki = FakeAnki().also(::ready)
+        val media = FakeMedia(AnkiCardFiles(File("w.m4a"), File("s.m4a"), File("p.jpg")))
+        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(audio = true, picture = true))
+        assertEquals(AnkiSendResult(sent = 1), result)
+        val byName = TRIPLE_FIELDS.zip(anki.notes.single().second).toMap()
+        assertEquals("[sound:w.m4a]", byName["Word audio"])
+        assertEquals("[sound:s.m4a]", byName["Sentence audio"])
+        assertTrue(byName.getValue("Source").startsWith("<img src=\"p.jpg\""))
+        assertTrue(byName.getValue("Source").contains("youtube.com/watch"))
+        assertTrue(media.waiting.isEmpty())
+    }
+
+    @Test
+    fun aCardSentBeforeItsSentenceClipWaitsForItInTheSentenceAudioField() {
+        val anki = FakeAnki().also(::ready)
+        val media = FakeMedia(AnkiCardFiles(word = File("w.m4a")))
+        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(audio = true))
+        assertEquals(AnkiSendResult(sent = 1, waiting = 1), result)
+        assertEquals(ANKI_SENTENCE_AUDIO_FIELD, media.waiting.single().field)
     }
 
     @Test
     fun anExistingDeckAndNoteTypeAreReusedNotDuplicated() {
         val anki = FakeAnki().also(::ready)
-        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).sendNow(listOf(word())))
         assertEquals(0, anki.deckCreates)
         assertEquals(0, anki.typeCreates)
         assertEquals(5L, anki.moves.single().second)
@@ -157,7 +211,7 @@ class AnkiDroidSenderTest {
         val anki = FakeAnki()
         anki.deckList += 5L to TRIPLE_DECK_NAME
         anki.typeList += AnkiNoteType(7, TRIPLE_NOTE_TYPE_NAME, listOf("Front", "Back"))
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiProblem.NOTE_TYPE_CONFLICT, result.problem)
         assertEquals(0, result.sent)
         assertEquals(0, anki.typeCreates)
@@ -170,14 +224,14 @@ class AnkiDroidSenderTest {
     fun aCompatibleTypeIsUsedEvenWhenAnotherSameNameTypeExists() {
         val anki = FakeAnki().also(::ready)
         anki.typeList += AnkiNoteType(8, TRIPLE_NOTE_TYPE_NAME, listOf("Front", "Back"))
-        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).sendNow(listOf(word())))
         assertEquals(0, anki.typeCreates)
     }
 
     @Test
     fun aRefusedProviderNamesTheDeckStepAndSendsNothing() {
         val anki = FakeAnki().apply { refuseDecks = SecurityException("secret: Verletzten") }
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiProblem.DECK_FAILED, result.problem)
         assertEquals("SecurityException", result.detail)
         assertTrue(anki.notes.isEmpty())
@@ -187,7 +241,7 @@ class AnkiDroidSenderTest {
     @Test
     fun aFailedDeckCreationInsertsNothing() {
         val anki = FakeAnki().apply { failDeckCreate = true }
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiProblem.DECK_FAILED, result.problem)
         assertEquals(0, anki.typeCreates)
         assertTrue(anki.notes.isEmpty())
@@ -197,7 +251,7 @@ class AnkiDroidSenderTest {
     @Test
     fun aFailedNoteTypeCreationInsertsNothing() {
         val anki = FakeAnki().apply { failTypeCreate = true }
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiProblem.NOTE_TYPE_FAILED, result.problem)
         assertTrue(anki.notes.isEmpty())
         assertEquals(0, marks)
@@ -206,7 +260,7 @@ class AnkiDroidSenderTest {
     @Test
     fun aFailedInsertionDoesNotMarkTheWordSent() {
         val anki = FakeAnki().also(::ready).apply { failInsert = true }
-        val result = sender(anki).send(listOf(word()))
+        val result = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiProblem.INSERT_FAILED, result.problem)
         assertEquals(0, marks)
         assertTrue(sentIds.isEmpty())
@@ -215,11 +269,11 @@ class AnkiDroidSenderTest {
     @Test
     fun aCardAnkiDroidWillNotMoveIsStillSentOnceAndTheDeckProblemIsReported() {
         val anki = FakeAnki().also(::ready).apply { failMove = true }
-        val result = sender(anki).send(listOf(word("1"), word("2")))
+        val result = sender(anki).sendNow(listOf(word("1"), word("2")))
         assertEquals(AnkiSendResult(sent = 2, problem = AnkiProblem.WRONG_DECK), result)
         assertEquals(2, marks)
         assertEquals(2, anki.notes.size)
-        val again = sender(anki).send(listOf(word("1"), word("2")))
+        val again = sender(anki).sendNow(listOf(word("1"), word("2")))
         assertEquals(AnkiSendResult(skipped = 2), again)
         assertEquals(2, anki.notes.size)
     }
@@ -227,14 +281,14 @@ class AnkiDroidSenderTest {
     @Test
     fun theNoteIdAnkiDroidGivesBackIsTheConfirmationSoNoSecondLookIsNeeded() {
         val anki = FakeAnki().also(::ready)
-        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).sendNow(listOf(word())))
         assertEquals(1, marks)
     }
 
     @Test
     fun aSuccessfulInsertionMarksEachWordSentExactlyOnce() {
         val anki = FakeAnki().also(::ready)
-        val result = sender(anki).send(listOf(word("1"), word("2"), word("1")))
+        val result = sender(anki).sendNow(listOf(word("1"), word("2"), word("1")))
         assertEquals(AnkiSendResult(sent = 2), result)
         assertEquals(2, marks)
         assertEquals(setOf("1", "2"), sentIds)
@@ -243,8 +297,8 @@ class AnkiDroidSenderTest {
     @Test
     fun sendingAgainAddsNoSecondNote() {
         val anki = FakeAnki()
-        sender(anki).send(listOf(word()))
-        val again = sender(anki).send(listOf(word()))
+        sender(anki).sendNow(listOf(word()))
+        val again = sender(anki).sendNow(listOf(word()))
         assertEquals(AnkiSendResult(skipped = 1), again)
         assertEquals(1, anki.notes.size)
         assertEquals(1, anki.deckList.size)
@@ -254,7 +308,7 @@ class AnkiDroidSenderTest {
     @Test
     fun aDeckTheUserChoseIsUsedAndTheDefaultDeckIsNotMade() {
         val anki = FakeAnki().apply { deckList += 9L to "My deck" }
-        assertEquals(AnkiSendResult(sent = 1), sender(anki, "My deck").send(listOf(word())))
+        assertEquals(AnkiSendResult(sent = 1), sender(anki, "My deck").sendNow(listOf(word())))
         assertEquals(9L, anki.moves.single().second)
         assertEquals(0, anki.deckCreates)
         assertFalse(anki.deckList.any { it.second == TRIPLE_DECK_NAME })
@@ -263,7 +317,7 @@ class AnkiDroidSenderTest {
     @Test
     fun theNoteHasTheNineFieldsInOrderWithPersianAndEscapedText() {
         val anki = FakeAnki().also(::ready)
-        sender(anki).send(listOf(word()))
+        sender(anki).sendNow(listOf(word()))
         val fields = anki.notes.single().second
         assertEquals(TRIPLE_FIELDS.size, fields.size)
         assertEquals(tripleNoteFields(word()), fields)
@@ -283,7 +337,7 @@ class AnkiDroidSenderTest {
                 deckList += 2L to ANKI_DECK_NAME
                 typeList += legacyType
             }
-        sender(anki).send(listOf(word()))
+        sender(anki).sendNow(listOf(word()))
         assertTrue(anki.deckList.contains(2L to ANKI_DECK_NAME))
         assertEquals(legacyType, anki.typeList.first())
         assertTrue(anki.notes.none { it.first == 3L })
@@ -293,10 +347,10 @@ class AnkiDroidSenderTest {
     @Test
     fun aRetryAfterAPartialFailureReusesTheDeckAndCreatesTheRestOnce() {
         val anki = FakeAnki().apply { failTypeCreate = true }
-        assertEquals(AnkiProblem.NOTE_TYPE_FAILED, sender(anki).send(listOf(word())).problem)
+        assertEquals(AnkiProblem.NOTE_TYPE_FAILED, sender(anki).sendNow(listOf(word())).problem)
         assertEquals(1, anki.deckList.size)
         anki.failTypeCreate = false
-        assertEquals(AnkiSendResult(sent = 1), sender(anki).send(listOf(word())))
+        assertEquals(AnkiSendResult(sent = 1), sender(anki).sendNow(listOf(word())))
         assertEquals(1, anki.deckList.count { it.second == TRIPLE_DECK_NAME })
         assertEquals(1, anki.typeList.size)
         assertEquals(1, anki.notes.size)
@@ -306,9 +360,9 @@ class AnkiDroidSenderTest {
     @Test
     fun aFailureMidwayKeepsWhatWasSentAndReportsTheStep() {
         val anki = FakeAnki().also(::ready)
-        val first = sender(anki).send(listOf(word("1")))
+        val first = sender(anki).sendNow(listOf(word("1")))
         anki.failInsert = true
-        val second = sender(anki).send(listOf(word("1"), word("2")))
+        val second = sender(anki).sendNow(listOf(word("1"), word("2")))
         assertEquals(1, first.sent)
         assertEquals(AnkiSendResult(sent = 0, skipped = 1, problem = AnkiProblem.INSERT_FAILED), second)
         assertNull(second.detail)

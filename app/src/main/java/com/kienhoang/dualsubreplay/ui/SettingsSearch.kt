@@ -52,6 +52,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
+import com.kienhoang.dualsubreplay.assistant.AiProvider
+import com.kienhoang.dualsubreplay.data.CardFront
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_ONLY_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.AI_TRANSLATION_PREFERENCE
 import com.kienhoang.dualsubreplay.translation.GOOGLE_WAIT_PREFERENCE
@@ -63,7 +65,7 @@ import java.util.Locale
 
 /**
  * A setting that Search settings finds and Often changed lists (owner request 2026-11-06): its
- * name, the More settings section it is in, the tag of the place on the
+ * name, the settings section it is in, the tag of the place on the
  * page to scroll to ([settingAnchor]; [SettingsSwitchRow] uses its test tag), and the preference
  * keys a change of it writes.
  */
@@ -72,6 +74,10 @@ internal enum class SearchableSetting(
     val section: MoreSettingsSection,
     val anchor: String?,
     val keys: Set<String>,
+    /** Names of the setting's choices, so "pause" or "dictation" finds Play mode (2026-11-09). */
+    val alsoFinds: List<Int> = emptyList(),
+    /** The card inside the AI assistant section that holds the setting; a jump opens it too. */
+    val aiSection: AiSettingsSection? = null,
 ) {
     ORIGINAL_LANGUAGE(
         R.string.settings_original_language,
@@ -101,7 +107,7 @@ internal enum class SearchableSetting(
     ),
     TRANSCRIPT_FOLLOW(
         R.string.settings_transcript_follow_title,
-        MoreSettingsSection.READING,
+        MoreSettingsSection.LAYOUT,
         "transcript_follow",
         setOf(TRANSCRIPT_FOLLOW_PREFERENCE),
     ),
@@ -113,7 +119,7 @@ internal enum class SearchableSetting(
     ),
     DEFAULT_VIEW(
         R.string.settings_group_default_view,
-        MoreSettingsSection.READING,
+        MoreSettingsSection.LAYOUT,
         "default_view",
         setOf(PLAYER_EXPERIENCE_MODE_PREFERENCE),
     ),
@@ -123,7 +129,7 @@ internal enum class SearchableSetting(
         "portrait_panel_position",
         setOf(PORTRAIT_PANEL_OFFSET_PREFERENCE),
     ),
-    CAPTION_FORMAT(R.string.settings_caption_format_title, MoreSettingsSection.LAYOUT, "caption_format", setOf(CAPTION_FORMAT_PREFERENCE)),
+    CAPTION_FORMAT(R.string.settings_caption_format_title, MoreSettingsSection.READING, "caption_format", setOf(CAPTION_FORMAT_PREFERENCE)),
     THIRD_LINE(
         R.string.settings_slot_third,
         MoreSettingsSection.LANGUAGES,
@@ -161,6 +167,12 @@ internal enum class SearchableSetting(
         "preload_models_switch",
         setOf(PRELOAD_MODELS_ENABLED_PREFERENCE),
     ),
+    TRANSLATION_SOURCE(
+        R.string.translation_source_setting_title,
+        MoreSettingsSection.TRANSLATION,
+        "translation_source_switch",
+        setOf(SHOW_TRANSLATION_SOURCE_PREFERENCE),
+    ),
     LANGUAGE_DOWNLOADS(R.string.language_downloads_title, MoreSettingsSection.TRANSLATION, "language_downloads", emptySet()),
     PRONOUNCE_WORDS(
         R.string.settings_pronounce_tapped_title,
@@ -173,6 +185,18 @@ internal enum class SearchableSetting(
         MoreSettingsSection.WORD_LEARNING,
         "pronunciation_volume",
         setOf(PRONUNCIATION_VOLUME_PREFERENCE),
+    ),
+    PHONE_VOICE(
+        R.string.settings_phone_voice_title,
+        MoreSettingsSection.WORD_LEARNING,
+        "phone_voice_switch",
+        setOf(PHONE_VOICE_PREFERENCE),
+    ),
+    MEANING_IN_CONTEXT(
+        R.string.settings_meaning_in_context_title,
+        MoreSettingsSection.WORD_LEARNING,
+        "meaning_in_context_switch",
+        setOf(MEANING_IN_CONTEXT_PREFERENCE),
     ),
     WORD_LEARNING_MODE(
         R.string.settings_word_learning_mode_title,
@@ -203,35 +227,51 @@ internal enum class SearchableSetting(
         MoreSettingsSection.STUDY,
         "study_play_mode",
         setOf(STUDY_PLAY_MODE_PREFERENCE, STUDY_REPEAT_COUNT_PREFERENCE),
+        StudyPlayMode.entries.map { it.titleRes },
     ),
     LOOP_BUTTON(R.string.study_loop_button_title, MoreSettingsSection.STUDY, "loop_button_switch", setOf(LOOP_BUTTON_PREFERENCE)),
     SKIP_SILENCE(R.string.study_skip_silence_title, MoreSettingsSection.STUDY, "skip_silence", setOf(SKIP_SILENCE_PREFERENCE)),
     KNOWN_WORDS(
         R.string.study_known_words_title,
-        MoreSettingsSection.STUDY,
+        MoreSettingsSection.WORD_LEARNING,
         "known_words",
         setOf(KNOWN_WORDS_PREFERENCE, KNOWN_WORDS_AFTER_PREFERENCE),
     ),
     MARK_NEW_WORDS(
         R.string.study_mark_new_words_title,
-        MoreSettingsSection.STUDY,
+        MoreSettingsSection.WORD_LEARNING,
         "mark_new_words_switch",
         setOf(MARK_NEW_WORDS_PREFERENCE),
     ),
     SEND_TO(
         R.string.study_anki_title,
-        MoreSettingsSection.STUDY,
+        MoreSettingsSection.FLASHCARDS,
         "ankidroid_switch",
         setOf(ANKIDROID_PREFERENCE, SEND_TO_APP_PREFERENCE, ANKICONNECT_DECK_PREFERENCE),
+    ),
+    CARD_AUDIO(R.string.study_card_audio_title, MoreSettingsSection.FLASHCARDS, "card_audio_switch", setOf(CARD_AUDIO_PREFERENCE)),
+    CARD_PICTURE(R.string.study_card_picture_title, MoreSettingsSection.FLASHCARDS, "card_picture_switch", setOf(CARD_PICTURE_PREFERENCE)),
+    CARD_FRONT(
+        R.string.study_card_front_title,
+        MoreSettingsSection.FLASHCARDS,
+        "card_front",
+        setOf(CARD_FRONT_PREFERENCE),
+        CardFront.entries.map { it.labelRes },
+    ),
+    CARD_FRONT_SOUND(
+        R.string.study_card_front_sound_title,
+        MoreSettingsSection.FLASHCARDS,
+        "card_front_sound_switch",
+        setOf(CARD_FRONT_SOUND_PREFERENCE),
     ),
     BLUR_BOX(R.string.study_blur_box_title, MoreSettingsSection.STUDY, "blur_box_switch", setOf(BLUR_BOX_PREFERENCE)),
     CHARACTER_DETAILS(
         R.string.study_kanji_details_title,
-        MoreSettingsSection.STUDY,
+        MoreSettingsSection.WORD_LEARNING,
         "kanji_details_switch",
         setOf(KANJI_DETAILS_PREFERENCE),
     ),
-    PAGE_TOKEN(R.string.study_page_token_title, MoreSettingsSection.STUDY, "page_token", setOf(PAGE_TOKEN_CAPTIONS_PREFERENCE)),
+    PAGE_TOKEN(R.string.study_page_token_title, MoreSettingsSection.TRANSLATION, "page_token", setOf(PAGE_TOKEN_CAPTIONS_PREFERENCE)),
     OVERLAY_FULLSCREEN(
         R.string.settings_overlay_fullscreen_title,
         MoreSettingsSection.OVERLAY,
@@ -309,6 +349,78 @@ internal enum class SearchableSetting(
     ),
     AUTO_UPDATE(R.string.updates_auto_title, MoreSettingsSection.UPDATES, "auto_update_switch", setOf(APP_AUTO_UPDATE_PREFERENCE)),
     TV_LAYOUT(R.string.tv_layout_title, MoreSettingsSection.TV, "tv_layout_switch", setOf(TV_LAYOUT_PREFERENCE)),
+
+    // The assistant's own settings (owner pick 2026-11-11: Search found none of them). They live in the
+    // assistant's preferences, which Often changed does not follow, so they have no keys.
+    AI_SERVICE(
+        R.string.ai_settings_service,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_service",
+        emptySet(),
+        AiProvider.entries.map { it.labelRes },
+    ),
+    AI_KEYS(
+        R.string.ai_settings_keys_section,
+        MoreSettingsSection.AI_ASSISTANT,
+        AiSettingsSection.KEYS.anchor,
+        emptySet(),
+        aiSection = AiSettingsSection.KEYS,
+    ),
+    AI_MODEL(
+        R.string.ai_settings_model_section,
+        MoreSettingsSection.AI_ASSISTANT,
+        AiSettingsSection.MODEL.anchor,
+        emptySet(),
+        aiSection = AiSettingsSection.MODEL,
+    ),
+    AI_YOUTUBE_SEARCH(
+        R.string.ai_search_youtube_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_youtube_search_switch",
+        emptySet(),
+        aiSection = AiSettingsSection.SEARCH,
+    ),
+    AI_WEB_SEARCH(
+        R.string.ai_search_web_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_web_search",
+        emptySet(),
+        aiSection = AiSettingsSection.SEARCH,
+    ),
+    AI_SCREEN(
+        R.string.ai_search_screen_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_screen_switch",
+        emptySet(),
+        aiSection = AiSettingsSection.SEARCH,
+    ),
+    AI_MEMORY(
+        R.string.ai_memory_enabled_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_memory_switch",
+        emptySet(),
+        aiSection = AiSettingsSection.MEMORY,
+    ),
+    AI_HISTORY(
+        R.string.ai_history,
+        MoreSettingsSection.AI_ASSISTANT,
+        AiSettingsSection.HISTORY.anchor,
+        emptySet(),
+        aiSection = AiSettingsSection.HISTORY,
+    ),
+    AI_FULL_ACCESS(
+        R.string.ai_settings_full_access_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_full_access_switch",
+        emptySet(),
+        aiSection = AiSettingsSection.PERMISSIONS,
+    ),
+    AI_RESPONSE_SOURCE(
+        R.string.ai_show_response_source_title,
+        MoreSettingsSection.AI_ASSISTANT,
+        "ai_show_response_source",
+        emptySet(),
+    ),
     ;
 
     companion object {
@@ -319,12 +431,14 @@ internal enum class SearchableSetting(
     }
 }
 
-/** One search result: a setting, or a whole More settings section when its name matches. */
+/** One search result: a setting, or a whole settings section when its name matches. */
 internal data class SettingsSearchEntry(
     val title: String,
     val sectionTitle: String,
     val setting: SearchableSetting? = null,
     val section: MoreSettingsSection? = setting?.section,
+    /** The names of the setting's choices ([SearchableSetting.alsoFinds]), matched like its name. */
+    val choices: List<String> = emptyList(),
 )
 
 /** Lower case without accents, so "tieng viet" finds "Tiếng Việt" and "cafe" finds "café". */
@@ -352,9 +466,10 @@ internal fun searchSettings(
         .mapNotNull { entry ->
             val title = normalizedForSearch(entry.title)
             val withSection = "$title ${normalizedForSearch(entry.sectionTitle)}"
+            val choices = entry.choices.map(::normalizedForSearch)
             when {
                 title.startsWith(normalizedQuery) -> 0
-                words.all { it in title } -> 1
+                words.all { it in title } || choices.any { choice -> words.all { it in choice } } -> 1
                 words.all { it in withSection } -> 2
                 else -> null
             }?.let { rank -> rank to entry }
@@ -480,6 +595,9 @@ internal fun RecordSettingChanges(
 internal class SettingsAnchors {
     val tops = HashMap<String, Float>()
     var flashing by mutableStateOf<String?>(null)
+
+    /** The card inside the AI assistant section a jump wants open; the section clears it once it opened. */
+    var aiSectionToOpen by mutableStateOf<AiSettingsSection?>(null)
 }
 
 internal val LocalSettingsAnchors = staticCompositionLocalOf<SettingsAnchors?> { null }

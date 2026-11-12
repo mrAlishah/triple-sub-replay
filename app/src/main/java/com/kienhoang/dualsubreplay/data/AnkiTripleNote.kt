@@ -3,27 +3,46 @@ package com.kienhoang.dualsubreplay.data
 import java.util.Locale
 
 /**
- * The "TripleSub Replay v4" note type: the v3 fields in the same order plus "Source Title". It is a new type
- * beside "TripleSub Replay v3" and "DualSub Replay", whose notes and cards are never touched; the name carries
- * the version so it can never clash with another type of the same name that has other fields.
+ * The "TripleSub Replay v5" note type: the v4 fields in the same order plus the two sound fields of upstream's
+ * "DualSub Replay audio" type (a card's picture goes in Source, as there). It is a new type beside v4, v3 and
+ * "DualSub Replay", whose notes and cards are never touched; AnkiDroid cannot add fields to a type that exists,
+ * so the name carries the version and can never clash with another type of the same name that has other fields.
  */
-internal const val TRIPLE_NOTE_TYPE_NAME = "TripleSub Replay v4"
+internal const val TRIPLE_NOTE_TYPE_NAME = "TripleSub Replay v5"
 
-/** The earlier type, still used by AnkiConnect Android (which cannot make note types) when a phone already has it. */
+/** The earlier types, still used by AnkiConnect Android (which cannot make note types) when a phone already has one. */
+internal const val TRIPLE_V4_NOTE_TYPE_NAME = "TripleSub Replay v4"
 internal const val TRIPLE_V3_NOTE_TYPE_NAME = "TripleSub Replay v3"
 internal val TRIPLE_V3_FIELDS =
     listOf("Word", "Subtitle 1", "Subtitle 2", "Reading", "Sentence", "Translation", "Text", "Source", "Online Example")
-internal val TRIPLE_FIELDS = TRIPLE_V3_FIELDS + "Source Title"
+internal val TRIPLE_V4_FIELDS = TRIPLE_V3_FIELDS + "Source Title"
+internal val TRIPLE_FIELDS = TRIPLE_V4_FIELDS + listOf(ANKI_WORD_AUDIO_FIELD, ANKI_SENTENCE_AUDIO_FIELD)
 
-internal const val TRIPLE_QUESTION_FORMAT = ANKI_QUESTION_FORMAT
-internal const val TRIPLE_ANSWER_FORMAT =
-    "{{FrontSide}}<hr id=answer><div class=reading>{{Reading}}</div><div class=meaning dir=auto>{{Subtitle 1}}</div>" +
-        "{{#Subtitle 2}}<div class=meaning2 dir=auto>{{Subtitle 2}}</div>{{/Subtitle 2}}" +
-        "<div class=translation>{{Translation}}</div>" +
-        "{{#Text}}<div class=desc dir=auto>{{Text}}</div>{{/Text}}" +
-        "{{#Online Example}}<div class=online>{{Online Example}}</div>{{/Online Example}}" +
-        "{{#Source Title}}<div class=sourcetitle dir=auto>{{Source Title}}</div>{{/Source Title}}" +
-        "<div class=source>{{Source}}</div>"
+/**
+ * The card template for [front] (Settings → Flashcards & Anki → Card front): upstream's layout with the
+ * Meaning block replaced by both subtitle meanings and the Source block by the extra fields before it.
+ */
+internal fun tripleCardTemplate(
+    front: CardFront,
+    frontSound: Boolean = false,
+): AnkiCardTemplate {
+    val template = ankiCardTemplate(front, frontSound)
+    return template.copy(
+        answer =
+            template.answer
+                .replace(
+                    MEANING_HTML,
+                    "<div class=meaning dir=auto>{{Subtitle 1}}</div>" +
+                        "{{#Subtitle 2}}<div class=meaning2 dir=auto>{{Subtitle 2}}</div>{{/Subtitle 2}}",
+                ).replace(
+                    SOURCE_HTML,
+                    "{{#Text}}<div class=desc dir=auto>{{Text}}</div>{{/Text}}" +
+                        "{{#Online Example}}<div class=online>{{Online Example}}</div>{{/Online Example}}" +
+                        "{{#Source Title}}<div class=sourcetitle dir=auto>{{Source Title}}</div>{{/Source Title}}" + SOURCE_HTML,
+                ),
+    )
+}
+
 internal const val TRIPLE_CSS =
     ANKI_CSS + ".meaning2{font-size:20px;margin-top:8px;}.desc{font-size:16px;margin-top:12px;text-align:start;}" +
         ".online{font-size:14px;margin-top:12px;}.sourcetitle{font-size:13px;margin-top:12px;opacity:.7;}"
@@ -31,8 +50,14 @@ internal const val TRIPLE_CSS =
 private const val SECONDS_PER_MINUTE = 60
 private const val MS_PER_SECOND = 1_000
 
-/** The fields of [word]'s note, in [TRIPLE_FIELDS] order. No field carries a language name or code. */
-internal fun tripleNoteFields(word: SavedWord): List<String> =
+/**
+ * The fields of [word]'s note, in [TRIPLE_FIELDS] order. No field carries a language name or code. The picture
+ * goes in Source above the video link: AnkiDroid cannot add a field to a note type people already have.
+ */
+internal fun tripleNoteFields(
+    word: SavedWord,
+    media: CardMedia = CardMedia(),
+): List<String> =
     listOf(
         ankiHtml(word.word),
         ankiHtml(word.meaning),
@@ -41,9 +66,11 @@ internal fun tripleNoteFields(word: SavedWord): List<String> =
         ankiSentenceHtml(word.sentence, word.word),
         ankiLinesHtml(word),
         ankiHtml(word.personalNotes),
-        ankiSourceLink(word.videoId, word.startMs),
+        listOf(media.picture, ankiSourceLink(word.videoId, word.startMs)).filter { it.isNotEmpty() }.joinToString("<br>"),
         ankiOnlineExampleHtml(word),
         ankiHtml(word.sourceTitle.orEmpty()),
+        media.word,
+        media.sentence,
     )
 
 /** Anki tags of [word]'s note: the app tag, and `yt_<video id>` so cards of one video can be grouped in any note type. */

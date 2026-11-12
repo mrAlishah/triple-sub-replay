@@ -2,7 +2,7 @@
 <resources>
     <!-- Study tools (2026-10-20): play modes, skip silence, known words, AnkiDroid, blur box, page token -->
     <string name="settings_section_study_title">Công cụ học</string>
-    <string name="settings_section_study_summary">Chế độ phát, bỏ qua đoạn im lặng, từ đã biết, Gửi sang, ô làm mờ</string>
+    <string name="settings_section_flashcards_title">Thẻ ghi nhớ &amp; Anki</string>
     <string name="study_play_mode_title">Chế độ phát</string>
     <string name="study_play_mode_normal">Bình thường</string>
     <string name="study_play_mode_normal_description">Video phát như thường lệ.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">Dừng ở đầu mỗi dòng để bạn đọc trước khi nghe.</string>
     <string name="study_play_mode_listen_first">Nghe trước</string>
     <string name="study_play_mode_listen_first_description">Ẩn phụ đề khi video đang phát, rồi dừng sau mỗi dòng và hiện phụ đề.</string>
+    <string name="study_play_mode_dictation">Nghe chép</string>
+    <string name="study_play_mode_dictation_description">Ẩn từng dòng cho đến khi bạn gõ lại những gì nghe được. Video dừng sau mỗi dòng; nhấn Kiểm tra để xem chỗ bạn nghe sót. Phụ đề do người làm cho kết quả tốt nhất: phụ đề tự động có thể có lỗi.</string>
     <string name="study_play_mode_repeat">Lặp lại mỗi dòng</string>
     <string name="study_play_mode_repeat_description">Phát mỗi dòng vài lần rồi mới sang dòng tiếp theo. Mãi mãi lặp lại dòng đó cho đến khi bạn chạm vào dòng khác hoặc tua.</string>
     <string name="study_repeat_forever">Mãi mãi</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">Xóa</string>
     <string name="study_anki_title">Gửi sang ứng dụng thẻ ghi nhớ</string>
     <string name="study_anki_description">Hiện nút Gửi sang trên thẻ từ và trong Luyện tập → Xuất. Nút gửi sang AnkiDroid, trừ khi bạn chọn ứng dụng khác bằng ▾ trên nút hoặc ở bên dưới; khi đó nút sẽ hiện ứng dụng đó.</string>
+    <string name="study_card_audio_title">Thêm âm thanh vào thẻ</string>
+    <string name="study_card_audio_description">Thẻ có từ được đọc bằng giọng của thẻ từ, và âm thanh thật của câu trong video. Câu được ghi lại khi đang phát, nên thẻ gửi trước khi câu kết thúc sẽ có âm thanh khi câu phát xong.</string>
+    <string name="study_card_picture_title">Thêm hình ảnh vào thẻ</string>
+    <string name="study_card_picture_description">Thẻ có một hình ảnh lấy từ video, chụp khi câu chứa từ đó đang hiện trên màn hình. Nếu không có, ảnh thu nhỏ của video sẽ được dùng.</string>
+    <string name="study_card_front_title">Mặt trước thẻ</string>
+    <string name="study_card_front_sound_title">Âm thanh câu ở mặt trước</string>
+    <string name="study_card_front_sound_description">Mặt trước cũng phát âm thanh của câu từ video, không chỉ mặt sau.</string>
+    <string name="study_card_front_word_sentence">Từ và câu</string>
+    <string name="study_card_front_word">Từ</string>
+    <string name="study_card_front_sentence">Câu</string>
+    <string name="study_card_front_listening">Nghe</string>
+    <string name="study_card_front_word_sentence_description">Mặt trước hiện từ cùng câu của nó.</string>
+    <string name="study_card_front_word_description">Mặt trước chỉ hiện từ; câu nằm ở mặt sau.</string>
+    <string name="study_card_front_sentence_description">Mặt trước hiện câu với từ được in đậm; từ và nghĩa nằm ở mặt sau.</string>
+    <string name="study_card_front_listening_description">Mặt trước chỉ phát âm thanh của câu; câu và từ nằm ở mặt sau.</string>
+    <string name="study_card_front_note">Đổi mục này cũng đổi các thẻ bạn đã gửi trước đó.</string>
+    <string name="study_card_sound_waits">Âm thanh của câu sẽ được thêm khi câu phát hết.</string>
+    <string name="study_card_sound_replaying">Đang phát lại câu một lần để thêm âm thanh vào thẻ.</string>
     <string name="study_blur_box_title">Ô làm mờ</string>
     <string name="study_blur_box_description">Đặt một ô làm mờ lên video để che phụ đề có sẵn trong hình. Kéo để di chuyển, kéo góc để đổi kích thước.</string>
     <string name="study_page_token_title">Tải phụ đề bằng mã của trang (thử nghiệm)</string>
@@ -48,6 +68,9 @@
     <string name="study_send_to_anki">Gửi sang %1$s</string>
     <string name="study_sending_to_anki">Đang gửi…</string>
     <string name="study_sent_to_anki">Đã gửi sang %1$s</string>
+    <string name="study_send_again_title">Gửi lại thẻ này?</string>
+    <string name="study_send_again_text">%1$s đã có thẻ cho từ này. Một thẻ nữa sẽ được thêm, và bạn có thể xóa thẻ cũ ở đó.</string>
+    <string name="study_send_again">Gửi lại</string>
     <string name="study_anki_not_installed">Điện thoại này chưa cài AnkiDroid.</string>
     <string name="study_anki_permission_denied">Chưa cấp quyền cho AnkiDroid nên không thẻ nào được thêm.</string>
     <string name="study_anki_failed">AnkiDroid không nhận thẻ. Hãy mở AnkiDroid, để nó chạy trong nền, rồi quay lại và thử lại.</string>
@@ -68,6 +91,9 @@
     <plurals name="study_anki_sent_count">
         <item quantity="other">Đã gửi %1$d từ sang %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="other">%1$d thẻ sẽ có âm thanh của câu khi câu đó phát xong.</item>
+    </plurals>
     <string name="study_page_token_auto">Tự động</string>
     <string name="study_page_token_on">Bật</string>
     <string name="study_page_token_off">Tắt</string>
@@ -78,7 +104,7 @@
     <string name="study_known_words_after_title">Tính là đã biết sau khi gặp</string>
     <string name="study_word_seen">Đã gặp %1$d/%2$d lần</string>
     <string name="study_known_words_offer_title">Bật Từ đã biết?</string>
-    <string name="study_known_words_offer_message">Khi đó bảng phụ đề sẽ cho biết bạn đã biết bao nhiêu phần của mỗi video, và những từ bạn gặp thường xuyên sẽ tự được tính là đã biết. Bạn có thể đổi lại sau trong Cài đặt → Công cụ học.</string>
+    <string name="study_known_words_offer_message">Khi đó bảng phụ đề sẽ cho biết bạn đã biết bao nhiêu phần của mỗi video, và những từ bạn gặp thường xuyên sẽ tự được tính là đã biết. Bạn có thể đổi lại sau trong Cài đặt → Học từ.</string>
     <string name="study_known_words_offer_confirm">Bật</string>
     <string name="study_known_words_offer_dismiss">Để sau</string>
     <string name="study_send_to_app_title">Gửi từ tới</string>
@@ -101,4 +127,12 @@
     <string name="study_ankiconnect_open">Mở AnkiConnect Android</string>
     <string name="study_loop_button_title">Nút lặp trên dòng đang phát</string>
     <string name="study_loop_button_description">Hiện một biểu tượng lặp nhỏ trên dòng đang phát trong bản chép lời. Chạm vào để lặp lại dòng đó cho đến khi bạn chạm lại. Chạm vào dòng khác hoặc tua video thì sẽ lặp dòng đó.</string>
+    <string name="dictation_type_what_you_heard">Gõ những gì bạn nghe được</string>
+    <string name="dictation_replay">Nghe lại</string>
+    <string name="dictation_show">Hiện</string>
+    <string name="dictation_check">Kiểm tra</string>
+    <string name="dictation_next">Tiếp</string>
+    <string name="dictation_perfect">Hoàn hảo!</string>
+    <string name="dictation_score">Đúng %1$d/%2$d</string>
+    <string name="dictation_hidden_line">Dòng đang ẩn</string>
 </resources>

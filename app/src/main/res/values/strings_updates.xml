@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_section_updates_title">App updates</string>
-    <string name="settings_section_updates_summary">Update automatically</string>
     <string name="updates_check">Check for updates</string>
     <string name="updates_version">Version %1$s</string>
     <string name="updates_available_short">Version %1$s is available</string>
@@ -20,7 +19,9 @@
     <string name="updates_try_again">Try again</string>
     <string name="updates_open_github">Open GitHub</string>
     <string name="updates_unsupported">This copy of the app was built on a computer, so it can\'t update itself. Get the latest version on GitHub.</string>
+    <string name="updates_unsupported_device">New versions are made for phones with ARM processors, and this device can\'t run them. The version you have keeps working, and GitHub has every version.</string>
     <string name="updates_problem_offline">Couldn\'t reach GitHub. Check your connection and try again.</string>
+    <string name="updates_problem_interrupted">The download stopped before it finished. Try again to carry on from where it stopped.</string>
     <string name="updates_problem_busy">GitHub is busy right now. Try again in a few minutes.</string>
     <string name="updates_problem_github">GitHub sent an unexpected answer. Try again later.</string>
     <string name="updates_problem_checksum">The download didn\'t match GitHub\'s checksum, so it was deleted.</string>

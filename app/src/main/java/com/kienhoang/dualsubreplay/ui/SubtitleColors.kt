@@ -155,6 +155,9 @@ val RESETTABLE_SETTING_KEYS =
     listOf(
         "auto_pronounce",
         PRONUNCIATION_VOLUME_PREFERENCE,
+        PHONE_VOICE_PREFERENCE,
+        MEANING_IN_CONTEXT_PREFERENCE,
+        MEANING_ORDER_PREFERENCE,
         "font_scale",
         PORTRAIT_PANEL_OFFSET_PREFERENCE,
         "preferred_caption_language",

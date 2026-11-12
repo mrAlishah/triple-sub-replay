@@ -24,6 +24,7 @@ import com.kienhoang.dualsubreplay.assistant.aiActionNote
 import com.kienhoang.dualsubreplay.data.SavedWord
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import com.kienhoang.dualsubreplay.data.savedWordId
+import com.kienhoang.dualsubreplay.data.storedCardFront
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 import com.kienhoang.dualsubreplay.data.validClipRange
 import com.kienhoang.dualsubreplay.translation.TranslationEngine
@@ -135,6 +136,9 @@ internal data class AiStoredSettings(
     val appColors: String = DEFAULT_APP_COLOR_THEME_KEY,
     val accentColor: String = DEFAULT_APP_THEME_ACCENT_KEY,
     val pronunciationVolume: Float = DEFAULT_PRONUNCIATION_VOLUME,
+    val phoneVoice: Boolean = false,
+    val meaningInContext: Boolean = false,
+    val meaningOrder: String = MEANING_ORDER_SENTENCE_FIRST,
     val overlayInFullscreen: Boolean = true,
     val overlayWhenRotated: Boolean = true,
     val movableControls: Boolean = true,
@@ -157,6 +161,9 @@ internal fun readAiStoredSettings(context: Context): AiStoredSettings {
         appColors = storedAppColorTheme(preferences.getString(APP_COLOR_THEME_PREFERENCE, null)).key,
         accentColor = storedAppThemeAccentKey(preferences.getString(APP_THEME_ACCENT_PREFERENCE, null)),
         pronunciationVolume = readPronunciationVolume(context),
+        phoneVoice = preferences.getBoolean(PHONE_VOICE_PREFERENCE, false),
+        meaningInContext = preferences.getBoolean(MEANING_IN_CONTEXT_PREFERENCE, false),
+        meaningOrder = storedMeaningOrder(preferences.getString(MEANING_ORDER_PREFERENCE, null)),
         overlayInFullscreen = preferences.getBoolean(AUTO_OVERLAY_FULLSCREEN_PREFERENCE, true),
         overlayWhenRotated = preferences.getBoolean(AUTO_OVERLAY_LANDSCAPE_PREFERENCE, true),
         movableControls = preferences.getBoolean(MOVABLE_OVERLAY_PREFERENCE, true),
@@ -193,6 +200,9 @@ private fun aiStoredSettingValue(
         AiSetting.APP_COLORS -> stored.appColors
         AiSetting.ACCENT_COLOR -> stored.accentColor
         AiSetting.PRONUNCIATION_VOLUME -> Math.round(stored.pronunciationVolume * PERCENT).toString()
+        AiSetting.PHONE_VOICE -> onOff(stored.phoneVoice)
+        AiSetting.MEANING_IN_CONTEXT -> onOff(stored.meaningInContext)
+        AiSetting.MEANING_ORDER -> stored.meaningOrder
         AiSetting.OVERLAY_IN_FULLSCREEN -> onOff(stored.overlayInFullscreen)
         AiSetting.OVERLAY_WHEN_ROTATED -> onOff(stored.overlayWhenRotated)
         AiSetting.MOVABLE_SUBTITLE_CONTROLS -> onOff(stored.movableControls)
@@ -223,6 +233,10 @@ private fun aiStudySettingValue(
         AiSetting.MARK_NEW_WORDS -> onOff(study.markNewWords)
         AiSetting.SEND_TO_ANKIDROID -> onOff(study.ankiDroid)
         AiSetting.SEND_TO_APP -> study.sendTo.storageValue
+        AiSetting.CARD_AUDIO -> onOff(study.cardAudio)
+        AiSetting.CARD_PICTURE -> onOff(study.cardPicture)
+        AiSetting.CARD_FRONT_SOUND -> onOff(study.cardFrontSound)
+        AiSetting.CARD_FRONT -> study.cardFront.storageValue
         AiSetting.BLUR_BOX -> onOff(study.blurBox)
         AiSetting.LOOP_BUTTON -> onOff(study.loopButton)
         AiSetting.KANJI_DETAILS -> onOff(study.kanjiDetails)
@@ -230,7 +244,7 @@ private fun aiStudySettingValue(
         else -> null
     }
 
-/** The Reading & view, Layout and Colors settings that the view model holds. */
+/** The Subtitle text, Screen layout and Colors settings that the view model holds. */
 private fun aiReadingSettingValue(
     state: DualSubUiState,
     playerMode: PlayerExperienceMode,
@@ -636,6 +650,9 @@ internal class AppAiActions(
             AiSetting.APP_COLORS -> editor.putString(APP_COLOR_THEME_PREFERENCE, value)
             AiSetting.ACCENT_COLOR -> editor.putString(APP_THEME_ACCENT_PREFERENCE, value)
             AiSetting.PRONUNCIATION_VOLUME -> editor.putFloat(PRONUNCIATION_VOLUME_PREFERENCE, value.toFloat() / PERCENT)
+            AiSetting.PHONE_VOICE -> editor.putBoolean(PHONE_VOICE_PREFERENCE, on)
+            AiSetting.MEANING_IN_CONTEXT -> editor.putBoolean(MEANING_IN_CONTEXT_PREFERENCE, on)
+            AiSetting.MEANING_ORDER -> editor.putString(MEANING_ORDER_PREFERENCE, storedMeaningOrder(value))
             AiSetting.OVERLAY_IN_FULLSCREEN -> editor.putBoolean(AUTO_OVERLAY_FULLSCREEN_PREFERENCE, on)
             AiSetting.OVERLAY_WHEN_ROTATED -> editor.putBoolean(AUTO_OVERLAY_LANDSCAPE_PREFERENCE, on)
             AiSetting.MOVABLE_SUBTITLE_CONTROLS -> editor.putBoolean(MOVABLE_OVERLAY_PREFERENCE, on)
@@ -674,6 +691,10 @@ internal class AppAiActions(
             AiSetting.MARK_NEW_WORDS -> editor.putBoolean(MARK_NEW_WORDS_PREFERENCE, on)
             AiSetting.SEND_TO_ANKIDROID -> editor.putBoolean(ANKIDROID_PREFERENCE, on)
             AiSetting.SEND_TO_APP -> editor.putString(SEND_TO_APP_PREFERENCE, storedFlashcardApp(value).storageValue)
+            AiSetting.CARD_AUDIO -> editor.putBoolean(CARD_AUDIO_PREFERENCE, on)
+            AiSetting.CARD_PICTURE -> editor.putBoolean(CARD_PICTURE_PREFERENCE, on)
+            AiSetting.CARD_FRONT_SOUND -> editor.putBoolean(CARD_FRONT_SOUND_PREFERENCE, on)
+            AiSetting.CARD_FRONT -> editor.putString(CARD_FRONT_PREFERENCE, storedCardFront(value).storageValue)
             AiSetting.BLUR_BOX -> editor.putBoolean(BLUR_BOX_PREFERENCE, on)
             AiSetting.LOOP_BUTTON -> editor.putBoolean(LOOP_BUTTON_PREFERENCE, on)
             AiSetting.KANJI_DETAILS -> editor.putBoolean(KANJI_DETAILS_PREFERENCE, on)
@@ -773,6 +794,17 @@ internal class AppAiActions(
                 named(R.string.settings_translation_position_title, string(storedTranslationPosition(value).labelRes))
             AiSetting.TRANSCRIPT_FOLLOW ->
                 named(R.string.settings_transcript_follow_title, string(storedTranscriptFollow(value).labelRes))
+            AiSetting.MEANING_ORDER ->
+                named(
+                    R.string.settings_meaning_order_title,
+                    string(
+                        if (storedMeaningOrder(value) == MEANING_ORDER_SENTENCE_FIRST) {
+                            R.string.settings_meaning_order_sentence
+                        } else {
+                            R.string.settings_meaning_order_dictionary
+                        },
+                    ),
+                )
             AiSetting.PORTRAIT_PANEL_POSITION -> {
                 val position = portraitPanelPositionText(value.toFloat() / PERCENT)
                 named(R.string.settings_portrait_panel_position, string(position.textRes, position.percentage))
@@ -832,8 +864,6 @@ internal class AppAiActions(
                 )
             }
             AiSetting.MARK_NEW_WORDS -> switch(R.string.study_mark_new_words_title, value)
-            AiSetting.SEND_TO_ANKIDROID -> switch(R.string.study_anki_title, value)
-            AiSetting.SEND_TO_APP -> named(R.string.study_send_to_app_title, string(storedFlashcardApp(value).nameRes))
             AiSetting.BLUR_BOX -> switch(R.string.study_blur_box_title, value)
             AiSetting.LOOP_BUTTON -> switch(R.string.study_loop_button_title, value)
             AiSetting.KANJI_DETAILS -> switch(R.string.study_kanji_details_title, value)
@@ -845,6 +875,21 @@ internal class AppAiActions(
             AiSetting.ALWAYS_SKIP_SPONSORS -> switch(R.string.ads_always_skip_sponsors_title, value)
             AiSetting.DIFFERENT_TAB_ACCOUNTS -> switch(R.string.tabs_different_accounts_title, value)
             AiSetting.TV_LAYOUT -> switch(R.string.tv_layout_title, value)
+            else -> flashcardSettingLabel(setting, value)
+        }
+
+    /** Labels of the Flashcards & Anki settings (2026-11-09 and 2026-11-10). */
+    private fun flashcardSettingLabel(
+        setting: AiSetting,
+        value: String,
+    ): String =
+        when (setting) {
+            AiSetting.SEND_TO_ANKIDROID -> switch(R.string.study_anki_title, value)
+            AiSetting.SEND_TO_APP -> named(R.string.study_send_to_app_title, string(storedFlashcardApp(value).nameRes))
+            AiSetting.CARD_AUDIO -> switch(R.string.study_card_audio_title, value)
+            AiSetting.CARD_PICTURE -> switch(R.string.study_card_picture_title, value)
+            AiSetting.CARD_FRONT_SOUND -> switch(R.string.study_card_front_sound_title, value)
+            AiSetting.CARD_FRONT -> named(R.string.study_card_front_title, string(storedCardFront(value).labelRes))
             // settingLabel and otherSettingLabel name the others.
             else -> value
         }
@@ -926,6 +971,8 @@ internal class AppAiActions(
 private val SETTING_SWITCH_TITLES =
     mapOf(
         AiSetting.HIGHLIGHT_ACTIVE_SENTENCE_ONLY to R.string.settings_active_sentence_only_title,
+        AiSetting.PHONE_VOICE to R.string.settings_phone_voice_title,
+        AiSetting.MEANING_IN_CONTEXT to R.string.settings_meaning_in_context_title,
         AiSetting.OVERLAY_IN_FULLSCREEN to R.string.settings_overlay_fullscreen_title,
         AiSetting.OVERLAY_WHEN_ROTATED to R.string.settings_overlay_landscape_title,
         AiSetting.MOVABLE_SUBTITLE_CONTROLS to R.string.settings_movable_controls_title,

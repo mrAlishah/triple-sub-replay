@@ -54,8 +54,8 @@ Paths below are relative to
   captions the player loads later still give the full transcript. When the player never downloads
   the track, the page opens YouTube's own transcript panel and `data/TranscriptPanelParser.kt`
   reads its lines (line timing only). See the
-  [spec](../specs/2026-10-18-page-first-full-transcript.md). With Settings → Study tools → Load
-  captions with a page token (beta, owner request 2026-10-20; Automatic by default, On, Off), a page whose plain
+  [spec](../specs/2026-10-18-page-first-full-transcript.md). With Settings → Captions & translation →
+  Load captions with a page token (beta, owner request 2026-10-20; Automatic by default, On, Off), a page whose plain
   track request comes back empty mints its own proof-of-origin token the way YouTube's web player
   does (`ui/PageTokenScript.kt`: BotGuard's challenge from the page's own `att/get`, its interpreter
   only from `https://www.google.com/js/th/`, `GenerateIT` on the page's own origin) and asks again
@@ -90,6 +90,10 @@ Paths below are relative to
   newest `security:critical` release, a Security update dialog (daily for the fix's first 3 days,
   then weekly; a newer fix starts again), never over a
   playing video (`data/UpdateReminders.kt`, `ui/AppNotices.kt`).
+  Since 2026-11-08 ([spec](../specs/2026-11-08-smaller-app-updates.md)) an update from one of the
+  last 15 releases (or the previous preview build) downloads a ~3 MB patch and rebuilds the APK
+  from the installed one (`tools/apk_patch.py`, `data/UpdatePatches.kt`), falling back to the
+  whole APK; the release APK carries ARM libraries only (about 25 MB).
 - Remote switches (owner decision 2026-10-30, switches only): `update/RemoteSwitchFetcher.kt` reads
   `remote-config/switches.json` from `raw.githubusercontent.com` with the daily check (64 KiB cap,
   saved 30 days). `data/RemoteSwitches.kt` can only reorder or drop built-in Google Translate
@@ -224,6 +228,10 @@ Paths below are relative to
   It changes the app only through its fixed tool list, with Undo or a tap to confirm; its own
   settings, keys and saved words need the off-by-default Full access option. Each service may keep
   several keys, and a failing key hands the request to the next one.
+- AI subtitles for videos without captions (owner pick 2026-11-08, [spec](../specs/2026-11-08-ai-subtitles-for-videos-without-captions.md))
+  reuse the assistant's Gemini keys: only after a tap on the no-captions card, the app sends the
+  video's YouTube address (no audio or text) to Gemini in 5-minute parts and keeps the result in
+  `cacheDir/ai-subtitles/`. No on-device speech model, no audio capture.
 - Preserve guide migration: a missing `guide_completed` inherits prior onboarding
   completion for existing users; new users still see the guide. Preserve vocabulary,
   review scheduling, backup/import compatibility, and retained legacy clip files.
@@ -240,8 +248,8 @@ Choose evidence appropriate to the change in its [spec](../specs/README.md).
 
 [Android CI](../../.github/workflows/android.yml) runs formatting/complexity checks,
 unit tests, lint, APK builds, optimized-build checks, and managed-device tests.
-[PR previews](../../.github/workflows/pr-preview-auto.yml) publish successful PR artifacts,
-including fork PRs, and clean up closed-PR previews.
+[PR previews](../../.github/workflows/pr-preview-auto.yml) publish the APK of a PR whose build job
+passed (device tests may still be running), including fork PRs, and clean up closed-PR previews.
 
 After an owner merge, [release-on-main.yml](../../.github/workflows/release-on-main.yml)
 and [automatic_release.py](../../tools/automatic_release.py) verify final-head PR CI,

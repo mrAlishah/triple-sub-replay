@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.ANKIDROID_PERMISSION
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
+import com.kienhoang.dualsubreplay.data.AnkiCardMedia
 import com.kienhoang.dualsubreplay.data.AnkiConnectNotes
 import com.kienhoang.dualsubreplay.data.AnkiDroidNotes
 import com.kienhoang.dualsubreplay.data.AnkiProblem
@@ -90,6 +91,8 @@ internal class StudyTools(
     internal val anki: AnkiDroidNotes,
     internal val ankiConnect: AnkiConnectNotes,
     private val scope: CoroutineScope,
+    /** The cards' sounds (Settings → Study tools → Add audio to cards); null where nothing records them. */
+    private val cardMedia: AnkiCardMedia? = null,
 ) {
     var settings by mutableStateOf(StudySettings())
         internal set
@@ -145,10 +148,11 @@ internal class StudyTools(
     suspend fun send(
         app: FlashcardApp,
         words: List<SavedWord>,
+        again: Boolean = false,
     ): AnkiSendResult =
         when (app) {
-            FlashcardApp.ANKIDROID -> anki.send(words)
-            FlashcardApp.ANKICONNECT -> ankiConnect.send(words, settings.ankiConnectDeck)
+            FlashcardApp.ANKIDROID -> anki.send(words, cardMedia, settings.cardOptions, again)
+            FlashcardApp.ANKICONNECT -> ankiConnect.send(words, settings.ankiConnectDeck, cardMedia, settings.cardOptions, again)
         }
 
     /** AnkiDroid asks for its permission before the first card; AnkiConnect asks for none. */
@@ -192,7 +196,13 @@ internal fun rememberStudyTools(
     val scope = rememberCoroutineScope()
     val tools =
         remember(context) {
-            StudyTools(KnownWordsRepository.get(context), AnkiDroidNotes(context), AnkiConnectNotes.create(context), scope)
+            StudyTools(
+                KnownWordsRepository.get(context),
+                AnkiDroidNotes(context),
+                AnkiConnectNotes.create(context),
+                scope,
+                CardMediaSource(context),
+            )
         }
     val settings by rememberStudySettings()
     val sourceCode = state.resolvedSourceLanguage
@@ -450,34 +460,43 @@ private fun SendToButton(
     var sending by remember(selection) { mutableStateOf(false) }
     var sentNow by remember(selection) { mutableStateOf(emptySet<FlashcardApp>()) }
     var problem by remember(selection) { mutableStateOf<Pair<FlashcardApp, AnkiSendResult>?>(null) }
+    var soundWaits by remember(selection) { mutableStateOf(false) }
+    var soundReplaying by remember(selection) { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
+    var askAgain by remember(selection) { mutableStateOf(false) }
     val sent = app in sentNow || tools.wasSent(app, word.id)
-    val send: (FlashcardApp) -> Unit = { to ->
+    val send: (FlashcardApp, Boolean) -> Unit = { to, again ->
         sending = true
         problem = null
         scope.launch {
-            val result = tools.send(to, listOf(word))
+            val result = tools.send(to, listOf(word), again)
             sending = false
+            soundWaits = result.waiting > 0
+            // The line was paused part-way: play it once now, so the card gets its sound without waiting.
+            soundReplaying = soundWaits && LineAudioBridge.replayForSound(word)
             if (result.problem == null) sentNow = sentNow + to else problem = to to result
         }
     }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
-                send(FlashcardApp.ANKIDROID)
+                send(FlashcardApp.ANKIDROID, false)
             } else {
                 problem =
                     FlashcardApp.ANKIDROID to AnkiSendResult(problem = AnkiProblem.NO_PERMISSION)
             }
         }
-    val start: (FlashcardApp) -> Unit = { to -> if (tools.needsPermission(to)) permission.launch(ANKIDROID_PERMISSION) else send(to) }
+    val start: (FlashcardApp) -> Unit = { to ->
+        if (tools.needsPermission(to)) permission.launch(ANKIDROID_PERMISSION) else send(to, false)
+    }
     val name = stringResource(app.nameRes)
     Column {
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             FilterChip(
                 selected = sent,
-                enabled = !sending && !sent && meaning.isNotBlank() && !pending,
-                onClick = { start(app) },
+                // A sent card can go again (lion737, #81): after a settings change, or to replace one deleted in Anki.
+                enabled = !sending && meaning.isNotBlank() && !pending,
+                onClick = { if (sent) askAgain = true else start(app) },
                 label = {
                     Text(
                         when {
@@ -518,6 +537,8 @@ private fun SendToButton(
                 )
             }
         }
+        if (askAgain) SendAgainDialog(name, { askAgain = false }) { send(app, true) }
+        if (soundWaits && problem == null) CardSoundWaitsNote(soundReplaying)
         problem?.let { (to, result) ->
             Text(
                 sendProblemText(LocalResources.current, to, result),
@@ -665,9 +686,50 @@ internal fun sendResultText(
 ): String {
     val name = resources.getString(app.nameRes)
     val sent = resources.getQuantityString(R.plurals.study_anki_sent_count, result.sent, result.sent, name)
+    val waits =
+        resources.getQuantityString(R.plurals.study_anki_sound_waits_count, result.waiting, result.waiting).takeIf { result.waiting > 0 }
     return when {
-        result.problem != null -> listOfNotNull(sent.takeIf { result.sent > 0 }, sendProblemText(resources, app, result)).joinToString(" ")
+        result.problem != null ->
+            listOfNotNull(sent.takeIf { result.sent > 0 }, waits, sendProblemText(resources, app, result)).joinToString(" ")
         result.sent == 0 -> resources.getString(R.string.study_anki_all_sent_before, name)
-        else -> sent
+        else -> listOfNotNull(sent, waits).joinToString(" ")
     }
+}
+
+/**
+ * The line was paused part-way (tapping a word pauses it): its sound is recorded once it has played,
+ * which [replaying] does right away.
+ */
+@Composable
+private fun CardSoundWaitsNote(replaying: Boolean) {
+    Text(
+        stringResource(if (replaying) R.string.study_card_sound_replaying else R.string.study_card_sound_waits),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.testTag("card_sound_waits"),
+    )
+}
+
+/** Asks before a second card of the same word goes to [appName]; Anki keeps both. */
+@Composable
+private fun SendAgainDialog(
+    appName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.study_send_again_title)) },
+        text = { Text(stringResource(R.string.study_send_again_text, appName)) },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    onConfirm()
+                },
+                modifier = Modifier.testTag("send_again_confirm"),
+            ) { Text(stringResource(R.string.study_send_again)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } },
+    )
 }

@@ -37,11 +37,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.AnkiConnectNotes
+import com.kienhoang.dualsubreplay.data.CardFront
 import com.kienhoang.dualsubreplay.data.KnownWordsRepository
 import com.kienhoang.dualsubreplay.data.PageTokenMode
 import kotlinx.coroutines.launch
 
-/** More settings → Study tools: play modes, skip silence, known words, Send to, blur box and page tokens. */
+/** Settings → Study tools: play modes, loop button, skip silence and blur box. */
 @Composable
 internal fun StudyToolsSettingsSection() {
     val context = LocalContext.current
@@ -65,6 +66,41 @@ internal fun StudyToolsSettingsSection() {
     SettingsSectionDivider()
     SkipSilenceSettings(settings.skipSilence) { skip -> preferences.edit().putString(SKIP_SILENCE_PREFERENCE, skip.storageValue).apply() }
     SettingsSectionDivider()
+    SettingsSwitchRow(
+        title = stringResource(R.string.study_blur_box_title),
+        description = stringResource(R.string.study_blur_box_description),
+        checked = settings.blurBox,
+        onCheckedChange = { preferences.edit().putBoolean(BLUR_BOX_PREFERENCE, it).apply() },
+        testTag = "blur_box_switch",
+    )
+}
+
+/**
+ * Settings → Captions & translation → Load captions with a page token: how captions load, so it
+ * sits with the caption settings rather than under Study tools (owner pick 2026-11-11).
+ */
+@Composable
+internal fun PageTokenCaptionSettings() {
+    val context = LocalContext.current
+    val preferences = remember(context) { studyPreferences(context) }
+    val settings by rememberStudySettings()
+    PageTokenSettings(settings.pageTokenCaptions) { mode ->
+        // A new choice starts over: Automatic learns again whether YouTube wants a token.
+        preferences
+            .edit()
+            .putString(PAGE_TOKEN_CAPTIONS_PREFERENCE, mode.storageValue)
+            .remove(PAGE_TOKEN_NEEDED_PREFERENCE)
+            .apply()
+    }
+}
+
+/** Settings → Word learning, after the word settings: known words and character details (owner pick 2026-11-09). */
+@Composable
+internal fun KnownWordsAndCharacterSettings() {
+    val context = LocalContext.current
+    val preferences = remember(context) { studyPreferences(context) }
+    val settings by rememberStudySettings()
+    SettingsSectionDivider()
     KnownWordsSettings(
         settings = settings,
         onModeChange = { mode -> preferences.edit().putString(KNOWN_WORDS_PREFERENCE, mode.storageValue).apply() },
@@ -80,7 +116,21 @@ internal fun StudyToolsSettingsSection() {
         )
     }
     KnownWordsCountRow()
-    SettingsSectionDivider()
+    SettingsSwitchRow(
+        title = stringResource(R.string.study_kanji_details_title),
+        description = stringResource(R.string.study_kanji_details_description),
+        checked = settings.kanjiDetails,
+        onCheckedChange = { preferences.edit().putBoolean(KANJI_DETAILS_PREFERENCE, it).apply() },
+        testTag = "kanji_details_switch",
+    )
+}
+
+/** Settings → Flashcards & Anki: Send to and card audio (owner pick 2026-11-09). */
+@Composable
+internal fun FlashcardSettingsSection() {
+    val context = LocalContext.current
+    val preferences = remember(context) { studyPreferences(context) }
+    val settings by rememberStudySettings()
     SettingsSwitchRow(
         title = stringResource(R.string.study_anki_title),
         description = stringResource(R.string.study_anki_description),
@@ -98,30 +148,84 @@ internal fun StudyToolsSettingsSection() {
                 editor.apply()
             },
         )
-    }
-    SettingsSwitchRow(
-        title = stringResource(R.string.study_blur_box_title),
-        description = stringResource(R.string.study_blur_box_description),
-        checked = settings.blurBox,
-        onCheckedChange = { preferences.edit().putBoolean(BLUR_BOX_PREFERENCE, it).apply() },
-        testTag = "blur_box_switch",
-    )
-    SettingsSwitchRow(
-        title = stringResource(R.string.study_kanji_details_title),
-        description = stringResource(R.string.study_kanji_details_description),
-        checked = settings.kanjiDetails,
-        onCheckedChange = { preferences.edit().putBoolean(KANJI_DETAILS_PREFERENCE, it).apply() },
-        testTag = "kanji_details_switch",
-    )
-    PageTokenSettings(settings.pageTokenCaptions) { mode ->
-        // A new choice starts over: Automatic learns again whether YouTube wants a token.
-        preferences
-            .edit()
-            .putString(PAGE_TOKEN_CAPTIONS_PREFERENCE, mode.storageValue)
-            .remove(PAGE_TOKEN_NEEDED_PREFERENCE)
-            .apply()
+        SettingsSwitchRow(
+            title = stringResource(R.string.study_card_audio_title),
+            description = stringResource(R.string.study_card_audio_description),
+            checked = settings.cardAudio,
+            onCheckedChange = { preferences.edit().putBoolean(CARD_AUDIO_PREFERENCE, it).apply() },
+            testTag = "card_audio_switch",
+        )
+        SettingsSwitchRow(
+            title = stringResource(R.string.study_card_picture_title),
+            description = stringResource(R.string.study_card_picture_description),
+            checked = settings.cardPicture,
+            onCheckedChange = { preferences.edit().putBoolean(CARD_PICTURE_PREFERENCE, it).apply() },
+            testTag = "card_picture_switch",
+        )
+        CardFrontSettings(
+            front = settings.cardFront,
+            onChange = { preferences.edit().putString(CARD_FRONT_PREFERENCE, it.storageValue).apply() },
+        )
+        // Listening already has nothing but the line's sound on the front.
+        if (settings.cardFront != CardFront.LISTENING) {
+            SettingsSwitchRow(
+                title = stringResource(R.string.study_card_front_sound_title),
+                description = stringResource(R.string.study_card_front_sound_description),
+                checked = settings.cardFrontSound,
+                onCheckedChange = { preferences.edit().putBoolean(CARD_FRONT_SOUND_PREFERENCE, it).apply() },
+                testTag = "card_front_sound_switch",
+            )
+        }
     }
 }
+
+/**
+ * Flashcards & Anki → Card front (owner pick 2026-11-10, lion737's Migaku-style cards): what Anki
+ * shows before the card is turned, with a line on what goes where.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CardFrontSettings(
+    front: CardFront,
+    onChange: (CardFront) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().settingAnchor("card_front").padding(start = 16.dp, bottom = 6.dp)) {
+        Text(stringResource(R.string.study_card_front_title), style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CardFront.entries.forEach { option ->
+                FilterChip(
+                    selected = front == option,
+                    onClick = { onChange(option) },
+                    label = { Text(stringResource(option.labelRes)) },
+                    modifier = Modifier.testTag("card_front_${option.storageValue}"),
+                )
+            }
+        }
+        Text(
+            stringResource(front.descriptionRes) + " " + stringResource(R.string.study_card_front_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+internal val CardFront.labelRes: Int
+    get() =
+        when (this) {
+            CardFront.WORD_AND_SENTENCE -> R.string.study_card_front_word_sentence
+            CardFront.WORD -> R.string.study_card_front_word
+            CardFront.SENTENCE -> R.string.study_card_front_sentence
+            CardFront.LISTENING -> R.string.study_card_front_listening
+        }
+
+private val CardFront.descriptionRes: Int
+    get() =
+        when (this) {
+            CardFront.WORD_AND_SENTENCE -> R.string.study_card_front_word_sentence_description
+            CardFront.WORD -> R.string.study_card_front_word_description
+            CardFront.SENTENCE -> R.string.study_card_front_sentence_description
+            CardFront.LISTENING -> R.string.study_card_front_listening_description
+        }
 
 @Composable
 private fun StudyPlayModeSettings(

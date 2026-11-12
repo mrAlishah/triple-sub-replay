@@ -12,6 +12,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
@@ -74,6 +75,9 @@ internal fun ankiConnectResult(body: String): Any? {
     return reply.opt("result")
 }
 
+/** Whether AnkiConnect did a request: AnkiConnect Android answers one it doesn't know with its version text. */
+internal fun ankiConnectDone(result: Any?): Boolean = !(result is String && result.startsWith("AnkiConnect"))
+
 /** A JSON list of text (deck, note type or field names), or empty when the result is something else. */
 internal fun ankiConnectNames(result: Any?): List<String> {
     val list = result as? JSONArray ?: return emptyList()
@@ -100,58 +104,114 @@ internal fun ankiConnectFallbackNoteType(names: List<String>): String? =
 
 /**
  * [word]'s note for a note type with [fieldNames]: the DualSub Replay fields one by one, or, in
- * any other note type, the word and sentence on the front (first field) and the rest on the back.
+ * any other note type, what [front] puts on the front in the first field and the rest on the back.
  */
 internal fun ankiConnectFields(
     fieldNames: List<String>,
     word: SavedWord,
+    media: CardMedia = CardMedia(),
+    front: CardFront = CardFront.WORD_AND_SENTENCE,
+    frontSound: Boolean = false,
 ): Map<String, String> {
-    val values = tripleNoteFields(word)
+    val values = tripleNoteFields(word, media)
     if (fieldNames == TRIPLE_FIELDS) return TRIPLE_FIELDS.zip(values).toMap()
-    // The older types have no Source Title field, so the title goes above the link in Source there.
+    // The earlier types have no sound fields, so the sounds follow the link in Source (they play on the back).
+    // The picture is in Source already. The v3 type has no Source Title field either, so the title goes above the link there.
+    val sounds = listOf(media.word, media.sentence).filter { it.isNotBlank() }
+    val withSounds = { v: String -> (listOf(v) + sounds).filter { it.isNotBlank() }.joinToString("<br>") }
+    if (fieldNames == TRIPLE_V4_FIELDS) {
+        return TRIPLE_V4_FIELDS
+            .zip(values.take(TRIPLE_V4_FIELDS.size).mapIndexed { i, v -> if (i == SOURCE_INDEX) withSounds(v) else v })
+            .toMap()
+    }
     if (fieldNames == TRIPLE_V3_FIELDS) {
         return TRIPLE_V3_FIELDS
             .zip(
                 values.take(TRIPLE_V3_FIELDS.size).mapIndexed { i, v ->
-                    if (i ==
-                        7
-                    ) {
-                        ankiSourceWithTitle(word, v)
-                    } else {
-                        v
-                    }
+                    if (i == SOURCE_INDEX) ankiSourceWithTitle(word, withSounds(v)) else v
                 },
             ).toMap()
     }
-    // The older six-field type has no field for the third meaning, so it stays inside Meaning there.
+    // Upstream's DualSub Replay audio type has no field for the second meaning or the extras, so they join Meaning and Source.
     if (fieldNames == ANKI_FIELDS) {
         return ANKI_FIELDS
             .zip(
-                ankiNoteFields(word).mapIndexed { i, v ->
-                    if (i ==
-                        ANKI_FIELDS.lastIndex
-                    ) {
-                        ankiSourceWithTitle(word, v)
-                    } else {
-                        v
-                    }
+                ankiNoteFields(word, media).mapIndexed { i, v ->
+                    if (i == ANKI_FIELDS.indexOf("Source")) ankiSourceWithTitle(word, v) else v
                 },
             ).toMap()
     }
     if (fieldNames.isEmpty()) return emptyMap()
-    val front = listOf(values[0], values[4]).filter { it.isNotBlank() }.joinToString("<br><br>")
-    val back =
-        listOf(values[3], values[1], values[2], values[5], values[6], values[8], values[9], values[7])
-            .filter {
-                it.isNotBlank()
-            }.joinToString("<br>")
-    if (fieldNames.size == 1) return mapOf(fieldNames[0] to listOf(front, back).filter { it.isNotBlank() }.joinToString("<hr>"))
-    return mapOf(fieldNames[0] to front, fieldNames[1] to back)
+    // Any other note type: the card front picks the sides of upstream's layout, from the fields in [ANKI_FIELDS] order.
+    val meaning = listOf(values[1], values[2]).filter { it.isNotBlank() }.joinToString("<br>")
+    val source = listOf(values[6], values[8], values[9], values[SOURCE_INDEX]).filter { it.isNotBlank() }.joinToString("<br>")
+    val basic = listOf(values[0], meaning, values[3], values[4], values[5], source, values[10], values[11])
+    val (frontParts, backParts) = basicCardSides(front, basic, frontSound)
+    val frontText = frontParts.filter { it.isNotBlank() }.joinToString("<br><br>")
+    val back = backParts.filter { it.isNotBlank() }.joinToString("<br>")
+    if (fieldNames.size == 1) return mapOf(fieldNames[0] to listOf(frontText, back).filter { it.isNotBlank() }.joinToString("<hr>"))
+    return mapOf(fieldNames[0] to frontText, fieldNames[1] to back)
+}
+
+/** Where Source sits in [TRIPLE_FIELDS] (and v3). */
+private const val SOURCE_INDEX = 7
+
+/** The fields ([values], in [ANKI_FIELDS] order) on a two-sided card's front and back for [front]. */
+private fun basicCardSides(
+    front: CardFront,
+    values: List<String>,
+    frontSound: Boolean,
+): Pair<List<String>, List<String>> {
+    val (frontParts, backParts) = basicCardSidesOf(front, values)
+    if (!frontSound || front == CardFront.LISTENING) return frontParts to backParts
+    val sentenceAudio = values[7]
+    return frontParts + sentenceAudio to backParts - sentenceAudio
+}
+
+private fun basicCardSidesOf(
+    front: CardFront,
+    values: List<String>,
+): Pair<List<String>, List<String>> {
+    val (word, meaning, reading, sentence) = values
+    val translation = values[4]
+    val source = values[5]
+    val wordAudio = values[6]
+    val sentenceAudio = values[7]
+    return when (front) {
+        CardFront.WORD_AND_SENTENCE ->
+            listOf(word, sentence, wordAudio) to listOf(reading, meaning, translation, sentenceAudio, source)
+        CardFront.WORD -> listOf(word, wordAudio) to listOf(reading, meaning, sentence, translation, sentenceAudio, source)
+        CardFront.SENTENCE -> listOf(sentence) to listOf(word, wordAudio, reading, meaning, translation, sentenceAudio, source)
+        CardFront.LISTENING ->
+            if (sentenceAudio.isBlank()) {
+                listOf(sentence) to listOf(word, wordAudio, reading, meaning, translation, source)
+            } else {
+                listOf(sentenceAudio) to listOf(sentence, word, wordAudio, reading, meaning, translation, source)
+            }
+    }
+}
+
+/**
+ * Where a card sent without its sentence clip gets it later: the Sentence audio field of the
+ * DualSub Replay audio type, else the back (or only) field, after the text it was sent with.
+ */
+internal fun ankiConnectSentenceTarget(
+    fieldNames: List<String>,
+    fields: Map<String, String>,
+): Pair<String, String>? {
+    if (fieldNames == TRIPLE_FIELDS || fieldNames == ANKI_FIELDS) return ANKI_SENTENCE_AUDIO_FIELD to ""
+    val field = fieldNames.getOrNull(1) ?: fieldNames.firstOrNull() ?: return null
+    val base = fields[field].orEmpty()
+    return field to if (base.isBlank()) "" else "$base<br>"
 }
 
 /** The TripleSub Replay note type, made where AnkiConnect can make one (desktop Anki). */
-internal fun ankiConnectNoteTypeParams(): JSONObject =
-    JSONObject()
+internal fun ankiConnectNoteTypeParams(
+    front: CardFront = CardFront.WORD_AND_SENTENCE,
+    frontSound: Boolean = false,
+): JSONObject {
+    val template = tripleCardTemplate(front, frontSound)
+    return JSONObject()
         .put("modelName", TRIPLE_NOTE_TYPE_NAME)
         .put("inOrderFields", JSONArray(TRIPLE_FIELDS))
         .put("css", TRIPLE_CSS)
@@ -160,11 +220,29 @@ internal fun ankiConnectNoteTypeParams(): JSONObject =
             "cardTemplates",
             JSONArray().put(
                 JSONObject()
-                    .put("Name", "Card 1")
-                    .put("Front", TRIPLE_QUESTION_FORMAT)
-                    .put("Back", TRIPLE_ANSWER_FORMAT),
+                    .put("Name", ANKI_CARD_TEMPLATE_NAME)
+                    .put("Front", template.question)
+                    .put("Back", template.answer),
             ),
         )
+}
+
+/** The note type's card template set to [front] (AnkiConnect's `updateModelTemplates`). */
+internal fun ankiConnectTemplateParams(
+    front: CardFront,
+    frontSound: Boolean = false,
+): JSONObject {
+    val template = tripleCardTemplate(front, frontSound)
+    val card = JSONObject().put("Front", template.question).put("Back", template.answer)
+    return JSONObject().put(
+        "model",
+        JSONObject()
+            .put("name", TRIPLE_NOTE_TYPE_NAME)
+            .put("templates", JSONObject().put(ANKI_CARD_TEMPLATE_NAME, card)),
+    )
+}
+
+private const val ANKI_CARD_TEMPLATE_NAME = "Card 1"
 
 /** Which words were sent, kept on the phone so a word is not sent twice. */
 internal interface SentWords {
@@ -193,6 +271,7 @@ internal class AnkiConnectNotes(
     private val post: suspend (String) -> String,
     private val launchIntent: () -> Intent? = { null },
     private val start: (Intent) -> Unit = {},
+    private val cardFronts: CardFrontMemory = InMemoryCardFronts(),
 ) {
     fun wasSent(id: String): Boolean = sentWords.wasSent(id)
 
@@ -209,17 +288,41 @@ internal class AnkiConnectNotes(
     suspend fun send(
         words: List<SavedWord>,
         chosenDeck: String?,
+        media: AnkiCardMedia? = null,
+        options: CardOptions = CardOptions(),
+        again: Boolean = false,
     ): AnkiSendResult {
-        val unsent = unsentAnkiWords(words, ::wasSent)
+        val unsent = unsentAnkiWords(words, again, ::wasSent)
         var skipped = words.distinctBy { it.id }.size - unsent.size
         if (unsent.isEmpty()) return AnkiSendResult(skipped = skipped)
         var sent = 0
+        var waiting = 0
         return try {
             val deck = deck(chosenDeck) ?: return AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
-            val (noteType, fields) = noteType() ?: return AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
+            val (noteType, fields) =
+                noteType(options.front, options.soundOnFront)
+                    ?: return AnkiSendResult(skipped = skipped, problem = AnkiProblem.FAILED)
             for (word in unsent) {
                 try {
-                    call("addNote", JSONObject().put("note", note(deck, noteType, ankiConnectFields(fields, word), ankiTags(word))))
+                    val files = media?.files(word, options) ?: AnkiCardFiles()
+                    val fieldMedia =
+                        CardMedia(
+                            word = files.word?.let { ankiSound(storeMedia(it)) }.orEmpty(),
+                            sentence = files.sentence?.let { ankiSound(storeMedia(it)) }.orEmpty(),
+                            picture = files.picture?.let { ankiPicture(storeMedia(it)) }.orEmpty(),
+                        )
+                    val values = ankiConnectFields(fields, word, fieldMedia, options.front, options.soundOnFront)
+                    val request = JSONObject().put("note", note(deck, noteType, values, ankiTags(word), allowDuplicate = again))
+                    val noteId = (call("addNote", request) as? Number)?.toLong()
+                    val line = audioLineOf(word)
+                    val target = ankiConnectSentenceTarget(fields, values)
+                    val waits = options.audio && fieldMedia.sentence.isEmpty()
+                    if (waits && media != null && noteId != null && line != null && target != null) {
+                        media.awaitSentence(
+                            PendingCardAudio(PENDING_ANKICONNECT, noteId, line, target.first, target.second, System.currentTimeMillis()),
+                        )
+                        waiting++
+                    }
                     sent++
                 } catch (error: AnkiConnectError) {
                     // Anki already has this note (sent from another phone, or before a reinstall).
@@ -228,17 +331,69 @@ internal class AnkiConnectNotes(
                 }
                 sentWords.markSent(word.id)
             }
-            AnkiSendResult(sent, skipped)
+            AnkiSendResult(sent, skipped, waiting = waiting)
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: IOException) {
-            AnkiSendResult(sent, skipped, AnkiProblem.NOT_RUNNING)
+            AnkiSendResult(sent, skipped, AnkiProblem.NOT_RUNNING, waiting = waiting)
         } catch (error: AnkiConnectError) {
-            AnkiSendResult(sent, skipped, AnkiProblem.FAILED, error.message)
+            AnkiSendResult(sent, skipped, AnkiProblem.FAILED, error.message, waiting)
         } catch (_: JSONException) {
-            AnkiSendResult(sent, skipped, AnkiProblem.FAILED)
+            AnkiSendResult(sent, skipped, AnkiProblem.FAILED, waiting = waiting)
         }
     }
+
+    /**
+     * Stores [file] in Anki's media and returns the name it got, or null when AnkiConnect refused
+     * it (the card then goes without it). AnkiConnect Android may add a number to the name, so the
+     * name it answers is used.
+     */
+    private suspend fun storeMedia(file: File): String? {
+        val data = withContext(Dispatchers.IO) { runCatching { file.readBytes() }.getOrNull() } ?: return null
+        val params =
+            JSONObject()
+                .put("filename", "dualsub_${file.name}")
+                .put(
+                    "data",
+                    java.util.Base64
+                        .getEncoder()
+                        .encodeToString(data),
+                )
+        return try {
+            call("storeMediaFile", params) as? String
+        } catch (_: AnkiConnectError) {
+            null
+        } catch (_: JSONException) {
+            null
+        }
+    }
+
+    /**
+     * Adds a waiting card's sentence clip to [item]'s field. False when AnkiConnect didn't answer
+     * (try again later); true also when it refused, so the card stops waiting.
+     */
+    suspend fun addSentenceAudio(
+        item: PendingCardAudio,
+        clip: File,
+    ): Boolean =
+        try {
+            val sound = ankiSound(storeMedia(clip))
+            if (sound.isEmpty()) {
+                false
+            } else {
+                val note = JSONObject().put("id", item.noteId).put("fields", JSONObject().put(item.field, item.base + sound))
+                call("updateNoteFields", JSONObject().put("note", note))
+                true
+            }
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (_: IOException) {
+            false
+        } catch (_: AnkiConnectError) {
+            true
+        } catch (_: JSONException) {
+            true
+        }
 
     private suspend fun deck(chosen: String?): String? {
         val decks = ankiConnectNames(call("deckNames"))
@@ -249,15 +404,26 @@ internal class AnkiConnectNotes(
         return ankiConnectDeck(after, chosen) ?: ankiConnectFallbackDeck(after)
     }
 
-    private suspend fun noteType(): Pair<String, List<String>>? {
+    private suspend fun noteType(
+        front: CardFront,
+        frontSound: Boolean,
+    ): Pair<String, List<String>>? {
         var names = ankiConnectNames(call("modelNames"))
         if (TRIPLE_NOTE_TYPE_NAME !in names) {
-            tryCall("createModel", ankiConnectNoteTypeParams())
+            if (tryCall("createModel", ankiConnectNoteTypeParams(front, frontSound))) {
+                cardFronts.remember(TRIPLE_NOTE_TYPE_NAME, front, frontSound)
+            }
             names = ankiConnectNames(call("modelNames"))
+        } else if (cardFrontNeedsUpdate(cardFronts.applied(TRIPLE_NOTE_TYPE_NAME), front, frontSound)) {
+            // Desktop AnkiConnect changes the template; AnkiConnect Android can't, and is asked again next time.
+            if (tryCall("updateModelTemplates", ankiConnectTemplateParams(front, frontSound))) {
+                cardFronts.remember(TRIPLE_NOTE_TYPE_NAME, front, frontSound)
+            }
         }
-        // AnkiConnect Android cannot make a note type: v3, the older six-field one, then Basic, take the card.
+        // AnkiConnect Android cannot make a note type: v4, v3, upstream's audio type, then Basic, take the card.
         val name =
-            listOf(TRIPLE_NOTE_TYPE_NAME, TRIPLE_V3_NOTE_TYPE_NAME, ANKI_NOTE_TYPE_NAME).firstOrNull { it in names }
+            listOf(TRIPLE_NOTE_TYPE_NAME, TRIPLE_V4_NOTE_TYPE_NAME, TRIPLE_V3_NOTE_TYPE_NAME, ANKI_NOTE_TYPE_NAME)
+                .firstOrNull { it in names }
                 ?: ankiConnectFallbackNoteType(names) ?: return null
         return name to ankiConnectNames(call("modelFieldNames", JSONObject().put("modelName", name)))
     }
@@ -267,32 +433,36 @@ internal class AnkiConnectNotes(
         noteType: String,
         fields: Map<String, String>,
         tags: List<String>,
+        allowDuplicate: Boolean = false,
     ): JSONObject =
         JSONObject()
             .put("deckName", deck)
             .put("modelName", noteType)
             .put("fields", JSONObject(fields))
             .put("tags", JSONArray(tags))
-            .put("options", JSONObject().put("allowDuplicate", false).put("duplicateScope", "deck"))
+            // Send again (lion737, #81) asks for a second card on purpose; otherwise Anki refuses a duplicate.
+            .put("options", JSONObject().put("allowDuplicate", allowDuplicate).put("duplicateScope", "deck"))
 
     private suspend fun call(
         action: String,
         params: JSONObject? = null,
     ): Any? = ankiConnectResult(post(ankiConnectRequest(action, params)))
 
-    /** A request AnkiConnect may not know (AnkiConnect Android has no createDeck or createModel). */
+    /**
+     * A request AnkiConnect may not know (AnkiConnect Android has no createDeck, createModel or
+     * updateModelTemplates; it answers them with its version text). True when it was done.
+     */
     private suspend fun tryCall(
         action: String,
         params: JSONObject,
-    ) {
+    ): Boolean =
         try {
-            call(action, params)
+            ankiConnectDone(call(action, params))
         } catch (_: AnkiConnectError) {
-            // Checked afterwards by listing again.
+            false
         } catch (_: JSONException) {
-            // Same.
+            false
         }
-    }
 
     companion object {
         fun create(context: Context): AnkiConnectNotes {
@@ -321,6 +491,7 @@ internal class AnkiConnectNotes(
                 post,
                 launchIntent = { app.packageManager.getLaunchIntentForPackage(ANKICONNECT_ANDROID_PACKAGE) },
                 start = app::startActivity,
+                cardFronts = PreferenceCardFronts(app, "ankiconnect_card_front"),
             )
         }
     }

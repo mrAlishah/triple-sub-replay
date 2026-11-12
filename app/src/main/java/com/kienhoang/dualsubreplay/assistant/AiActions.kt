@@ -53,7 +53,8 @@ internal val AI_APP_LANGUAGES = listOf("device", "en", "vi", "es", "pt-BR", "ja"
 internal val AI_DAILY_GOALS = listOf("off", "5", "10", "15", "20", "30", "45", "60")
 
 /** The keys of `StudyPlayMode`; a test keeps them equal. */
-internal val AI_STUDY_PLAY_MODES = listOf("normal", "pause_after_line", "read_first", "listen_first", "repeat_line", "new_word_lines")
+internal val AI_STUDY_PLAY_MODES =
+    listOf("normal", "pause_after_line", "read_first", "listen_first", "dictation", "repeat_line", "new_word_lines")
 
 /** The keys of `SkipSilence`; a test keeps them equal. */
 internal val AI_SKIP_SILENCE = listOf("off", "2x", "4x", "jump")
@@ -63,6 +64,9 @@ internal val AI_KNOWN_WORDS_AFTER = listOf("5", "10", "20")
 
 /** Where Send to sends words (`FlashcardApp`), which a test keeps equal. */
 internal val AI_SEND_TO_APPS = listOf("ankidroid", "ankiconnect")
+
+/** The Anki card fronts (`CardFront`), which a test keeps equal. */
+internal val AI_CARD_FRONTS = listOf("word_sentence", "word", "sentence", "listening")
 
 /** The plays of each line in Repeat each line (`STUDY_REPEAT_COUNTS`), which a test keeps equal. */
 internal val AI_STUDY_REPEAT_COUNTS = listOf("2", "3", "5", AI_REPEAT_FOREVER)
@@ -103,6 +107,9 @@ internal enum class AiSetting(
     ACCENT_COLOR("accent_color", AI_ACCENT_COLORS),
     PRONOUNCE_TAPPED_WORDS("pronounce_tapped_words"),
     PRONUNCIATION_VOLUME("pronunciation_volume", emptyList(), 25f..200f),
+    PHONE_VOICE("phone_voice"),
+    MEANING_IN_CONTEXT("meaning_in_context"),
+    MEANING_ORDER("meaning_order", listOf("sentence_first", "dictionary_first")),
     WORD_LEARNING_MODE("word_learning_mode"),
     COLORED_SUBTITLE_LINES("colored_subtitle_lines", listOf("original", "translation", "both")),
     TAP_WORD_FOR_DEFINITION("tap_word_for_definition"),
@@ -128,6 +135,10 @@ internal enum class AiSetting(
     MARK_NEW_WORDS("mark_new_words"),
     SEND_TO_ANKIDROID("send_to_ankidroid"),
     SEND_TO_APP("send_to_app", AI_SEND_TO_APPS),
+    CARD_AUDIO("anki_card_audio"),
+    CARD_PICTURE("anki_card_picture"),
+    CARD_FRONT("anki_card_front", AI_CARD_FRONTS),
+    CARD_FRONT_SOUND("anki_card_front_sound"),
     BLUR_BOX("blur_box"),
     LOOP_BUTTON("loop_button"),
     KANJI_DETAILS("kanji_details"),
@@ -608,11 +619,31 @@ private val SETTING_CHOICE_ALIASES by lazy {
                 "repeat_each_line" to "repeat_line",
                 "new_words" to "new_word_lines",
                 "one_new_word" to "new_word_lines",
+                "dictation_mode" to "dictation",
+                "type_what_you_hear" to "dictation",
             ),
         AiSetting.SKIP_SILENCE to mapOf("2" to "2x", "double" to "2x", "4" to "4x", "skip" to "jump"),
         AiSetting.TRANSCRIPT_FOLLOW to
             mapOf("centre" to "center", "middle" to "center", "in_the_middle" to "center", "lyrics" to "center", "down" to "page"),
+        AiSetting.MEANING_ORDER to
+            mapOf(
+                "sentence" to "sentence_first",
+                "context_first" to "sentence_first",
+                "in_context_first" to "sentence_first",
+                "dictionary" to "dictionary_first",
+                "dictionary_meaning_first" to "dictionary_first",
+            ),
         AiSetting.SEND_TO_APP to mapOf("anki" to "ankidroid", "anki_droid" to "ankidroid", "anki_connect" to "ankiconnect"),
+        AiSetting.CARD_FRONT to
+            mapOf(
+                "word_and_sentence" to "word_sentence",
+                "both" to "word_sentence",
+                "word_only" to "word",
+                "sentence_only" to "sentence",
+                "audio" to "listening",
+                "audio_sentence" to "listening",
+                "sound" to "listening",
+            ),
         AiSetting.KNOWN_WORDS to
             mapOf("automatic" to "auto", "on" to "auto", "true" to "auto", "enabled" to "auto", "false" to "off", "disabled" to "off"),
         AiSetting.PAGE_TOKEN_CAPTIONS to
@@ -756,7 +787,8 @@ internal fun aiSettingValues(setting: AiSetting): String =
         AiSetting.STUDY_PLAY_MODE ->
             choiceList(setting.choices) +
                 " (pause_after_line pauses after each line, read_first stops at each line's start, listen_first hides subtitles " +
-                "until each line ends, repeat_line plays each line study_repeat_count times, new_word_lines pauses after lines " +
+                "until each line ends, dictation hides each line until the user types what they heard and checks it in the " +
+                "subtitle panel, repeat_line plays each line study_repeat_count times, new_word_lines pauses after lines " +
                 "with exactly one new word and needs known_words on; all need the full transcript)"
         AiSetting.STUDY_REPEAT_COUNT ->
             choiceList(setting.choices) +
@@ -801,6 +833,21 @@ internal fun aiSettingValues(setting: AiSetting): String =
             choiceList(setting.choices) +
                 " (TV layout, beta: on an Android TV, TV home with YouTube search, remote buttons on the video and words " +
                 "picked from a list; on by default on a TV; phones and tablets never use it)"
+        else -> otherSettingValues(setting)
+    }
+
+/** What the settings [aiSettingValues] doesn't list take. */
+private fun otherSettingValues(setting: AiSetting): String =
+    when (setting) {
+        AiSetting.CARD_FRONT ->
+            choiceList(setting.choices) +
+                " (what an Anki card sent with Send to shows before it is turned; the rest is on the back: word_sentence the " +
+                "word with its sentence, word only the word, sentence the sentence with the word in bold, listening only the " +
+                "line's sound; it changes cards sent before too)"
+        AiSetting.CARD_FRONT_SOUND ->
+            choiceList(setting.choices) +
+                " (Sentence sound on the front: the line's sound from the video plays on the card's front too, not only on the " +
+                "back; for every Card front but listening, which has only that sound; off by default)"
         else -> choiceList(setting.choices)
     }
 

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_section_updates_title">应用更新</string>
-    <string name="settings_section_updates_summary">自动更新</string>
     <string name="updates_check">检查更新</string>
     <string name="updates_version">版本 %1$s</string>
     <string name="updates_available_short">有新版本 %1$s</string>
@@ -20,7 +19,9 @@
     <string name="updates_try_again">重试</string>
     <string name="updates_open_github">打开 GitHub</string>
     <string name="updates_unsupported">这个应用是在电脑上构建的，无法自行更新。请在 GitHub 获取最新版本。</string>
+    <string name="updates_unsupported_device">新版本是为 ARM 处理器的手机制作的，这台设备无法运行。你现在的版本可以继续使用，所有版本都在 GitHub 上。</string>
     <string name="updates_problem_offline">无法连接 GitHub。请检查网络后重试。</string>
+    <string name="updates_problem_interrupted">下载在完成前中断了。重试即可从中断处继续下载。</string>
     <string name="updates_problem_busy">GitHub 现在很忙。请过几分钟再试。</string>
     <string name="updates_problem_github">GitHub 返回了意外的结果。请稍后再试。</string>
     <string name="updates_problem_checksum">下载的文件与 GitHub 的校验和不一致，已删除。</string>

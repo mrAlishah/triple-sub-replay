@@ -76,9 +76,9 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 ## FC-07 Anki mapping and transfer
 
 - Ownership: Shared + Fork. Status: Implemented.
-- Purpose: note type `TripleSub Replay v4` (fields `Subtitle 1`, `Subtitle 2`, `Text`, `Source Title`), v3 kept as an AnkiConnect fallback; TSV columns `subtitle1`, `subtitle1Language`, `subtitle2`, `text`, old headers still imported.
+- Purpose: note type `TripleSub Replay v5` (fields `Subtitle 1`, `Subtitle 2`, `Text`, `Source Title`, `Word audio`, `Sentence audio`; card sound, picture in `Source` and card front through `tripleCardTemplate`, since 2026-11-12), v4 and v3 kept as AnkiConnect fallbacks; TSV columns `subtitle1`, `subtitle1Language`, `subtitle2`, `text`, old headers still imported.
 - Fork files: `data/AnkiTripleNote.kt`, `data/AnkiDroidProvisioning.kt`, `ui/PracticeSendToAnki.kt`.
-- Integration files (Shared): `data/AnkiDroidNotes.kt` (+135), `data/AnkiConnectNotes.kt`, `data/PracticeTransfer.kt`.
+- Integration files (Shared): `data/AnkiDroidNotes.kt` (+135), `data/AnkiConnectNotes.kt`, `data/PracticeTransfer.kt`, `data/AnkiCardLayout.kt` (upstream-owned; `MEANING_HTML` and `SOURCE_HTML` are `internal` for `tripleCardTemplate`). `AnkiDroidNotes.send` only delegates to `AnkiDroidSender` (media, card front and pending sentence audio go through it).
 - Invariants: never change an existing note type's field list; a field change needs a new note type name; export and import keep backward compatibility.
 - Tests: `app/src/androidTest/.../ui/PracticeSendToAnkiUiTest.kt`.
 
@@ -98,6 +98,13 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 - Conflict sensitivity: medium (the ViewModel seams are small and additive).
 - Update guidance: upstream setters that write a whitelisted key keep working unchanged; a new upstream setting that should be per tab is one line in `TAB_SETTING_KINDS` plus its reader in `withTabSettings`.
 - Tests: `app/src/test/.../ui/TabSettingsTest.kt`, `BrowserTabsTest.kt`.
+
+## FC-10 Backup and sharing of fork settings
+
+- Ownership: Fork, one Shared hook. Status: Implemented (2026-11-12 sync); JVM-checked by `BackupSharingTest`, device unverified.
+- Purpose: every fork preference key has a scope and type for upstream's Backup & sharing (`SETTING_SPECS`): slots, per-slot size, alignment and RTL, Translation and Chat AI choices (backup only, never shared), per-tab and phone state (never).
+- Fork files: `data/ForkSettingSpecs.kt` (`FORK_SETTING_SPECS`); the one hook is `+ FORK_SETTING_SPECS` at the end of `SETTING_SPECS` in `data/SettingsTransfer.kt`.
+- Invariants: a new fork setting is added to `FORK_SETTING_SPECS`, not to upstream's map; anything that uses an API key or a session stays out of SHARE; `BackupSharingTest` fails for a key left out.
 
 ## Hotspots by remaining fork churn against `main` (Shared files)
 

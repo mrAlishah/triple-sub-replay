@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
@@ -88,8 +89,10 @@ internal fun CompactSubtitleCard(
     focusModifier: Modifier = Modifier,
     /** The loop button at the row's end (Study tools → Loop button on the playing line), or null for none. */
     loop: LineLoopButton? = null,
+    /** Dictation: the line is hidden until revealed, and this (one dot per word) shows instead. */
+    hiddenHint: String? = null,
 ) {
-    if (!showOriginal && !showTranslation && thirdText == null) return
+    if (hiddenHint == null && !showOriginal && !showTranslation && thirdText == null) return
     val slotControls = LocalTripleSubtitleControls.current
     val slotRtl = slotControls.rtl
     val rowState = stringResource(if (active) R.string.player_active_subtitle else R.string.player_subtitle)
@@ -123,78 +126,99 @@ internal fun CompactSubtitleCard(
                 }
             }
             if (replayEnabled) Spacer(Modifier.size(9.dp))
-            Column(Modifier.weight(1f)) {
-                val isSentenceEligibleForPos = !wordLearningActiveOnly || active
-                slotControls.order.forEach { slot ->
-                    when (slot) {
-                        SubtitleSlot.ORIGINAL ->
-                            if (showOriginal) {
-                                LineDirection(slotRtl.original) {
-                                    OriginalCardText(
-                                        segment,
-                                        active,
-                                        activeWordIndex,
-                                        fontScale * slotControls.fontScales.original,
-                                        originalColor,
+            if (hiddenHint != null) {
+                HiddenLineText(hiddenHint, fontScale, Modifier.weight(1f))
+            } else {
+                Column(Modifier.weight(1f)) {
+                    val isSentenceEligibleForPos = !wordLearningActiveOnly || active
+                    slotControls.order.forEach { slot ->
+                        when (slot) {
+                            SubtitleSlot.ORIGINAL ->
+                                if (showOriginal) {
+                                    LineDirection(slotRtl.original) {
+                                        OriginalCardText(
+                                            segment,
+                                            active,
+                                            activeWordIndex,
+                                            fontScale * slotControls.fontScales.original,
+                                            originalColor,
+                                            translatedColor,
+                                            highlightColor,
+                                            wordLearningEnabled,
+                                            wordLearningTarget,
+                                            isSentenceEligibleForPos,
+                                            tapToLearnEnabled,
+                                            resolvedSourceLanguage,
+                                            targetLanguage,
+                                            isDownloadingTranslationModel,
+                                            onWordClick,
+                                        )
+                                    }
+                                }
+                            SubtitleSlot.SECOND ->
+                                if (showTranslation) {
+                                    LineDirection(slotRtl.second) {
+                                        TranslatedCardText(
+                                            segment,
+                                            active,
+                                            activeWordIndex,
+                                            fontScale * slotControls.fontScales.second,
+                                            originalColor,
+                                            translatedColor,
+                                            highlightColor,
+                                            wordLearningEnabled,
+                                            wordLearningTarget,
+                                            isSentenceEligibleForPos,
+                                            tapToLearnEnabled,
+                                            resolvedSourceLanguage,
+                                            targetLanguage,
+                                            stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
+                                            onWordClick,
+                                        )
+                                    }
+                                    if (segment.translatedText != null) {
+                                        TranslationSourceTag(segment.translationOrigin, SubtitleSlot.SECOND, targetLanguage, translatedColor)
+                                    }
+                                }
+                            SubtitleSlot.THIRD ->
+                                thirdText?.let {
+                                    val learn = wordLearningEnabled && tapToLearnEnabled
+                                    ThirdLine(
+                                        it,
+                                        fontScale * slotControls.fontScales.third,
                                         translatedColor,
-                                        highlightColor,
-                                        wordLearningEnabled,
-                                        wordLearningTarget,
-                                        isSentenceEligibleForPos,
-                                        tapToLearnEnabled,
-                                        resolvedSourceLanguage,
-                                        targetLanguage,
-                                        isDownloadingTranslationModel,
-                                        onWordClick,
-                                    )
-                                }
-                            }
-                        SubtitleSlot.SECOND ->
-                            if (showTranslation) {
-                                LineDirection(slotRtl.second) {
-                                    TranslatedCardText(
+                                        learn,
                                         segment,
-                                        active,
-                                        activeWordIndex,
-                                        fontScale * slotControls.fontScales.second,
-                                        originalColor,
-                                        translatedColor,
                                         highlightColor,
-                                        wordLearningEnabled,
-                                        wordLearningTarget,
-                                        isSentenceEligibleForPos,
-                                        tapToLearnEnabled,
-                                        resolvedSourceLanguage,
-                                        targetLanguage,
-                                        stringResource(pendingTranslationTextRes(isDownloadingTranslationModel, translationUnavailable)),
                                         onWordClick,
+                                        {},
                                     )
+                                    TranslationSourceTag(thirdOrigin, SubtitleSlot.THIRD, slotControls.language, translatedColor)
                                 }
-                                if (segment.translatedText != null) {
-                                    TranslationSourceTag(segment.translationOrigin, SubtitleSlot.SECOND, targetLanguage, translatedColor)
-                                }
-                            }
-                        SubtitleSlot.THIRD ->
-                            thirdText?.let {
-                                val learn = wordLearningEnabled && tapToLearnEnabled
-                                ThirdLine(
-                                    it,
-                                    fontScale * slotControls.fontScales.third,
-                                    translatedColor,
-                                    learn,
-                                    segment,
-                                    highlightColor,
-                                    onWordClick,
-                                    {},
-                                )
-                                TranslationSourceTag(thirdOrigin, SubtitleSlot.THIRD, slotControls.language, translatedColor)
-                            }
+                        }
                     }
                 }
             }
             loop?.let { LineLoopIconButton(it) }
         }
     }
+}
+
+/** A line Dictation hides: dots in place of its words, read out as "Hidden line". */
+@Composable
+private fun HiddenLineText(
+    dots: String,
+    fontScale: Float,
+    modifier: Modifier,
+) {
+    val description = stringResource(R.string.dictation_hidden_line)
+    Text(
+        text = dots,
+        modifier = modifier.semantics { contentDescription = description }.testTag("dictation_hidden_line"),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontSize = (16 * fontScale).sp,
+        letterSpacing = 1.sp,
+    )
 }
 
 /** The loop button of one transcript row: whether its line loops, and what a tap does. */

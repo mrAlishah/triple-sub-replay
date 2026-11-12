@@ -34,9 +34,13 @@ class PracticeSendTest {
         )
 
     @Test
-    fun theSavedWordFillsAllTenFieldsIncludingSavedMeaningsOfLanguagesNoLongerOn() {
+    fun theSavedWordFillsEveryFieldIncludingSavedMeaningsOfLanguagesNoLongerOn() {
         val byName = TRIPLE_FIELDS.zip(tripleNoteFields(saved)).toMap()
-        assertEquals(10, byName.size)
+        // Ten v4 fields plus the two sound fields of v5, which stay empty when the card has no media.
+        assertEquals(12, byName.size)
+        assertEquals(TRIPLE_FIELDS.size, byName.size)
+        assertEquals("", byName["Word audio"])
+        assertEquals("", byName["Sentence audio"])
         assertEquals("Verletzten", byName["Word"])
         assertEquals("injured", byName["Subtitle 1"])
         assertEquals("مجروح شد<br>جريح", byName["Subtitle 2"])

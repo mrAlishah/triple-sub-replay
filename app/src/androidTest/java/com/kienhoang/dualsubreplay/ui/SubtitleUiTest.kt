@@ -22,6 +22,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -87,7 +89,7 @@ class SubtitleUiTest {
         composeRule.onNodeWithTag("language_search").performTextInput("English")
         composeRule.onNodeWithTag("language_option_target_en").performClick()
         composeRule.runOnIdle { assertEquals("en", selectedTarget) }
-        composeRule.onNodeWithText("Done").performClick()
+        composeRule.onNodeWithTag("close_settings").performClick()
         composeRule.runOnIdle { assertTrue(dismissed) }
     }
 
@@ -110,7 +112,7 @@ class SubtitleUiTest {
             }
         }
 
-        composeRule.onNodeWithText("Subtitle languages").assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitles").assertIsDisplayed()
         composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
         composeRule.onNodeWithText("Text size: 100%").assertDoesNotExist()
         composeRule.onNodeWithText("Done").assertDoesNotExist()
@@ -122,7 +124,7 @@ class SubtitleUiTest {
         composeRule.onNodeWithTag("language_search").performTextInput("English")
         composeRule.onNodeWithTag("language_option_target_en").performClick()
         composeRule.runOnIdle { assertEquals("en", selectedTarget) }
-        composeRule.onNodeWithText("Subtitle languages").assertIsDisplayed()
+        composeRule.onNodeWithText("Subtitles").assertIsDisplayed()
         composeRule.onNodeWithTag("open_all_settings").performClick()
         composeRule.runOnIdle { assertTrue(openedAllSettings) }
         composeRule.onNodeWithTag(DIALOG_CLOSE_TAG).performClick()
@@ -234,6 +236,45 @@ class SubtitleUiTest {
         composeRule.onNodeWithTag("target_language_picker").assertDoesNotExist()
         composeRule.onNodeWithTag("third_language_picker").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(second) }
+    }
+
+    @Test
+    fun quickSettingsHideWhilePlayingTogglesCaptionVisibility() {
+        var translated by mutableStateOf(CaptionVisibility.PAUSED)
+        var originalChanged = false
+        composeRule.setContent {
+            DualSubTheme {
+                QuickLanguageSettingsDialog(
+                    sourcePreference = "auto",
+                    targetLanguage = "vi",
+                    availableSourceLanguages = listOf(CaptionLanguage("en", "English")),
+                    onSourceChange = {},
+                    onTargetChange = {},
+                    onOpenAllSettings = {},
+                    translatedVisibility = translated,
+                    onCaptionVisibilityChange = { isOriginal, visibility ->
+                        if (isOriginal) originalChanged = true else translated = visibility
+                    },
+                    onDismiss = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Hide while playing").assertIsDisplayed()
+        // Only Translation is offered here, so the popup can never hide both lines.
+        composeRule.onNodeWithTag("hide_original_while_playing").assertDoesNotExist()
+        composeRule.onNodeWithTag("hide_translation_while_playing").assertIsSelected()
+        Thread.sleep(700)
+        saveUiEvidence("subtitle-quick-hide-while-playing")
+        composeRule.onNodeWithTag("hide_translation_while_playing").performClick()
+        composeRule.runOnIdle { assertEquals(CaptionVisibility.ALWAYS, translated) }
+        composeRule.onNodeWithTag("hide_translation_while_playing").assertIsNotSelected()
+        composeRule.onNodeWithTag("hide_translation_while_playing").performClick()
+        composeRule.runOnIdle {
+            assertEquals(CaptionVisibility.PAUSED, translated)
+            assertFalse(originalChanged)
+        }
+        composeRule.onNodeWithTag("hide_translation_while_playing").assertIsSelected()
     }
 
     @Test

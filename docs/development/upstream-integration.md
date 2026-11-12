@@ -105,7 +105,7 @@ Do not change any of these in a sync without a migration plan and owner approval
 | Source Title | `SavedWord.sourceTitle`, `normalizeSourceTitle` | `sourceTitle` key | Absent when none |
 | JSON backup | `PracticeTransfer.kt` | `format` = `DualSubReplay`, `version` = 1, `words` array of the record body | Import requires exactly that format and version |
 | TSV | `transferColumns`, `TRANSLATIONS_COLUMN`, `MEANINGS_COLUMN` = `subtitle2`, `NOTES_COLUMN` = `text` | header names; `subtitle1`, `subtitle1Language`, `sourceTitle` among them | Read by header name; `LEGACY_COLUMNS` map old headers; limits 8 MiB, 20,000 records |
-| Anki note type | `AnkiTripleNote.kt` | `TripleSub Replay v4` = v3 fields + `Source Title`; `TripleSub Replay v3` kept untouched | AnkiConnect: `allowDuplicate=false`, `duplicateScope=deck`, a duplicate error counts as skipped |
+| Anki note type | `AnkiTripleNote.kt` | `TripleSub Replay v5` = v4 fields + `Word audio`, `Sentence audio`; v4 (= v3 + `Source Title`) and v3 kept untouched | AnkiConnect: `allowDuplicate=false`, `duplicateScope=deck`, a duplicate error counts as skipped |
 | Anki fields and tags | `ankiTriple fields` in `TRIPLE_FIELDS` order, `ankiTags` | no language names or codes in fields | A changed field list needs a new note type name |
 
 Tests covering these (JVM, pass in the Stage 11 full run): `SavedWordTest`, `SourceTitleTest`, `PracticeTransferTest`, `LegacyVocabularyUpgradeTest`, `AnkiTripleNoteTest`, `AnkiConnectNotesTest`, `AnkiDroidNotesTest`, `AnkiDroidSenderTest`.
@@ -113,3 +113,7 @@ Tests covering these (JVM, pass in the Stage 11 full run): `SavedWordTest`, `Sou
 ## Sync 2026-11-04
 
 Record, accepted and excluded items and the manual checklist: [low-divergence spec](../specs/2026-10-30-low-divergence-fork-architecture.md#upstream-sync-record-main-83d21f9-into-merge_upstream-2026-11-04). Seams to remember: upstream's saved-word `notes` / `thirdSentence` map to `personalNotes` / `sentenceTranslations` (read in `decodeWord`, never written); `deck` is the only new saved-word field; upstream's per-slot or third-line UI and the AI-thinking settings stay out (use the fork's slots and per-service effort).
+
+## Sync 2026-11-12
+
+Record, accepted, adapted and excluded items and the manual checklist: [low-divergence spec](../specs/2026-10-30-low-divergence-fork-architecture.md#upstream-sync-record-main-ed6e09c-into-mydevelop-2026-11-12). Seams to remember: upstream's card sound, picture and card front go through the fork's `AnkiDroidSender` and `tripleCardTemplate` into note type v5; upstream's `thirdLine` UI, `ThirdSubtitleLine.kt` and the AI-thinking setting stay out; new fork preference keys go in `data/ForkSettingSpecs.kt`; upstream's Meaning in this sentence asks the model of `aiConfig.translationModel()`.

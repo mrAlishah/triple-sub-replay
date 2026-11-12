@@ -36,8 +36,9 @@ class AnkiTripleNoteTest {
 
     @Test
     fun theAnswerShowsTheSourceTitleOnlyWhenThereIsOneAndTheLinkStays() {
-        assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{#Source Title}}"))
-        assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{Source}}"))
+        val answer = tripleCardTemplate(CardFront.WORD_AND_SENTENCE).answer
+        assertTrue(answer.contains("{{#Source Title}}"))
+        assertTrue(answer.contains("{{Source}}"))
     }
 
     @Test
@@ -48,10 +49,12 @@ class AnkiTripleNoteTest {
     }
 
     @Test
-    fun theTypeIsVersionedAndHasTheV3FieldsInOrderThenTheSourceTitle() {
-        assertEquals("TripleSub Replay v4", TRIPLE_NOTE_TYPE_NAME)
+    fun theTypeIsVersionedAndHasTheV4FieldsInOrderThenTheTwoSoundFields() {
+        assertEquals("TripleSub Replay v5", TRIPLE_NOTE_TYPE_NAME)
+        assertEquals("TripleSub Replay v4", TRIPLE_V4_NOTE_TYPE_NAME)
         assertEquals("TripleSub Replay v3", TRIPLE_V3_NOTE_TYPE_NAME)
-        assertEquals(TRIPLE_V3_FIELDS + "Source Title", TRIPLE_FIELDS)
+        assertEquals(TRIPLE_V3_FIELDS + "Source Title", TRIPLE_V4_FIELDS)
+        assertEquals(TRIPLE_V4_FIELDS + listOf("Word audio", "Sentence audio"), TRIPLE_FIELDS)
         assertTrue(TRIPLE_NOTE_TYPE_NAME != ANKI_NOTE_TYPE_NAME)
         assertEquals(
             listOf("Word", "Subtitle 1", "Subtitle 2", "Reading", "Sentence", "Translation", "Text", "Source", "Online Example"),
@@ -106,11 +109,14 @@ class AnkiTripleNoteTest {
     }
 
     @Test
-    fun theOlderSixFieldTypeAndItsNotesAreUnchanged() {
-        val six = ankiNoteFields(german)
-        assertEquals(listOf("Word", "Meaning", "Reading", "Sentence", "Translation", "Source"), ANKI_FIELDS)
-        assertEquals(ANKI_FIELDS.size, six.size)
-        assertTrue(six[1].startsWith("injured") && six[1].contains("مجروح شد"))
+    fun upstreamsAudioTypeAndItsNotesAreUnchanged() {
+        val eight = ankiNoteFields(german)
+        assertEquals(
+            listOf("Word", "Meaning", "Reading", "Sentence", "Translation", "Source", "Word audio", "Sentence audio"),
+            ANKI_FIELDS,
+        )
+        assertEquals(ANKI_FIELDS.size, eight.size)
+        assertTrue(eight[1].startsWith("injured") && eight[1].contains("مجروح شد"))
     }
 
     @Test
@@ -121,13 +127,40 @@ class AnkiTripleNoteTest {
         val back = ankiConnectFields(listOf("Front", "Back"), withClip).getValue("Back")
         assertTrue(back.contains("injured") && back.contains("مجروح شد") && back.contains("Plural of") && back.contains("t=971s"))
         assertEquals(ANKI_FIELDS, ankiConnectFields(ANKI_FIELDS, withClip).keys.toList())
+        // A phone that only has the v4 or v3 type still gets the sounds, after the link in Source.
+        val sound = CardMedia(word = "[sound:w.mp3]", sentence = "[sound:s.m4a]")
+        listOf(TRIPLE_V4_FIELDS, TRIPLE_V3_FIELDS).forEach { names ->
+            assertEquals(names, ankiConnectFields(names, withClip, sound).keys.toList())
+            assertTrue(ankiConnectFields(names, withClip, sound).getValue("Source").endsWith("<br>[sound:w.mp3]<br>[sound:s.m4a]"))
+        }
+        // The v4 type has no sound fields: its notes keep their ten fields and the sounds stay out.
+        assertEquals(TRIPLE_V4_FIELDS, ankiConnectFields(TRIPLE_V4_FIELDS, withClip).keys.toList())
+    }
+
+    @Test
+    fun soundsAndThePictureFillTheV5NoteAndTheSourceFieldKeepsTheLink() {
+        val media = CardMedia(word = "[sound:w.m4a]", sentence = "[sound:s.m4a]", picture = "<img src=\"p.jpg\">")
+        val byName = TRIPLE_FIELDS.zip(tripleNoteFields(german, media)).toMap()
+        assertEquals("[sound:w.m4a]", byName["Word audio"])
+        assertEquals("[sound:s.m4a]", byName["Sentence audio"])
+        assertTrue(byName.getValue("Source").startsWith("<img src=\"p.jpg\"><br><a href="))
+    }
+
+    @Test
+    fun everyCardFrontKeepsTheTripleBackFieldsAndNoUpstreamMeaningField() {
+        CardFront.entries.forEach { front ->
+            val answer = tripleCardTemplate(front).answer
+            assertFalse(front.name, answer.contains("{{Meaning}}"))
+            assertTrue(front.name, answer.contains("{{Subtitle 1}}") && answer.contains("{{#Source Title}}") && answer.contains("{{Source}}"))
+        }
     }
 
     @Test
     fun theCardShowsMeaning2DescAndTheExampleOnlyWhenFilled() {
+        val template = tripleCardTemplate(CardFront.WORD_AND_SENTENCE)
         listOf("Subtitle 2", "Text", "Online Example").forEach {
-            assertTrue(TRIPLE_ANSWER_FORMAT.contains("{{#$it}}") && TRIPLE_ANSWER_FORMAT.contains("{{/$it}}"))
+            assertTrue(template.answer.contains("{{#$it}}") && template.answer.contains("{{/$it}}"))
         }
-        assertFalse(TRIPLE_QUESTION_FORMAT.contains("Meaning") || TRIPLE_QUESTION_FORMAT.contains("Text"))
+        assertFalse(template.question.contains("Meaning") || template.question.contains("Text"))
     }
 }

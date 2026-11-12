@@ -244,6 +244,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // ARM only (owner pick 2026-11-08, docs/specs/2026-11-08-smaller-app-updates.md): ML Kit's
+            // translation library for x86 and x86_64 was 14 MB of a 40 MB APK. Intel Chromebooks and
+            // emulators run ARM apps through translation; debug builds keep every ABI for the CI emulator.
+            ndk {
+                abiFilters += setOf("arm64-v8a", "armeabi-v7a")
+            }
             if (previewApplicationIdSuffix.isNotBlank()) {
                 applicationIdSuffix = previewApplicationIdSuffix
             }
@@ -259,6 +265,8 @@ android {
         }
         create("benchmark") {
             initWith(getByName("release"))
+            // Benchmarks may run on an x86_64 emulator.
+            ndk.abiFilters.clear()
             signingConfig = signingConfigs.getByName("debug")
             applicationIdSuffix = ".benchmark"
             isDebuggable = false

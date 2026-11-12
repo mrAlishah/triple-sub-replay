@@ -149,3 +149,33 @@ Merge in progress, not committed. Resolved by meaning, hunk by hunk; merge base 
 - Search seam: a slot's language button registers `settingAnchor("<tag>_picker")` (`source_language_picker`, `target_language_picker`, `third_language_picker`); `LanguagePickerState.expandForAnchor` opens that slot's panel on a jump. The `THIRD_LINE` search entry points at the third slot (`TRIPLE_SUBTITLES_PREFERENCE`, `THIRD_LANGUAGE_PREFERENCE`). A new fork setting inside a collapsed panel needs the same treatment.
 - Validated: `:app:assembleDebug`, `:app:compileDebugAndroidTestKotlin`, `:app:compileDebugUnitTestKotlin` compile. Not run: unit, instrumented, lint, format, complexity.
 - Manual checks (owner, device): search for Original, Subtitle 1, Subtitle 2 and Third subtitle (section opens, slot panel opens, scroll, glow, saved value unchanged); search a Reading, Layout and Translation setting; Often changed; Languages and Reading open one at a time while the three slot panels stay independent; Per-tab settings card; Loop button (tap, stop, long seek, ads) and that a card tap still does not seek; media notification picture and controls.
+
+## Upstream sync record: `main` (ed6e09c) into `mydevelop` (2026-11-12)
+
+Merge base `ae9c1be`. Resolved in the working tree, uncommitted. JVM-checked only; nothing was run on a device.
+
+### Accepted from upstream
+
+- Backup and shared setups (`ui/BackupSharing.kt`, `data/SettingsTransfer.kt`), settings groups with current values and Search settings entries for every switch, Flashcards section, Hide while playing in the quick language popup, close X in the settings top bar.
+- Card sound, picture and card front, Dictation play mode, AI subtitles for videos without captions, Meaning in this sentence (AI), smaller app updates and interrupted-update retry, earlier PR preview, line sound replay.
+
+### Adapted to the fork
+
+- Card media reaches the fork's note type as `TripleSub Replay v5` through `AnkiDroidSender` / `tripleCardTemplate` ([spec](2026-11-12-triplesub-anki-v5-card-media.md), owner pick).
+- Settings page: upstream's groups and `PageSectionSettings` kept; Languages uses the fork's slot accordions; the Translation hand-off to AI connections (`onOpenAiConnection`, `connectionTarget`) and the Subtitle 1 position rule stay the fork's. Quick popup keeps the slot rows plus Hide while playing.
+- `tracksVisible()` counts the third line too. Word card keeps the extra meaning languages beside the in-sentence meaning; Search lists the translation-source and AI response-source switches.
+- Meaning in this sentence asks `aiConfig.translationModel()` (the Translation AI Service and its effort), not upstream's removed `aiTranslationModel`.
+- Fork keys are sorted for backup and sharing in `data/ForkSettingSpecs.kt` (never SHARE for AI or phone state).
+
+### Excluded
+
+- Upstream's third subtitle line (`ThirdSubtitleLine.kt`, its switch, `setThirdLine`, `thirdLine` in the quick popup): the fork's Subtitle 2 slot replaces it. The only upstream change to that file was a comment.
+- AI thinking for translation (stays out, per-service Thinking covers it); upstream's `sendToGoogleTranslate` hand-off (the fork's Google Translate link wins); upstream README wording that does not apply to the fork's README.
+
+### Manual verification (owner)
+
+- AnkiDroid and AnkiConnect: first send creates v5, all four card fronts, sound on the card, a picture, a card sent before its clip, v4 and v3 notes untouched, a Basic card.
+- Settings page groups, Languages accordions, Search for the new entries; quick popup (slots, Hide while playing); Backup and Share setup round trip with slots, AI choices (never in a shared link) and per-tab state.
+- Meaning in this sentence with each Translation AI Service, including ChatGPT sign-in and no key; AI subtitles for a video with no captions; Dictation.
+- Not run: lint, `formatCheck`, `complexityCheck`, the full unit suite, `assembleDebug`, androidTest on a device.
+

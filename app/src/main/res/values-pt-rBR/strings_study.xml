@@ -2,7 +2,7 @@
 <resources>
     <!-- Study tools (2026-10-20): play modes, skip silence, known words, AnkiDroid, blur box, page token -->
     <string name="settings_section_study_title">Ferramentas de estudo</string>
-    <string name="settings_section_study_summary">Modos de reprodução, pular silêncios, palavras conhecidas, Enviar para, caixa desfocada</string>
+    <string name="settings_section_flashcards_title">Flashcards e Anki</string>
     <string name="study_play_mode_title">Modo de reprodução</string>
     <string name="study_play_mode_normal">Normal</string>
     <string name="study_play_mode_normal_description">O vídeo toca como sempre.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">Para no início de cada linha para você lê-la antes de ouvi-la.</string>
     <string name="study_play_mode_listen_first">Ouvir primeiro</string>
     <string name="study_play_mode_listen_first_description">Esconde as legendas enquanto o vídeo toca e depois pausa após cada linha e as mostra.</string>
+    <string name="study_play_mode_dictation">Ditado</string>
+    <string name="study_play_mode_dictation_description">Esconde cada linha até você digitar o que ouviu. O vídeo pausa após cada linha; toque em Verificar para ver o que você perdeu. Funciona melhor com legendas feitas por pessoas: as automáticas podem ter erros.</string>
     <string name="study_play_mode_repeat">Repetir cada linha</string>
     <string name="study_play_mode_repeat_description">Toca cada linha algumas vezes antes de seguir. Sempre repete a linha até você tocar em outra linha ou avançar/voltar o vídeo.</string>
     <string name="study_repeat_forever">Sempre</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">Limpar</string>
     <string name="study_anki_title">Enviar para apps de flashcards</string>
     <string name="study_anki_description">Mostra um botão Enviar para no cartão da palavra e em Prática → Exportar. Ele envia para o AnkiDroid, a menos que você escolha outro app com ▾ no botão ou aqui embaixo; então o botão mostra esse app.</string>
+    <string name="study_card_audio_title">Adicionar áudio aos cartões</string>
+    <string name="study_card_audio_description">Os cartões recebem a palavra na voz usada pelo cartão de palavra e o som real da frase do vídeo. A frase é gravada enquanto toca, então um cartão enviado antes de a frase terminar recebe o som quando ela termina.</string>
+    <string name="study_card_picture_title">Adicionar uma imagem aos cartões</string>
+    <string name="study_card_picture_description">Os cartões recebem uma imagem do vídeo, tirada enquanto a frase da palavra está na tela. Se não houver nenhuma, é usada a miniatura do vídeo.</string>
+    <string name="study_card_front_title">Frente do cartão</string>
+    <string name="study_card_front_sound_title">Som da frase na frente</string>
+    <string name="study_card_front_sound_description">A frente também toca o som da frase do vídeo, não só o verso.</string>
+    <string name="study_card_front_word_sentence">Palavra e frase</string>
+    <string name="study_card_front_word">Palavra</string>
+    <string name="study_card_front_sentence">Frase</string>
+    <string name="study_card_front_listening">Escuta</string>
+    <string name="study_card_front_word_sentence_description">A frente mostra a palavra com a frase.</string>
+    <string name="study_card_front_word_description">A frente mostra só a palavra; a frase fica no verso.</string>
+    <string name="study_card_front_sentence_description">A frente mostra a frase com a palavra em negrito; a palavra e o significado ficam no verso.</string>
+    <string name="study_card_front_listening_description">A frente só toca o som da frase; a frase e a palavra ficam no verso.</string>
+    <string name="study_card_front_note">Mudar isso também muda os cartões que você já enviou.</string>
+    <string name="study_card_sound_waits">O som da frase é adicionado depois que a frase toca até o fim.</string>
+    <string name="study_card_sound_replaying">Tocando a frase uma vez para colocar o som no cartão.</string>
     <string name="study_blur_box_title">Caixa desfocada</string>
     <string name="study_blur_box_description">Coloca uma caixa desfocada sobre o vídeo para esconder legendas embutidas na imagem. Arraste para mover e arraste o canto para mudar o tamanho.</string>
     <string name="study_page_token_title">Carregar legendas com um token da página (beta)</string>
@@ -48,6 +68,9 @@
     <string name="study_send_to_anki">Enviar para o %1$s</string>
     <string name="study_sending_to_anki">Enviando…</string>
     <string name="study_sent_to_anki">Enviado para o %1$s</string>
+    <string name="study_send_again_title">Enviar este cartão de novo?</string>
+    <string name="study_send_again_text">O %1$s já tem um cartão desta palavra. Outro é adicionado, e você pode apagar o antigo lá.</string>
+    <string name="study_send_again">Enviar de novo</string>
     <string name="study_anki_not_installed">O AnkiDroid não está instalado neste celular.</string>
     <string name="study_anki_permission_denied">A permissão do AnkiDroid não foi dada, então nenhum cartão foi adicionado.</string>
     <string name="study_anki_failed">O AnkiDroid não aceitou o cartão. Abra o AnkiDroid, deixe-o em segundo plano, volte e tente de novo.</string>
@@ -78,6 +101,11 @@
         <item quantity="many">%1$d palavras enviadas para o %2$s.</item>
         <item quantity="other">%1$d palavras enviadas para o %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="one">%1$d cartão recebe o som da frase depois que ela toca.</item>
+        <item quantity="many">%1$d cartões recebem o som das frases depois que elas tocam.</item>
+        <item quantity="other">%1$d cartões recebem o som das frases depois que elas tocam.</item>
+    </plurals>
     <string name="study_page_token_auto">Automático</string>
     <string name="study_page_token_on">Ligado</string>
     <string name="study_page_token_off">Desligado</string>
@@ -88,7 +116,7 @@
     <string name="study_known_words_after_title">Contar como conhecida depois de vê-la</string>
     <string name="study_word_seen">Vista %1$d de %2$d vezes</string>
     <string name="study_known_words_offer_title">Ligar Palavras conhecidas?</string>
-    <string name="study_known_words_offer_message">O painel de legendas passa a mostrar quanto de cada vídeo você já conhece, e as palavras que você vê com frequência contam como conhecidas sozinhas. Você pode mudar isso depois em Configurações → Ferramentas de estudo.</string>
+    <string name="study_known_words_offer_message">O painel de legendas passa a mostrar quanto de cada vídeo você já conhece, e as palavras que você vê com frequência contam como conhecidas sozinhas. Você pode mudar isso depois em Configurações → Aprendizado de palavras.</string>
     <string name="study_known_words_offer_confirm">Ligar</string>
     <string name="study_known_words_offer_dismiss">Agora não</string>
     <string name="study_send_to_app_title">Enviar palavras para</string>
@@ -111,4 +139,12 @@
     <string name="study_ankiconnect_open">Abrir AnkiConnect Android</string>
     <string name="study_loop_button_title">Botão de repetição na linha atual</string>
     <string name="study_loop_button_description">Mostra um pequeno ícone de repetição na linha que está tocando na transcrição. Toque nele para repetir essa linha até tocar de novo. Tocar em outra linha ou mover o vídeo repete essa linha.</string>
+    <string name="dictation_type_what_you_heard">Digite o que você ouviu</string>
+    <string name="dictation_replay">Ouvir de novo</string>
+    <string name="dictation_show">Mostrar</string>
+    <string name="dictation_check">Verificar</string>
+    <string name="dictation_next">Próxima</string>
+    <string name="dictation_perfect">Perfeito!</string>
+    <string name="dictation_score">%1$d de %2$d certas</string>
+    <string name="dictation_hidden_line">Linha escondida</string>
 </resources>

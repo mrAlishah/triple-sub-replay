@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_section_study_title">Öyrənmə alətləri</string>
-    <string name="settings_section_study_summary">Oynatma rejimləri, sükutu ötürmə, bildiyim sözlər, Göndər, bulanıq qutu</string>
+    <string name="settings_section_flashcards_title">Fləşkartlar və Anki</string>
     <string name="study_play_mode_title">Oynatma rejimi</string>
     <string name="study_play_mode_normal">Adi</string>
     <string name="study_play_mode_normal_description">Video həmişəki kimi oynayır.</string>
@@ -11,6 +11,8 @@
     <string name="study_play_mode_read_first_description">Hər sətrin əvvəlində dayanır ki, onu eşitməzdən əvvəl oxuya biləsiniz.</string>
     <string name="study_play_mode_listen_first">Əvvəl dinlə</string>
     <string name="study_play_mode_listen_first_description">Video oynayarkən altyazıları gizlədir, sonra hər sətirdən sonra dayanıb onları göstərir.</string>
+    <string name="study_play_mode_dictation">Diktə</string>
+    <string name="study_play_mode_dictation_description">Eşitdiyinizi yazana qədər hər sətri gizlədir. Hər sətirdən sonra video dayanır; nəyi qaçırdığınızı görmək üçün Yoxla düyməsinə toxunun. İnsanların hazırladığı altyazılarla daha yaxşı işləyir: avtomatik altyazılarda səhvlər ola bilər.</string>
     <string name="study_play_mode_repeat">Hər sətri təkrarla</string>
     <string name="study_play_mode_repeat_description">Davam etməzdən əvvəl hər sətri bir neçə dəfə oynadır. Sonsuz seçimi başqa sətrə toxunana və ya videonu irəli-geri çəkənə qədər sətri təkrarlayır.</string>
     <string name="study_repeat_forever">Sonsuz</string>
@@ -34,6 +36,24 @@
     <string name="study_known_words_clear_confirm">Təmizlə</string>
     <string name="study_anki_title">Fləşkart tətbiqlərinə göndər</string>
     <string name="study_anki_description">Söz kartında və Məşq → İxrac bölməsində Göndər düyməsini göstərir. Düymədəki və ya aşağıdakı ▾ ilə başqa tətbiq seçməsəniz, AnkiDroid-ə göndərir; sonra düymə həmin tətbiqi göstərir.</string>
+    <string name="study_card_audio_title">Kartlara səs əlavə et</string>
+    <string name="study_card_audio_description">Kartlara söz kartının istifadə etdiyi səslə oxunan söz və videodakı cümlənin əsl səsi əlavə olunur. Cümlə oynayarkən yazılır, buna görə cümlə bitməmiş göndərilən kart səsi cümlə bitəndə alır.</string>
+    <string name="study_card_picture_title">Kartlara şəkil əlavə et</string>
+    <string name="study_card_picture_description">Kartlara videodan şəkil əlavə olunur, sözün cümləsi ekranda olarkən çəkilir. Şəkil yoxdursa, videonun miniatürü istifadə olunur.</string>
+    <string name="study_card_front_title">Kartın üzü</string>
+    <string name="study_card_front_sound_title">Cümlənin səsi kartın üzündə</string>
+    <string name="study_card_front_sound_description">Videodan cümlənin səsi təkcə arxada deyil, kartın üzündə də səslənir.</string>
+    <string name="study_card_front_word_sentence">Söz və cümlə</string>
+    <string name="study_card_front_word">Söz</string>
+    <string name="study_card_front_sentence">Cümlə</string>
+    <string name="study_card_front_listening">Dinləmə</string>
+    <string name="study_card_front_word_sentence_description">Üzdə söz cümləsi ilə birlikdə görünür.</string>
+    <string name="study_card_front_word_description">Üzdə yalnız söz görünür; cümlə arxadadır.</string>
+    <string name="study_card_front_sentence_description">Üzdə söz qalın yazılmış cümlə görünür; söz və mənası arxadadır.</string>
+    <string name="study_card_front_listening_description">Üz yalnız cümlənin səsini oxudur; cümlə və söz arxadadır.</string>
+    <string name="study_card_front_note">Bunu dəyişmək əvvəl göndərdiyiniz kartları da dəyişir.</string>
+    <string name="study_card_sound_waits">Cümlənin səsi cümlə sona qədər oynadıqdan sonra əlavə olunur.</string>
+    <string name="study_card_sound_replaying">Səsi karta əlavə olunsun deyə cümlə bir dəfə oynadılır.</string>
     <string name="study_send_to_app_title">Sözləri göndər</string>
     <string name="study_ankidroid_description">Kartlar DualSub Replay dəstəsinə gedir. AnkiDroid-i arxa planda açıq saxlayın: bir çox telefonda o, kartları yalnız işləyərkən qəbul edir.</string>
     <string name="study_ankiconnect_description">Bu telefondakı AnkiConnect-ə (127.0.0.1:8765) göndərir, ondan AnkiConnect Android tətbiqi, Yomitan və asbplayer istifadə edir. Serverinin işləməsi üçün AnkiConnect Android-i bir dəfə açın. AnkiConnect DualSub Replay qeyd növü yarada bilmədikdə kartlar Anki-nin Basic qeyd növündən istifadə edir.</string>
@@ -56,6 +76,9 @@
     <string name="study_send_to_choose">Hara göndəriləcəyini seçin</string>
     <string name="study_sending_to_anki">Göndərilir…</string>
     <string name="study_sent_to_anki">Göndərildi: %1$s</string>
+    <string name="study_send_again_title">Bu kart yenidən göndərilsin?</string>
+    <string name="study_send_again_text">%1$s artıq bu söz üçün kartı var. Daha biri əlavə olunur, köhnəsini orada silə bilərsiniz.</string>
+    <string name="study_send_again">Yenidən göndər</string>
     <string name="study_anki_not_installed">Bu telefonda AnkiDroid quraşdırılmayıb.</string>
     <string name="study_anki_permission_denied">AnkiDroid-ə icazə verilmədi, ona görə kart əlavə olunmadı.</string>
     <string name="study_anki_failed">AnkiDroid kartı qəbul etmədi. AnkiDroid-i açın, arxa planda işləməyə buraxın, sonra qayıdıb yenidən cəhd edin.</string>
@@ -85,6 +108,10 @@
         <item quantity="one">%1$d söz göndərildi: %2$s.</item>
         <item quantity="other">%1$d söz göndərildi: %2$s.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="one">%1$d kart cümləsinin səsini cümlə oynadıqdan sonra alır.</item>
+        <item quantity="other">%1$d kart cümlələrinin səsini cümlələr oynadıqdan sonra alır.</item>
+    </plurals>
     <string name="study_page_token_auto">Avtomatik</string>
     <string name="study_page_token_on">Yandırılıb</string>
     <string name="study_page_token_off">Söndürülüb</string>
@@ -95,7 +122,7 @@
     <string name="study_known_words_after_title">Sözü bu qədər gördükdən sonra bilinən say</string>
     <string name="study_word_seen">%2$d dəfədən %1$d dəfə görülüb</string>
     <string name="study_known_words_offer_title">Bildiyim sözlər yandırılsın?</string>
-    <string name="study_known_words_offer_message">Bundan sonra altyazı paneli hər videonun nə qədərini artıq bildiyinizi göstərir, tez-tez gördüyünüz sözlər isə özü bilinən sayılır. Bunu sonra Ayarlar → Öyrənmə alətləri bölməsində dəyişə bilərsiniz.</string>
+    <string name="study_known_words_offer_message">Bundan sonra altyazı paneli hər videonun nə qədərini artıq bildiyinizi göstərir, tez-tez gördüyünüz sözlər isə özü bilinən sayılır. Bunu sonra Ayarlar → Söz öyrənmə bölməsində dəyişə bilərsiniz.</string>
     <string name="study_known_words_offer_confirm">Yandır</string>
     <string name="study_known_words_offer_dismiss">İndi yox</string>
     <!-- Machine-translated, not native-reviewed (TripleSub additions). -->
@@ -106,4 +133,12 @@
     <string name="study_anki_wrong_deck">Kart AnkiDroid-ə əlavə olundu, lakin AnkiDroid onu TripleSub Replay kolodasına köçürmədi. Onu qeyd növünün öz kolodasında axtarın.</string>
     <string name="study_loop_button_title">Oynayan sətirdə dövr düyməsi</string>
     <string name="study_loop_button_description">Transkriptdə oynayan sətirdə kiçik dövr işarəsi göstərir. Həmin sətri təkrarlamaq üçün ona toxunun; yenidən toxunana qədər təkrarlanır. Başqa sətrə toxunsanız və ya videonu irəli-geri çəksəniz, həmin sətir təkrarlanır.</string>
+    <string name="dictation_type_what_you_heard">Eşitdiyinizi yazın</string>
+    <string name="dictation_replay">Yenidən dinlə</string>
+    <string name="dictation_show">Göstər</string>
+    <string name="dictation_check">Yoxla</string>
+    <string name="dictation_next">Növbəti</string>
+    <string name="dictation_perfect">Mükəmməl!</string>
+    <string name="dictation_score">Düz: %1$d / %2$d</string>
+    <string name="dictation_hidden_line">Gizli sətir</string>
 </resources>

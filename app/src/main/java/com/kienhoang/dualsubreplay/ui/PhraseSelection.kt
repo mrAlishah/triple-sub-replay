@@ -100,6 +100,7 @@ import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.WordTap
 import com.kienhoang.dualsubreplay.data.learningSourceLanguage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -143,6 +144,26 @@ internal fun nearestWord(
             else -> 0
         }
     } ?: -1
+
+/**
+ * What Copy puts on the clipboard for [words] of [tokens]: the text from the first to the last
+ * word, plus the line's opening or closing punctuation ("¿", "?", "." and the like) when the
+ * selection reaches that end of the line (lion737, discussion #81, 2026-11-10).
+ */
+internal fun copiedPhrase(
+    text: String,
+    tokens: List<AnalyzedToken>,
+    words: IntRange,
+): String {
+    var start = tokens[words.first].startIndex
+    var end = tokens[words.last].endIndex
+    if (words.first == 0) while (start > 0 && text[start - 1] in OPENING_PUNCTUATION) start--
+    if (words.last == tokens.lastIndex) while (end < text.length && text[end] in CLOSING_PUNCTUATION) end++
+    return text.substring(start, end)
+}
+
+private const val OPENING_PUNCTUATION = "¿¡\"“„«‹'‘(（[「『"
+private const val CLOSING_PUNCTUATION = ".?!…,;:\"”»›'’)）]」』。？！、"
 
 /** The words tap-to-learn recognizes in a subtitle line, in text order. */
 internal fun subtitleWordTokens(
@@ -241,6 +262,10 @@ internal class PhraseActions(
     val pronounceIn: (text: String, language: String) -> Unit = { _, _ -> },
     val selectIn: (text: String, language: String, singleWord: Boolean) -> Unit = { _, _, _ -> },
     val translateFrom: (suspend (text: String, language: String) -> String)? = null,
+    /** The selection's meaning in its sentence from the AI, while Meaning in this sentence (AI) is on; null while it is off. */
+    val meaningInSentence: (suspend (WordTap) -> ContextMeaning)? = null,
+    /** Show first: true puts the meaning in the sentence above the dictionary meaning. */
+    val meaningInSentenceFirst: Boolean = true,
     /** Sends the selected text to the Google Translate app. */
     val openGoogleTranslate: (text: String) -> Unit = {},
 ) {
@@ -351,6 +376,7 @@ internal fun BindPhraseActions(
     pronouncer: WordPronouncer,
     translate: suspend (text: String, translated: Boolean) -> String,
     translateFrom: (suspend (text: String, language: String) -> String)? = null,
+    meaningInSentence: suspend (WordTap) -> ContextMeaning = { ContextMeaning.None },
 ) {
     val controller = LocalPhraseSelection.current ?: return
     val source = learningSourceLanguage(state.resolvedSourceLanguage, state.sourcePreference)
@@ -362,6 +388,8 @@ internal fun BindPhraseActions(
     val autoPronounce = state.autoPronounce
     val context = LocalContext.current
     SideEffect {
+        // Read on each change of the screen, so turning the setting on or off counts from the next selection.
+        val askAi = readMeaningInContext(context)
         controller.actions =
             PhraseActions(
                 pause = webController::pause,
@@ -384,6 +412,8 @@ internal fun BindPhraseActions(
                 stopSpeech = pronouncer::stop,
                 speechMessage = { pronouncer.message },
                 translate = translate,
+                meaningInSentence = meaningInSentence.takeIf { askAi },
+                meaningInSentenceFirst = readMeaningInContextFirst(context),
             )
     }
 }
@@ -494,6 +524,7 @@ internal fun SelectableSubtitleText(
                 PhraseActionBar(
                     selection = textLayout.getPathForRange(start, end).getBounds(),
                     phrase = text.substring(start, end),
+                    copyText = copiedPhrase(text, tokens, words),
                     singleWord = words.first == words.last,
                     speechMessage = controller.actions.speechMessage(),
                     dictionaryNote =
@@ -503,6 +534,10 @@ internal fun SelectableSubtitleText(
                             .translatorFor(translated, lineLanguage)
                             ?.let { translate -> { translate(text.substring(start, end)) } },
                     showTranslate = showTranslate,
+                    meaningInSentence =
+                        controller.actions.meaningInSentence
+                            ?.let { ask -> { ask(phraseTap(text, tokens, words, segment, translated, lineLanguage)) } },
+                    meaningInSentenceFirst = controller.actions.meaningInSentenceFirst,
                     onTranslate = {
                         val tap = phraseTap(text, tokens, words, segment, translated, lineLanguage)
                         controller.clear(owner)
@@ -778,11 +813,14 @@ private fun TextStyle.centeredIf(centered: Boolean): TextStyle = if (centered) c
 private fun PhraseActionBar(
     selection: Rect,
     phrase: String,
+    copyText: String,
     singleWord: Boolean,
     speechMessage: String?,
     @StringRes dictionaryNote: Int?,
     quickTranslate: (suspend () -> String)?,
     showTranslate: Boolean,
+    meaningInSentence: (suspend () -> ContextMeaning)?,
+    meaningInSentenceFirst: Boolean,
     onTranslate: () -> Unit,
     onPronounce: () -> Unit,
     onOpenGoogleTranslate: () -> Unit,
@@ -822,7 +860,7 @@ private fun PhraseActionBar(
                             label = if (copied) R.string.practice_copied else R.string.practice_copy,
                             tag = "copy",
                         ) {
-                            scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, phrase))) }
+                            scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, copyText))) }
                             copied = true
                         },
                         PhraseAction(Icons.Default.Translate, R.string.practice_translate, "translate", onTranslate)
@@ -855,7 +893,7 @@ private fun PhraseActionBar(
                         )
                     }
                 }
-                quickTranslate?.let { QuickTranslation(phrase, it) }
+                quickTranslate?.let { QuickTranslation(phrase, it, meaningInSentence, meaningInSentenceFirst) }
                 val note =
                     speechMessage
                         ?: dictionaryNote?.let { stringResource(it) }
@@ -909,13 +947,21 @@ private fun PhraseActionMenu(actions: List<PhraseAction>) {
     }
 }
 
-/** The selection's meaning, shown right in the bar so no extra tap is needed to understand it. */
+/**
+ * The selection's meaning, shown right in the bar so no extra tap is needed to understand it. While
+ * Meaning in this sentence (AI) is on, the AI's meaning in the sentence joins it, in the order
+ * Show first picks, as on the word card (lion737, discussion #81, 2026-11-11).
+ */
 @Composable
 private fun QuickTranslation(
     word: String,
     translate: suspend () -> String,
+    meaningInSentence: (suspend () -> ContextMeaning)?,
+    contextFirst: Boolean,
 ) {
     var meaning by remember(word) { mutableStateOf<String?>(null) }
+    var inContext by remember(word) { mutableStateOf<String?>(null) }
+    var asking by remember(word) { mutableStateOf(meaningInSentence != null) }
     val unavailable = stringResource(R.string.practice_translation_unavailable)
     LaunchedEffect(word) {
         meaning =
@@ -927,13 +973,55 @@ private fun QuickTranslation(
                 unavailable
             }
     }
+    if (meaningInSentence != null) {
+        LaunchedEffect(word) {
+            // Tapping more words grows the selection a word at a time: ask only where it stops.
+            delay(QUICK_CONTEXT_MEANING_DELAY_MS)
+            inContext =
+                try {
+                    (meaningInSentence() as? ContextMeaning.Found)?.text
+                } catch (cancel: CancellationException) {
+                    throw cancel
+                } catch (_: Exception) {
+                    null
+                }
+            asking = false
+        }
+    }
+    val dictionary = meaning
+    val differs = dictionary != null && dictionary != unavailable && differsFromDictionary(inContext, dictionary)
+    val big = if (differs && contextFirst) inContext else dictionary
     Text(
-        meaning ?: stringResource(R.string.practice_translating),
+        big ?: stringResource(R.string.practice_translating),
         style = MaterialTheme.typography.titleMedium,
-        color = if (meaning == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+        color = if (big == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 6.dp).testTag("phrase_quick_translation"),
     )
+    val small =
+        when {
+            !differs -> null
+            contextFirst -> stringResource(R.string.practice_meaning_dictionary, dictionary.orEmpty())
+            else -> stringResource(R.string.practice_meaning_in_sentence_under, inContext.orEmpty())
+        }
+    small?.let {
+        Text(
+            it,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 6.dp).testTag("phrase_meaning_in_sentence"),
+        )
+    }
+    if (asking && dictionary != null) {
+        Text(
+            stringResource(R.string.practice_meaning_in_sentence_loading),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 6.dp).testTag("phrase_meaning_in_sentence_loading"),
+        )
+    }
 }
+
+/** How long a selection must stay put before the bar asks the AI for its meaning in the sentence. */
+private const val QUICK_CONTEXT_MEANING_DELAY_MS = 500L
 
 private class PhraseBarPositionProvider(
     private val selection: Rect,

@@ -2,7 +2,12 @@ package com.kienhoang.dualsubreplay.data
 
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.CancellationException
+import java.io.File
 
 /** The deck new words go to in AnkiDroid; the older "DualSub Replay" deck and its notes are never touched. */
 internal const val TRIPLE_DECK_NAME = "TripleSub Replay"
@@ -30,8 +35,14 @@ internal interface AnkiDroidProvider {
         deckId: Long,
     ): Long?
 
-    /** Gives a note type made just now the TripleSub card layout. Refused layouts leave AnkiDroid's own. */
-    fun styleNoteType(id: Long)
+    /** Gives a note type the TripleSub card layout of [template]. Refused layouts leave AnkiDroid's own. */
+    fun styleNoteType(
+        id: Long,
+        template: AnkiCardTemplate,
+    )
+
+    /** Copies [file] into AnkiDroid's media and returns the name it got, or null when it refused (the card then goes without it). */
+    fun addMedia(file: File): String? = null
 
     /** The new note's id, or null when AnkiDroid did not make one. */
     fun insertNote(
@@ -50,37 +61,51 @@ internal interface AnkiDroidProvider {
  * Sends words to AnkiDroid in separately checked steps: deck, note type, then each note. The deck and the
  * note type are confirmed by asking AnkiDroid again; a note is confirmed by the id AnkiDroid gives back for
  * it, and only then is the word marked sent. A failure names its step. Existing decks and note types are
- * reused, never renamed or changed; a retry after a partly done send finds what exists and carries on
- * without making a second one. A card AnkiDroid will not move into the deck is still sent, and says so.
+ * reused and never renamed; a note type's card layout changes only when the learner picks another card
+ * front. A retry after a partly done send finds what exists and carries on without making a second one. A card AnkiDroid will not move into the deck is still sent, and says so.
  */
 internal class AnkiDroidSender(
     private val provider: AnkiDroidProvider,
     private val wasSent: (String) -> Boolean,
     private val markSent: (String) -> Unit,
     private val deckName: String = TRIPLE_DECK_NAME,
+    private val cardFronts: CardFrontMemory = InMemoryCardFronts(),
 ) {
     private class Stop(
         val problem: AnkiProblem,
         val detail: String? = null,
     ) : Exception()
 
-    fun send(words: List<SavedWord>): AnkiSendResult {
-        val unsent = unsentAnkiWords(words, wasSent)
+    suspend fun send(
+        words: List<SavedWord>,
+        media: AnkiCardMedia? = null,
+        options: CardOptions = CardOptions(),
+        again: Boolean = false,
+    ): AnkiSendResult {
+        val unsent = unsentAnkiWords(words, again, wasSent)
         val skipped = words.distinctBy { it.id }.size - unsent.size
         if (unsent.isEmpty()) return AnkiSendResult(skipped = skipped)
         var sent = 0
         var misplaced = 0
+        var waiting = 0
         return try {
             val deck = resolveDeck()
-            val noteType = resolveNoteType(deck)
+            val noteType = resolveNoteType(deck, options)
             for (word in unsent) {
-                if (!addNote(noteType, deck, word)) misplaced++
+                val added = addNote(noteType, deck, word, media, options)
+                if (!added.placed) misplaced++
+                if (added.waiting) waiting++
                 markSent(word.id)
                 sent++
             }
-            AnkiSendResult(sent, skipped, AnkiProblem.WRONG_DECK.takeIf { misplaced > 0 })
+            AnkiSendResult(sent, skipped, AnkiProblem.WRONG_DECK.takeIf { misplaced > 0 }, waiting = waiting)
         } catch (stop: Stop) {
-            AnkiSendResult(sent, skipped, stop.problem, stop.detail)
+            AnkiSendResult(sent, skipped, stop.problem, stop.detail, waiting)
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (error: Exception) {
+            // The card's media failed (not AnkiDroid's note steps, which name their own); kind only, like [step].
+            AnkiSendResult(sent, skipped, AnkiProblem.FAILED, error.javaClass.simpleName, waiting)
         }
     }
 
@@ -104,9 +129,17 @@ internal class AnkiDroidSender(
                 ?: provider.createDeck(deckName)?.takeIf { id -> provider.decks().any { it.first == id } }
         }
 
-    private fun resolveNoteType(deck: Long): Long {
+    private fun resolveNoteType(
+        deck: Long,
+        options: CardOptions,
+    ): Long {
         val same = step(AnkiProblem.NOTE_TYPE_FAILED) { provider.noteTypes().filter { it.name == TRIPLE_NOTE_TYPE_NAME } }
-        same.firstOrNull { it.fields == TRIPLE_FIELDS }?.let { return it.id }
+        same.firstOrNull { it.fields == TRIPLE_FIELDS }?.let { found ->
+            // A layout the learner changed in Anki is replaced only when they pick another front.
+            val applied = cardFronts.applied(found.id.toString())
+            if (cardFrontNeedsUpdate(applied, options.front, options.soundOnFront)) styleNoteType(found.id, options)
+            return found.id
+        }
         if (same.isNotEmpty()) throw Stop(AnkiProblem.NOTE_TYPE_CONFLICT)
         val id =
             step(AnkiProblem.NOTE_TYPE_FAILED) {
@@ -114,25 +147,57 @@ internal class AnkiDroidSender(
                     .createNoteType(TRIPLE_NOTE_TYPE_NAME, TRIPLE_FIELDS, deck)
                     ?.takeIf { made -> provider.noteTypes().any { it.id == made && it.fields == TRIPLE_FIELDS } }
             }
-        runCatching { provider.styleNoteType(id) }
+        styleNoteType(id, options)
         return id
     }
 
-    /** Adds the note; false when its card could not be moved into [deck] and stays in the note type's own deck. */
-    private fun addNote(
+    private fun styleNoteType(
+        id: Long,
+        options: CardOptions,
+    ) {
+        val applied = runCatching { provider.styleNoteType(id, tripleCardTemplate(options.front, options.soundOnFront)) }.isSuccess
+        if (applied) cardFronts.remember(id.toString(), options.front, options.soundOnFront)
+    }
+
+    /** A note AnkiDroid took: [placed] false when its card stayed in the note type's own deck, [waiting] when its sentence sound comes later. */
+    private class Added(
+        val placed: Boolean,
+        val waiting: Boolean,
+    )
+
+    private suspend fun addNote(
         noteType: Long,
         deck: Long,
         word: SavedWord,
-    ): Boolean {
-        val noteId = step(AnkiProblem.INSERT_FAILED) { provider.insertNote(noteType, tripleNoteFields(word), ankiTags(word)) }
-        return runCatching { provider.moveToDeck(noteId, deck) }.isSuccess
+        media: AnkiCardMedia?,
+        options: CardOptions,
+    ): Added {
+        val files = media?.files(word, options) ?: AnkiCardFiles()
+        val fieldMedia =
+            CardMedia(
+                word = files.word?.let { ankiSound(provider.addMedia(it)) }.orEmpty(),
+                sentence = files.sentence?.let { ankiSound(provider.addMedia(it)) }.orEmpty(),
+                picture = files.picture?.let { ankiPicture(provider.addMedia(it)) }.orEmpty(),
+            )
+        val noteId = step(AnkiProblem.INSERT_FAILED) { provider.insertNote(noteType, tripleNoteFields(word, fieldMedia), ankiTags(word)) }
+        val placed = runCatching { provider.moveToDeck(noteId, deck) }.isSuccess
+        val line = audioLineOf(word)
+        val pending =
+            if (media != null && line != null && options.audio && fieldMedia.sentence.isEmpty()) {
+                PendingCardAudio(PENDING_ANKIDROID, noteId, line, ANKI_SENTENCE_AUDIO_FIELD, "", System.currentTimeMillis())
+            } else {
+                null
+            }
+        pending?.let { media?.awaitSentence(it) }
+        return Added(placed, pending != null)
     }
 }
 
 /** [AnkiDroidProvider] over AnkiDroid's public content provider (no AnkiDroid library). */
 internal class ContentProviderAnkiDroid(
-    private val resolver: ContentResolver,
+    private val context: Context,
 ) : AnkiDroidProvider {
+    private val resolver: ContentResolver = context.contentResolver
     private val base = Uri.parse("content://$ANKIDROID_AUTHORITY")
     private val decksUri = Uri.withAppendedPath(base, "decks")
     private val modelsUri = Uri.withAppendedPath(base, "models")
@@ -186,13 +251,37 @@ internal class ContentProviderAnkiDroid(
         return resolver.insert(modelsUri, values)?.lastPathSegment?.toLongOrNull()
     }
 
-    override fun styleNoteType(id: Long) {
-        val template =
+    override fun styleNoteType(
+        id: Long,
+        template: AnkiCardTemplate,
+    ) {
+        val values =
             ContentValues().apply {
-                put("question_format", TRIPLE_QUESTION_FORMAT)
-                put("answer_format", TRIPLE_ANSWER_FORMAT)
+                put("question_format", template.question)
+                put("answer_format", template.answer)
             }
-        resolver.update(Uri.withAppendedPath(modelsUri, "$id/templates/0"), template, null, null)
+        resolver.update(Uri.withAppendedPath(modelsUri, "$id/templates/0"), values, null, null)
+    }
+
+    /**
+     * AnkiDroid reads the file through a content address it may read only during this copy; the
+     * name it gave the file comes back, or null when it refused.
+     */
+    override fun addMedia(file: File): String? {
+        val uri = runCatching { FileProvider.getUriForFile(context, cardAudioAuthority(context), file) }.getOrNull() ?: return null
+        return try {
+            context.grantUriPermission(ANKIDROID_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val values =
+                ContentValues().apply {
+                    put("file_uri", uri.toString())
+                    put("preferred_name", "dualsub_${file.nameWithoutExtension}")
+                }
+            resolver.insert(Uri.withAppendedPath(base, "media"), values)?.path
+        } catch (_: Exception) {
+            null
+        } finally {
+            runCatching { context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        }
     }
 
     override fun insertNote(

@@ -2,7 +2,7 @@
 <resources>
     <!-- Study tools (2026-10-20): play modes, skip silence, known words, AnkiDroid, blur box, page token -->
     <string name="settings_section_study_title">학습 도구</string>
-    <string name="settings_section_study_summary">재생 모드, 무음 건너뛰기, 아는 단어, 보내기, 흐림 상자</string>
+    <string name="settings_section_flashcards_title">플래시카드 및 Anki</string>
     <string name="study_play_mode_title">재생 모드</string>
     <string name="study_play_mode_normal">보통</string>
     <string name="study_play_mode_normal_description">동영상을 평소처럼 재생합니다.</string>
@@ -12,6 +12,8 @@
     <string name="study_play_mode_read_first_description">각 줄의 시작에서 멈춰 듣기 전에 읽을 수 있습니다.</string>
     <string name="study_play_mode_listen_first">먼저 듣기</string>
     <string name="study_play_mode_listen_first_description">재생 중에는 자막을 숨기고, 각 줄 뒤에 일시정지하며 자막을 보여 줍니다.</string>
+    <string name="study_play_mode_dictation">받아쓰기</string>
+    <string name="study_play_mode_dictation_description">들은 내용을 입력할 때까지 각 줄을 숨깁니다. 각 줄 뒤에 동영상이 일시정지되고, 확인을 누르면 놓친 부분을 볼 수 있습니다. 사람이 만든 자막에서 가장 잘 작동합니다. 자동 자막에는 오류가 있을 수 있습니다.</string>
     <string name="study_play_mode_repeat">각 줄 반복</string>
     <string name="study_play_mode_repeat_description">각 줄을 여러 번 재생한 뒤 다음으로 넘어갑니다. 계속을 고르면 다른 줄을 탭하거나 탐색할 때까지 그 줄을 반복합니다.</string>
     <string name="study_repeat_forever">계속</string>
@@ -35,6 +37,24 @@
     <string name="study_known_words_clear_confirm">지우기</string>
     <string name="study_anki_title">플래시카드 앱으로 보내기</string>
     <string name="study_anki_description">단어 카드와 연습 → 내보내기에 보내기 버튼을 표시합니다. 버튼의 ▾ 또는 아래에서 다른 앱을 고르지 않으면 AnkiDroid로 보냅니다. 고른 앱은 버튼에 표시됩니다.</string>
+    <string name="study_card_audio_title">카드에 오디오 추가</string>
+    <string name="study_card_audio_description">단어 카드와 같은 목소리로 읽은 단어와, 동영상에서 가져온 문장의 실제 소리를 카드에 넣습니다. 문장은 재생되는 동안 녹음되므로, 문장이 끝나기 전에 보낸 카드는 문장이 끝나면 소리가 추가됩니다.</string>
+    <string name="study_card_picture_title">카드에 그림 추가</string>
+    <string name="study_card_picture_description">단어가 나온 문장이 화면에 있을 때 동영상에서 찍은 그림을 카드에 넣습니다. 그림이 없으면 동영상 썸네일을 씁니다.</string>
+    <string name="study_card_front_title">카드 앞면</string>
+    <string name="study_card_front_sound_title">앞면에 문장 소리</string>
+    <string name="study_card_front_sound_description">뒷면뿐 아니라 앞면에서도 영상의 문장 소리를 재생합니다.</string>
+    <string name="study_card_front_word_sentence">단어와 문장</string>
+    <string name="study_card_front_word">단어</string>
+    <string name="study_card_front_sentence">문장</string>
+    <string name="study_card_front_listening">듣기</string>
+    <string name="study_card_front_word_sentence_description">앞면에 단어와 그 문장을 보여 줍니다.</string>
+    <string name="study_card_front_word_description">앞면에는 단어만 보여 주고, 문장은 뒷면에 있습니다.</string>
+    <string name="study_card_front_sentence_description">앞면에 단어를 굵게 표시한 문장을 보여 주고, 단어와 뜻은 뒷면에 있습니다.</string>
+    <string name="study_card_front_listening_description">앞면에서는 문장의 소리만 재생하고, 문장과 단어는 뒷면에 있습니다.</string>
+    <string name="study_card_front_note">이 설정을 바꾸면 전에 보낸 카드도 바뀝니다.</string>
+    <string name="study_card_sound_waits">문장 소리는 문장이 끝까지 재생된 뒤에 추가됩니다.</string>
+    <string name="study_card_sound_replaying">카드에 소리를 넣기 위해 문장을 한 번 재생하는 중입니다.</string>
     <string name="study_blur_box_title">흐림 상자</string>
     <string name="study_blur_box_description">동영상 위에 흐림 상자를 놓아 화면에 새겨진 자막을 가립니다. 끌어서 옮기고, 모서리를 끌어 크기를 바꿉니다.</string>
     <string name="study_page_token_title">페이지 토큰으로 자막 불러오기(베타)</string>
@@ -48,6 +68,9 @@
     <string name="study_send_to_anki">%1$s로 보내기</string>
     <string name="study_sending_to_anki">보내는 중…</string>
     <string name="study_sent_to_anki">%1$s로 보냄</string>
+    <string name="study_send_again_title">이 카드를 다시 보낼까요?</string>
+    <string name="study_send_again_text">%1$s에 이 단어의 카드가 이미 있습니다. 카드가 하나 더 추가되며, 이전 카드는 그곳에서 삭제할 수 있습니다.</string>
+    <string name="study_send_again">다시 보내기</string>
     <string name="study_anki_not_installed">이 휴대전화에 AnkiDroid가 설치되어 있지 않습니다.</string>
     <string name="study_anki_permission_denied">AnkiDroid 권한이 허용되지 않아 카드가 추가되지 않았습니다.</string>
     <string name="study_anki_failed">AnkiDroid가 카드를 받지 않았습니다. AnkiDroid를 열어 백그라운드에서 실행해 둔 뒤 돌아와 다시 시도하세요.</string>
@@ -68,6 +91,9 @@
     <plurals name="study_anki_sent_count">
         <item quantity="other">단어 %1$d개를 %2$s로 보냈습니다.</item>
     </plurals>
+    <plurals name="study_anki_sound_waits_count">
+        <item quantity="other">카드 %1$d개는 문장이 재생된 뒤에 문장 소리가 추가됩니다.</item>
+    </plurals>
     <string name="study_page_token_auto">자동</string>
     <string name="study_page_token_on">켜기</string>
     <string name="study_page_token_off">끄기</string>
@@ -78,7 +104,7 @@
     <string name="study_known_words_after_title">아는 단어로 세기까지 볼 횟수</string>
     <string name="study_word_seen">%2$d번 중 %1$d번 봤어요</string>
     <string name="study_known_words_offer_title">아는 단어를 켤까요?</string>
-    <string name="study_known_words_offer_message">자막 패널에 각 동영상에서 이미 아는 비율이 표시되고, 자주 보는 단어는 저절로 아는 단어로 셉니다. 나중에 설정 → 학습 도구에서 바꿀 수 있습니다.</string>
+    <string name="study_known_words_offer_message">자막 패널에 각 동영상에서 이미 아는 비율이 표시되고, 자주 보는 단어는 저절로 아는 단어로 셉니다. 나중에 설정 → 단어 학습에서 바꿀 수 있습니다.</string>
     <string name="study_known_words_offer_confirm">켜기</string>
     <string name="study_known_words_offer_dismiss">나중에</string>
     <string name="study_send_to_app_title">단어를 보낼 곳</string>
@@ -101,4 +127,12 @@
     <string name="study_ankiconnect_open">AnkiConnect Android 열기</string>
     <string name="study_loop_button_title">재생 중인 줄에 반복 버튼</string>
     <string name="study_loop_button_description">자막 목록에서 재생 중인 줄에 작은 반복 아이콘을 표시합니다. 탭하면 그 줄을 반복하고, 다시 탭하면 멈춥니다. 다른 줄을 탭하거나 영상을 이동하면 그 줄을 반복합니다.</string>
+    <string name="dictation_type_what_you_heard">들은 내용을 입력하세요</string>
+    <string name="dictation_replay">다시 듣기</string>
+    <string name="dictation_show">보기</string>
+    <string name="dictation_check">확인</string>
+    <string name="dictation_next">다음</string>
+    <string name="dictation_perfect">완벽해요!</string>
+    <string name="dictation_score">%2$d개 중 %1$d개 맞음</string>
+    <string name="dictation_hidden_line">숨겨진 줄</string>
 </resources>

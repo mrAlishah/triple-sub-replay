@@ -45,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -262,8 +263,8 @@ private fun ClipData.firstText(context: android.content.Context): String? =
         null
     }
 
-/** The sections under the AI service row; one is open at a time, like More settings. */
-private enum class AiSettingsSection(
+/** The sections under the AI service row; one is open at a time, like the settings page's own. */
+internal enum class AiSettingsSection(
     val key: String,
     @StringRes val titleRes: Int,
     val icon: ImageVector,
@@ -274,12 +275,16 @@ private enum class AiSettingsSection(
     MEMORY("memory", R.string.ai_memory_title, Icons.Default.Psychology),
     HISTORY("history", R.string.ai_history, Icons.Default.History),
     PERMISSIONS("permissions", R.string.ai_settings_permissions_section, Icons.Default.Shield),
+    ;
+
+    /** Where Search settings lands for a result that is this whole card ([settingAnchor]). */
+    val anchor: String get() = "ai_section_$key"
 }
 
 /**
- * More settings → AI assistant, and the settings page inside the panel: the on/off switch, the AI service row (which service's
+ * Settings → AI Connection, and the settings page inside the panel: the on/off switch, the AI service row (which service's
  * settings are shown below), the Chat AI Service row (which service chat uses), then sections that open one at a time. [nested] is
- * true inside a More settings card, so the sections take a lighter color. [connectionTarget] opens the sections on that service
+ * true inside a settings page card, so the sections take a lighter color. [connectionTarget] opens the sections on that service
  * (Captions & translation → Manage AI connection); neither row changes the subtitle translation service, which is set in
  * Captions & translation.
  */
@@ -307,8 +312,10 @@ internal fun AiAssistantSettingsSection(
     var shownId by rememberSaveable(connectionTarget?.id) { mutableStateOf(connectionTarget?.id) }
     val target = aiConnectionTargetFor(shownId)?.takeIf { it != AiConnectionTarget.ChatGpt || hasChatGpt } ?: chatTarget
     if (!chatOnly) {
-        SettingsSubheading(stringResource(R.string.ai_settings_service))
-        AiServiceMenu(aiState, target, onSelect = { shownId = it.id }, showChatGpt = hasChatGpt)
+        Column(Modifier.fillMaxWidth().settingAnchor("ai_service")) {
+            SettingsSubheading(stringResource(R.string.ai_settings_service))
+            AiServiceMenu(aiState, target, onSelect = { shownId = it.id }, showChatGpt = hasChatGpt)
+        }
         SettingsHint(stringResource(R.string.ai_service_viewing_hint))
         if (target == AiConnectionTarget.Key(AiProvider.CUSTOM)) AiCustomAddressField(aiState, controller)
         Spacer(Modifier.height(12.dp))
@@ -329,41 +336,52 @@ internal fun AiAssistantSettingsSection(
             },
         )
     }
+    // A jump from Search settings to a setting in one of the cards opens that card.
+    val anchors = LocalSettingsAnchors.current
+    val wanted = anchors?.aiSectionToOpen
+    LaunchedEffect(wanted) {
+        if (wanted != null) {
+            open = wanted.key
+            anchors.aiSectionToOpen = null
+        }
+    }
     val color = if (nested) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerHigh
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Keys, sign-in, model and thinking are managed in Settings → AI Connection only, never in the chat's own settings.
         val chatHidden = setOf(AiSettingsSection.KEYS, AiSettingsSection.MODEL)
         AiSettingsSection.entries.filter { !chatOnly || it !in chatHidden }.forEach { section ->
-            SettingsExpandableCard(
-                title =
-                    stringResource(
-                        if (section == AiSettingsSection.KEYS &&
-                            target is AiConnectionTarget.ChatGpt
-                        ) {
-                            R.string.ai_connection_title
-                        } else {
-                            section.titleRes
+            Box(Modifier.fillMaxWidth().settingAnchor(section.anchor)) {
+                SettingsExpandableCard(
+                    title =
+                        stringResource(
+                            if (section == AiSettingsSection.KEYS &&
+                                target is AiConnectionTarget.ChatGpt
+                            ) {
+                                R.string.ai_connection_title
+                            } else {
+                                section.titleRes
+                            },
+                        ),
+                    summary =
+                        when (section) {
+                            AiSettingsSection.KEYS -> aiConnectionSummary(target, aiState, host.chatGpt)
+                            AiSettingsSection.MODEL -> aiModelSummary(target, aiState, host.chatGpt)
+                            else -> aiSectionSummary(section, aiState)
                         },
-                    ),
-                summary =
+                    icon = section.icon,
+                    expanded = open == section.key,
+                    onToggle = { open = if (open == section.key) null else section.key },
+                    testTag = "ai_section_${section.key}",
+                    color = color,
+                ) {
                     when (section) {
-                        AiSettingsSection.KEYS -> aiConnectionSummary(target, aiState, host.chatGpt)
-                        AiSettingsSection.MODEL -> aiModelSummary(target, aiState, host.chatGpt)
-                        else -> aiSectionSummary(section, aiState)
-                    },
-                icon = section.icon,
-                expanded = open == section.key,
-                onToggle = { open = if (open == section.key) null else section.key },
-                testTag = "ai_section_${section.key}",
-                color = color,
-            ) {
-                when (section) {
-                    AiSettingsSection.KEYS -> AiConnectionBody(target, aiState, controller, host.chatGpt)
-                    AiSettingsSection.MODEL -> AiModelSettings(host, aiState, controller, target)
-                    AiSettingsSection.SEARCH -> AiSearchSettings(aiState, controller)
-                    AiSettingsSection.MEMORY -> AiMemorySettings(aiState, controller)
-                    AiSettingsSection.HISTORY -> AiHistorySettings(aiState, controller)
-                    AiSettingsSection.PERMISSIONS -> AiPermissionSettings(aiState, controller)
+                        AiSettingsSection.KEYS -> AiConnectionBody(target, aiState, controller, host.chatGpt)
+                        AiSettingsSection.MODEL -> AiModelSettings(host, aiState, controller, target)
+                        AiSettingsSection.SEARCH -> AiSearchSettings(aiState, controller)
+                        AiSettingsSection.MEMORY -> AiMemorySettings(aiState, controller)
+                        AiSettingsSection.HISTORY -> AiHistorySettings(aiState, controller)
+                        AiSettingsSection.PERMISSIONS -> AiPermissionSettings(aiState, controller)
+                    }
                 }
             }
         }

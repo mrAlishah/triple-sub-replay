@@ -37,6 +37,8 @@ data class DualSubUiState(
     val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
     /** Recent "Translate to" picks, newest first; see [recentLanguagesToShow]. */
     val recentTargetLanguages: List<String> = emptyList(),
+    /** Recent Subtitle 2 picks, newest first, independent of [recentTargetLanguages]. */
+    val recentThirdLanguages: List<String> = emptyList(),
     val onboardingCompleted: Boolean = false,
     val guideCompleted: Boolean = false,
     val dailyGoalPromptCompleted: Boolean = false,

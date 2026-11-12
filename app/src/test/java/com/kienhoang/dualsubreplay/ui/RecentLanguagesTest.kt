@@ -45,4 +45,21 @@ class RecentLanguagesTest {
     fun resetAllSettingsClearsRecentLanguages() {
         assertTrue(RECENT_TARGET_LANGUAGES_PREFERENCE in RESETTABLE_SETTING_KEYS)
     }
+
+    @Test
+    fun subtitle2HasItsOwnHistoryKeyThatResetsToo() {
+        assertTrue(RECENT_THIRD_LANGUAGES_PREFERENCE != RECENT_TARGET_LANGUAGES_PREFERENCE)
+        assertTrue(RECENT_THIRD_LANGUAGES_PREFERENCE in RESETTABLE_SETTING_KEYS)
+        assertTrue(RECENT_THIRD_LANGUAGES_PREFERENCE in com.kienhoang.dualsubreplay.data.FORK_SETTING_SPECS)
+    }
+
+    @Test
+    fun subtitle2HistoryIsIndependentDedupedAndDropsUnknownCodes() {
+        val subtitle1 = rememberRecentLanguage(emptyList(), "en", "vi")
+        val subtitle2 = rememberRecentLanguage(parseRecentLanguages("fr,zz,ja,fr"), "fr", "ja")
+        assertEquals(listOf("vi", "en"), subtitle1)
+        assertEquals(listOf("ja", "fr"), subtitle2)
+        assertEquals(listOf("ja", "fr"), parseRecentLanguages(encodeRecentLanguages(subtitle2)))
+        assertEquals(listOf("ja", "fr"), recentLanguagesToShow(subtitle2, "ja"))
+    }
 }

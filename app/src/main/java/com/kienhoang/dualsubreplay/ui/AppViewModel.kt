@@ -331,6 +331,8 @@ class AppViewModel internal constructor(
                         ?: DEFAULT_SECOND_LANGUAGE,
                 recentTargetLanguages =
                     parseRecentLanguages(preferences.getString(RECENT_TARGET_LANGUAGES_PREFERENCE, null)),
+                recentThirdLanguages =
+                    parseRecentLanguages(preferences.getString(RECENT_THIRD_LANGUAGES_PREFERENCE, null)),
                 onboardingCompleted = preferences.getBoolean("onboarding_completed", false),
                 guideCompleted =
                     initialGuideCompleted(
@@ -1401,6 +1403,7 @@ class AppViewModel internal constructor(
                 sourcePreference = "auto",
                 targetLanguage = DEFAULT_SECOND_LANGUAGE,
                 recentTargetLanguages = emptyList(),
+                recentThirdLanguages = emptyList(),
                 fontScale = 1f,
                 portraitPanelOffsetFraction = DEFAULT_PORTRAIT_PANEL_OFFSET_FRACTION,
                 landscapeSplitEnabled = true,
@@ -1863,13 +1866,11 @@ class AppViewModel internal constructor(
             val store = checkNotNull(displayStore)
             // One model for both lines, so Subtitle 1 and Subtitle 2 share its pacing and its stop on a limit.
             val ai = if (_state.value.translatesWithGoogle()) selectedAiModel() else null
-            // Subtitle 2 uses the AI only with ChatGPT Subscription: keyed users keep Google there, as before.
-            val thirdAi = ai.takeIf { chatGpt.useSubscription }
             // A manual Re-translate always uses the chosen AI provider, whatever the translation mode: its model is ready here when a
             // provider is, and in Google only it makes no request of its own, it only shows what a manual Re-translate brought.
             val manualAi =
                 if (_state.value.translatesWithGoogle()) ai ?: withContext(Dispatchers.IO) { aiConfig.translationModel() } else null
-            thirdLine = thirdLineTranslation.start(store, videoId, generation, sourceLanguage, googleRequests, thirdAi, manualAi)
+            thirdLine = thirdLineTranslation.start(store, videoId, generation, sourceLanguage, googleRequests, ai, manualAi)
             refreshInstalled = refreshSession.install(store, videoId, generation, sourceLanguage, targetLanguage, manualAi)
             try {
                 if (_state.value.translatesWithGoogle()) {

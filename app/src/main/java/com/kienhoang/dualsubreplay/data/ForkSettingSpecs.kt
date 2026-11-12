@@ -17,6 +17,8 @@ internal val FORK_SETTING_SPECS: Map<String, SettingSpec> =
         // The three subtitle slots: what they show, how, and where; each slot is keyed by its stable id.
         "triple_subtitles_enabled" to spec(SettingScope.SHARE, SettingType.BOOLEAN),
         "third_language" to spec(SettingScope.SHARE, SettingType.STRING),
+        // Personal history like Subtitle 1's recent_target_languages: backed up, never in a shared link.
+        "recent_third_languages" to spec(SettingScope.BACKUP, SettingType.STRING),
         "subtitle_order" to spec(SettingScope.SHARE, SettingType.STRING),
         "subtitle_alignment" to spec(SettingScope.SHARE, SettingType.STRING),
         "show_translation_source" to spec(SettingScope.SHARE, SettingType.BOOLEAN),

@@ -403,6 +403,8 @@ internal class TripleSubtitleControls(
     val onFontScaleChange: (SubtitleSlot, Float) -> Unit = { _, _ -> },
     val alignment: SlotAlignment = SlotAlignment(),
     val onAlignmentChange: (SubtitleSlot, SubtitleAlignment) -> Unit = { _, _ -> },
+    /** Recent Subtitle 2 languages, newest first, for the picker's Recent group. */
+    val recentLanguages: List<String> = emptyList(),
 )
 
 internal val LocalTripleSubtitleControls =

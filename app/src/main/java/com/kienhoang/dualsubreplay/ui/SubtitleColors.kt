@@ -163,6 +163,7 @@ val RESETTABLE_SETTING_KEYS =
         "preferred_caption_language",
         "target_language",
         RECENT_TARGET_LANGUAGES_PREFERENCE,
+        RECENT_THIRD_LANGUAGES_PREFERENCE,
         "landscape_split_enabled",
         PLAYER_EXPERIENCE_MODE_PREFERENCE,
         AUTO_OVERLAY_FULLSCREEN_PREFERENCE,

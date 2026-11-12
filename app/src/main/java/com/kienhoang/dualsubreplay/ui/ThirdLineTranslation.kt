@@ -43,7 +43,7 @@ internal class ThirdLineTranslation(
     /**
      * One more window loop on the same display [store], so its row ids match [DualSubUiState.segments]. Null when the
      * mode is off or would repeat another line. It runs in [scope] (the load's Google scope) and is cancelled when this
-     * translation run ends. With an [ai] model (ChatGPT Subscription) the line is also asked from the AI, straight
+     * translation run ends. With an [ai] model (the selected Translation AI Service, keyed or ChatGPT Subscription) the line is also asked from the AI, straight
      * from the Original.
      */
     fun start(

@@ -59,6 +59,7 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 - Fork files: `ui/AiUpgrades.kt`, `ui/TranslationRefresh.kt`, `ui/RetranslateUi.kt`, `translation/TranslationOrigin.kt`.
 - Integration files (Shared): `ui/AppViewModel.kt` (`followGoogleTranslation`, `runStoredTranslation`, refresh), `ui/PlaybackTranslation.kt` (+134), `translation/TranslationEngine.kt`, `ui/OnlineTranslationNotice.kt`.
 - Invariants: Google keeps what the AI leaves out; saved mode survives restart; provenance (`TranslationOrigin`) is kept per row.
+- Subtitle 2 (`ThirdLineTranslation`) receives the same AI model as Subtitle 1, keyed or ChatGPT Subscription, never a filtered one ([spec](../specs/2026-11-12-subtitle2-ai-service-and-recent-languages.md)); its recent languages are `recent_third_languages`.
 - Update guidance: semantic review of every upstream change to `AppViewModel` translation methods; upstream additions (such as `aiTranslationProblem`) must also reach the fork's third-line path if they apply.
 - Tests: `app/src/androidTest/.../ui/RetranslateUiTest.kt`, `TranslationSourceUiTest.kt`.
 

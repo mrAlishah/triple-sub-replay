@@ -5,6 +5,9 @@ import com.kienhoang.dualsubreplay.translation.TranslationLanguages
 /** The last "Translate to" picks, newest first, comma-separated. Reset all settings clears it. */
 const val RECENT_TARGET_LANGUAGES_PREFERENCE = "recent_target_languages"
 
+/** The last Subtitle 2 picks, newest first, comma-separated; kept apart from Subtitle 1's [RECENT_TARGET_LANGUAGES_PREFERENCE]. */
+const val RECENT_THIRD_LANGUAGES_PREFERENCE = "recent_third_languages"
+
 /** The picker's Recent group shows at most this many languages. */
 internal const val MAX_RECENT_LANGUAGES = 3
 

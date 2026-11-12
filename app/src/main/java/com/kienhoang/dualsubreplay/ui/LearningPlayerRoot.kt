@@ -574,6 +574,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
             state.subtitleOrder,
             state.slotFontScale,
             state.slotAlignment,
+            state.recentThirdLanguages,
         ) {
             TripleSubtitleControls(
                 originalEnabled = state.originalVisibility != CaptionVisibility.NEVER,
@@ -592,6 +593,7 @@ fun LearningPlayerRoot(viewModel: AppViewModel) {
                 onFontScaleChange = viewModel::setSlotFontScale,
                 alignment = state.slotAlignment,
                 onAlignmentChange = viewModel::setSlotAlignment,
+                recentLanguages = state.recentThirdLanguages,
             )
         }
     val translationSourceInfo =

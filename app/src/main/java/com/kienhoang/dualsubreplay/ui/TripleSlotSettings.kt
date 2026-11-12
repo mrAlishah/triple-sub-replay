@@ -20,8 +20,13 @@ internal class TripleSlotSettings(
 
     fun setThirdLanguage(language: String) {
         val normalized = storedThirdLanguage(language)
-        preferences.edit().putString(THIRD_LANGUAGE_PREFERENCE, normalized).apply()
-        state.update { it.copy(thirdLanguage = normalized) }
+        val recent = rememberRecentLanguage(state.value.recentThirdLanguages, state.value.thirdLanguage, normalized)
+        preferences
+            .edit()
+            .putString(THIRD_LANGUAGE_PREFERENCE, normalized)
+            .putString(RECENT_THIRD_LANGUAGES_PREFERENCE, encodeRecentLanguages(recent))
+            .apply()
+        state.update { it.copy(thirdLanguage = normalized, recentThirdLanguages = recent) }
     }
 
     fun setRtl(

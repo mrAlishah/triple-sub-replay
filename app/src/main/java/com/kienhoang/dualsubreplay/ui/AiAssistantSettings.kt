@@ -529,7 +529,12 @@ private fun AiCustomAddressField(
     OutlinedTextField(
         value = address,
         onValueChange = controller::setCustomBaseUrl,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("ai_base_url"),
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("ai_base_url"),
         label = { Text(stringResource(R.string.ai_settings_base_url)) },
         placeholder = { Text("https://example.com/v1") },
         singleLine = true,
@@ -656,7 +661,12 @@ private fun AiTypedKeyField(
             typed = it
             invalid = false
         },
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("ai_key_field"),
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("ai_key_field"),
         label = { Text(stringResource(R.string.ai_settings_key_label)) },
         singleLine = true,
         isError = invalid,
@@ -744,7 +754,7 @@ private fun AiKeyedModelSettings(
             edited = true
         },
         modifier =
-            Modifier.fillMaxWidth().testTag("ai_model").onFocusChanged {
+            Modifier.tvArrowsLeave().fillMaxWidth().testTag("ai_model").onFocusChanged {
                 if (!it.isFocused && edited) {
                     edited = false
                     changed()

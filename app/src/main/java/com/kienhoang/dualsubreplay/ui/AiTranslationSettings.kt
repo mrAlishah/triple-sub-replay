@@ -104,6 +104,7 @@ internal fun DropdownField(
             supportingText = supporting?.let { { Text(it) } },
             modifier =
                 Modifier
+                    .tvArrowsLeave()
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
                     .fillMaxWidth()
                     .semantics { role = Role.DropdownList }

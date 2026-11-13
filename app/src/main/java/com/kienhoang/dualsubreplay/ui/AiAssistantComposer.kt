@@ -142,7 +142,7 @@ internal fun AiComposer(
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f).testTag("ai_input"),
+                modifier = Modifier.weight(1f).tvArrowsLeave().testTag("ai_input"),
                 placeholder = { Text(stringResource(R.string.ai_input_hint)) },
                 maxLines = 5,
                 shape = RoundedCornerShape(20.dp),

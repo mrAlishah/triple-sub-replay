@@ -669,7 +669,12 @@ private fun PasteSetupDialog(
                     label = { Text(stringResource(R.string.paste_setup_label)) },
                     isError = invalid,
                     supportingText = if (invalid) ({ Text(stringResource(R.string.setup_link_invalid)) }) else null,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("paste_setup_field"),
+                    modifier =
+                        Modifier
+                            .tvArrowsLeave()
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .testTag("paste_setup_field"),
                 )
             }
         },

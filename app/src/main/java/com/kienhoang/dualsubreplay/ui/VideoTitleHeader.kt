@@ -97,7 +97,11 @@ private fun EditVideoTitleDialog(
                 { text = it },
                 singleLine = true,
                 textStyle = TextStyle(textDirection = TextDirection.Content),
-                modifier = Modifier.fillMaxWidth().testTag("source_title_input"),
+                modifier =
+                    Modifier
+                        .tvArrowsLeave()
+                        .fillMaxWidth()
+                        .testTag("source_title_input"),
             )
         },
         confirmButton = {

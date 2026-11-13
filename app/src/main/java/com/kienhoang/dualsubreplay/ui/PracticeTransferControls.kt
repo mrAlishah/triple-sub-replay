@@ -231,8 +231,18 @@ private fun ImportMappingForm(
     }
     val wordLanguageLabel = stringResource(R.string.practice_import_word_language_label)
     val meaningLanguageLabel = stringResource(R.string.practice_import_meaning_language_label)
-    OutlinedTextField(controller.source, { controller.source = it }, label = { Text(wordLanguageLabel) })
-    OutlinedTextField(controller.target, { controller.target = it }, label = { Text(meaningLanguageLabel) })
+    OutlinedTextField(
+        controller.source,
+        { controller.source = it },
+        modifier = Modifier.tvArrowsLeave(),
+        label = { Text(wordLanguageLabel) },
+    )
+    OutlinedTextField(
+        controller.target,
+        { controller.target = it },
+        modifier = Modifier.tvArrowsLeave(),
+        label = { Text(meaningLanguageLabel) },
+    )
     selected.rows.firstOrNull()?.let { row ->
         Text(stringResource(R.string.practice_import_first_row, row.take(3).joinToString(" · ").take(160)))
     }

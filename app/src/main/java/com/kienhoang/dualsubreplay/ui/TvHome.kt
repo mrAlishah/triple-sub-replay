@@ -176,6 +176,7 @@ internal fun TvHome(
     videoOpen: Boolean,
     actions: TvHomeActions,
     modifier: Modifier = Modifier,
+    backEnabled: Boolean = true,
 ) {
     val context = LocalContext.current
     val preferences = remember(context) { studyPreferences(context) }
@@ -213,7 +214,8 @@ internal fun TvHome(
         home.searched = asked
     }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    BackHandler {
+    // Not while the navigation drawer is open: its Back handler closes it.
+    BackHandler(backEnabled) {
         if (videoOpen) actions.backToVideo() else (context as? Activity)?.leaveKeepingState()
     }
 
@@ -527,17 +529,20 @@ private fun TvVideoCard(
 }
 
 @Composable
-private fun TvSearchDialog(
+internal fun TvSearchDialog(
     initial: String,
     onSearch: (String) -> Unit,
     onDismiss: () -> Unit,
+    title: String = stringResource(R.string.tv_home_search),
+    label: String = stringResource(R.string.tv_home_search_label),
+    allowBlank: Boolean = false,
 ) {
     var query by rememberSaveable { mutableStateOf(initial) }
     val field = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { field.requestFocus() } }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.tv_home_search)) },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = query,
@@ -548,14 +553,18 @@ private fun TvSearchDialog(
                         .focusRequester(field)
                         .tvArrowsLeave()
                         .testTag("tv_search_field"),
-                label = { Text(stringResource(R.string.tv_home_search_label)) },
+                label = { Text(label) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearch(query) }),
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSearch(query) }, enabled = query.isNotBlank(), modifier = Modifier.testTag("tv_search_go")) {
+            TextButton(
+                onClick = { onSearch(query) },
+                enabled = allowBlank || query.isNotBlank(),
+                modifier = Modifier.testTag("tv_search_go"),
+            ) {
                 Text(stringResource(R.string.tv_home_search_button))
             }
         },

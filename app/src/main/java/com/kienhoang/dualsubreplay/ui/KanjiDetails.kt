@@ -594,7 +594,11 @@ internal fun MyStoryField(
         },
         label = { Text(stringResource(R.string.kanji_my_story)) },
         placeholder = { Text(stringResource(R.string.kanji_my_story_hint)) },
-        modifier = Modifier.fillMaxWidth().testTag(testTag),
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .testTag(testTag),
     )
 }
 

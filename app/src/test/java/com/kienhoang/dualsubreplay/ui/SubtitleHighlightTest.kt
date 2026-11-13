@@ -270,6 +270,7 @@ class SubtitleWordHighlightTest {
                 DIFFERENT_TAB_ACCOUNTS_PREFERENCE,
                 DRAWER_TABS_OPEN_PREFERENCE,
                 TV_LAYOUT_PREFERENCE,
+                TV_SETTINGS_SEARCH_PREFERENCE,
             )
         // The AI provider choice, and each provider's saved model and effort (see aiTranslationChoiceKeys).
         assertEquals(

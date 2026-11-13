@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">Không tìm được trên YouTube. Hãy kiểm tra kết nối rồi thử lại.</string>
     <string name="tv_home_try_again">Thử lại</string>
     <string name="tv_home_start_hint">Tìm một video bằng ngôn ngữ bạn đang học, hoặc mở trang YouTube. Trên video, ◀ ▶ chuyển giữa các câu và ▼ xuống phụ đề.</string>
+    <string name="tv_search_visible_title">Hiện Tìm kiếm cài đặt trên TV</string>
+    <string name="tv_search_visible_description">Đặt ô tìm kiếm cài đặt ở đầu trang cài đặt trên TV này. Tắt: trang bắt đầu từ cài đặt tab và điều khiển không bao giờ dừng ở ô tìm kiếm.</string>
 </resources>

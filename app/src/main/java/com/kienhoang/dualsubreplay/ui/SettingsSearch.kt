@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,13 +26,16 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -349,6 +353,12 @@ internal enum class SearchableSetting(
     ),
     AUTO_UPDATE(R.string.updates_auto_title, MoreSettingsSection.UPDATES, "auto_update_switch", setOf(APP_AUTO_UPDATE_PREFERENCE)),
     TV_LAYOUT(R.string.tv_layout_title, MoreSettingsSection.TV, "tv_layout_switch", setOf(TV_LAYOUT_PREFERENCE)),
+    TV_SEARCH_VISIBLE(
+        R.string.tv_search_visible_title,
+        MoreSettingsSection.TV,
+        "tv_search_visible_switch",
+        setOf(TV_SETTINGS_SEARCH_PREFERENCE),
+    ),
 
     // The assistant's own settings (owner pick 2026-11-11: Search found none of them). They live in the
     // assistant's preferences, which Often changed does not follow, so they have no keys.
@@ -646,7 +656,13 @@ internal fun SettingsSearchField(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth().onFocusChanged { onFocusChange(it.isFocused) }.testTag("settings_search"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { onFocusChange(it.isFocused) }
+                // First control of the page: ▲ has nowhere to go, and the focus order would wrap to the last.
+                .tvArrowsLeave(sequentialFallback = false)
+                .testTag("settings_search"),
         placeholder = { Text(stringResource(R.string.settings_search_hint)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
@@ -661,6 +677,70 @@ internal fun SettingsSearchField(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
     )
+}
+
+/** Search settings is always on the page on phones and tablets; on a TV the "Show Search Settings on TV" switch decides. */
+internal fun settingsSearchShown(
+    tvLayout: Boolean,
+    tvSearchVisible: Boolean,
+): Boolean = !tvLayout || tvSearchVisible
+
+/**
+ * The first control of the settings page. On a TV it is a button that looks like the field: passing over it
+ * with the remote never opens the keyboard, only OK or a click does, in a dialog of its own. When it goes away
+ * (the TV switch) the query is dropped, so no results stay behind a hidden search.
+ */
+@Composable
+internal fun SettingsSearchEntry(
+    query: String,
+    shown: Boolean,
+    onFocusChange: (Boolean) -> Unit,
+    onQueryChange: (String) -> Unit,
+) {
+    LaunchedEffect(shown) { if (!shown && query.isNotEmpty()) onQueryChange("") }
+    if (!shown) return
+    if (LocalTvLayout.current) {
+        TvSettingsSearchButton(query, onQueryChange)
+    } else {
+        SettingsSearchField(query, onFocusChange, onQueryChange)
+    }
+    Spacer(Modifier.height(SETTINGS_PAGE_GAP))
+}
+
+@Composable
+private fun TvSettingsSearchButton(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val hint = stringResource(R.string.settings_search_hint)
+    OutlinedButton(
+        onClick = { editing = true },
+        shape = RoundedCornerShape(28.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .tvFocusRing(RoundedCornerShape(28.dp))
+                .testTag("settings_search"),
+    ) {
+        Icon(Icons.Default.Search, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
+        Text(query.ifEmpty { hint }, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+    if (editing) {
+        TvSearchDialog(
+            initial = query,
+            title = hint,
+            label = hint,
+            allowBlank = true,
+            onSearch = {
+                editing = false
+                onQueryChange(it.trim())
+            },
+            onDismiss = { editing = false },
+        )
+    }
 }
 
 /** The matching settings, or a line saying there are none. */

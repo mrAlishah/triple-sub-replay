@@ -43,7 +43,7 @@ internal fun PersonalNotesEditor(
         minLines = 3,
         maxLines = NOTES_MAX_VISIBLE_LINES,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        modifier = Modifier.fillMaxWidth().testTag("saved_notes"),
+        modifier = Modifier.fillMaxWidth().tvArrowsLeave().testTag("saved_notes"),
     )
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(onClick = onSave, enabled = enabled && changed, modifier = Modifier.testTag("save_notes")) {

@@ -1,6 +1,8 @@
 package com.kienhoang.dualsubreplay.ui
 
 import android.view.KeyEvent
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.Key
 import com.kienhoang.dualsubreplay.data.AnalyzedToken
 import com.kienhoang.dualsubreplay.data.PartOfSpeech
 import com.kienhoang.dualsubreplay.data.YouTubeVideoResult
@@ -11,6 +13,48 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TvLayoutTest {
+    @Test
+    fun onlyUpAndDownLeaveASliderOrField() {
+        assertEquals(FocusDirection.Up, tvArrowDirection(Key.DirectionUp))
+        assertEquals(FocusDirection.Down, tvArrowDirection(Key.DirectionDown))
+        for (key in listOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter, Key.Back)) {
+            assertNull(tvArrowDirection(key))
+        }
+    }
+
+    @Test
+    fun leavingTriesTheSpatialMoveThenTheFocusOrder() {
+        assertEquals(listOf(FocusDirection.Up, FocusDirection.Previous), tvLeaveAttempts(FocusDirection.Up))
+        assertEquals(listOf(FocusDirection.Down, FocusDirection.Next), tvLeaveAttempts(FocusDirection.Down))
+    }
+
+    @Test
+    fun theFirstControlOfAPageNeverWrapsToTheLast() {
+        assertEquals(listOf(FocusDirection.Up), tvLeaveAttempts(FocusDirection.Up, sequentialFallback = false))
+        assertEquals(listOf(FocusDirection.Down), tvLeaveAttempts(FocusDirection.Down, sequentialFallback = false))
+    }
+
+    @Test
+    fun theRemoteLeavesThePageUnderTvHomeAloneOnlyOnTv() {
+        assertFalse(pageFocusable(tvLayout = true, tvHomeShown = true))
+        assertTrue(pageFocusable(tvLayout = true, tvHomeShown = false))
+        assertTrue(pageFocusable(tvLayout = false, tvHomeShown = true))
+    }
+
+    @Test
+    fun searchSettingsIsAlwaysThereOnPhonesAndFollowsTheSwitchOnATv() {
+        for (visible in listOf(true, false)) assertTrue(settingsSearchShown(tvLayout = false, tvSearchVisible = visible))
+        assertTrue(settingsSearchShown(tvLayout = true, tvSearchVisible = true))
+        assertFalse(settingsSearchShown(tvLayout = true, tvSearchVisible = false))
+    }
+
+    @Test
+    fun theSearchSwitchIsOnByDefaultBecauseResetRemovesItsKey() {
+        assertEquals("tv_settings_search_visible", TV_SETTINGS_SEARCH_PREFERENCE)
+        assertTrue(RESETTABLE_SETTING_KEYS.contains(TV_SETTINGS_SEARCH_PREFERENCE))
+        assertTrue(SearchableSetting.entries.any { TV_SETTINGS_SEARCH_PREFERENCE in it.keys })
+    }
+
     @Test
     fun anyWayOfSayingTvCounts() {
         assertTrue(isTelevision(televisionUiMode = true, leanback = false, fireTv = false))
@@ -36,7 +80,7 @@ class TvLayoutTest {
 
     @Test
     fun resetAllSettingsBringsTheTvLayoutBack() {
-        assertEquals(listOf("tv_layout"), TV_LAYOUT_SETTING_KEYS)
+        assertEquals(listOf("tv_layout", "tv_settings_search_visible"), TV_LAYOUT_SETTING_KEYS)
         assertTrue(RESETTABLE_SETTING_KEYS.containsAll(TV_LAYOUT_SETTING_KEYS))
     }
 

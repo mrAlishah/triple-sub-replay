@@ -2,6 +2,7 @@ package com.kienhoang.dualsubreplay.ui
 
 import android.content.res.Configuration
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -401,6 +402,7 @@ private fun DualSubExperience(
     // The TV layout opens on TV home and always keeps the panel beside the video.
     val tvLayout = LocalTvLayout.current
     var tvHomeShown by rememberSaveable { mutableStateOf(true) }
+    var navigationOpen by remember { mutableStateOf(false) }
     val sideBySide =
         tracksVisible && !nativeDialogVisible &&
             shouldUseLandscapeSplit(
@@ -432,7 +434,10 @@ private fun DualSubExperience(
         onPractice = onVocabulary,
         onProgress = onProgress,
         onSettings = { showSettings = true },
-        onVisibilityChange = onNavigationVisibilityChange,
+        onVisibilityChange = {
+            navigationOpen = it
+            onNavigationVisibilityChange(it)
+        },
         tabs = state.browserTabs,
         differentTabAccounts = differentTabAccounts,
         tabActions = tabActions,
@@ -453,7 +458,9 @@ private fun DualSubExperience(
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding),
+                    .consumeWindowInsets(innerPadding)
+                    // Under TV home the remote reaches only TV home (its own focus group) and the top bar.
+                    .focusProperties { canFocus = pageFocusable(tvLayout, tvHomeShown) },
             ) {
                 // Single call site on purpose: branching around SingleYouTubePage would
                 // leave composition and destroy the persistent WebView on every rotation.
@@ -558,16 +565,18 @@ private fun DualSubExperience(
                 ) {
                     MovableSubtitleFab(onClick = { if (tracksVisible) onShowSubtitles() else showSettings = true })
                 }
+                // Inside the body, under the top bar, so the menu button stays visible over TV home.
+                TvLayer(
+                    state = state,
+                    webController = webController,
+                    homeShown = tvHomeShown,
+                    onHomeShownChange = { tvHomeShown = it },
+                    actions = TvLayerActions(onOpenVideo, tabActions, onShowSubtitles, onVocabulary, onProgress) { showSettings = true },
+                    navigationOpen = navigationOpen,
+                )
             }
         }
     }
-    TvLayer(
-        state = state,
-        webController = webController,
-        homeShown = tvHomeShown,
-        onHomeShownChange = { tvHomeShown = it },
-        actions = TvLayerActions(onOpenVideo, tabActions, onShowSubtitles, onVocabulary, onProgress) { showSettings = true },
-    )
     if (showQuickSettings) {
         QuickLanguageSettingsDialog(
             sourcePreference = sourceChoiceSelection(state),

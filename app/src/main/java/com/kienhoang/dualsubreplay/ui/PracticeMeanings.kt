@@ -51,7 +51,7 @@ internal fun EditMeanings(
 ) {
     val style = meaningTextStyle()
     val primaryLabel = slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(word.meaningLanguage, locale))
-    OutlinedTextField(meaning, onMeaning, textStyle = style, label = { Text(primaryLabel) })
+    OutlinedTextField(meaning, onMeaning, modifier = Modifier.tvArrowsLeave(), textStyle = style, label = { Text(primaryLabel) })
     val languages = edited.keys.toList()
     languages.forEach { language ->
         val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
@@ -60,7 +60,7 @@ internal fun EditMeanings(
             onValueChange = { edited[language] = it },
             textStyle = style,
             label = { Text(label) },
-            modifier = Modifier.testTag("saved_meaning_$language"),
+            modifier = Modifier.tvArrowsLeave().testTag("saved_meaning_$language"),
         )
     }
     val changed = meaning != word.meaning || edited.toMap() != word.meanings

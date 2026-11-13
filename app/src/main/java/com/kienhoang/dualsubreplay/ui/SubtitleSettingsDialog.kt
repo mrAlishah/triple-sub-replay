@@ -246,7 +246,7 @@ internal fun settingsSectionShape(
 private val SETTINGS_CARD_CORNER = 16.dp
 
 /** The space between Search settings, its results and the groups. */
-private val SETTINGS_PAGE_GAP = 12.dp
+internal val SETTINGS_PAGE_GAP = 12.dp
 
 /** A jump to a setting waits this long for its section to open before scrolling. */
 private const val SETTINGS_JUMP_SETTLE_MILLIS = 450L
@@ -710,6 +710,8 @@ internal fun SubtitleSettingsDialog(
     // Often changed shows under Search settings while it is tapped and empty (owner request 2026-11-06),
     // read afresh each time, so the list does not move while the user changes things.
     var searchFocused by remember { mutableStateOf(false) }
+    val tvSearchVisible by rememberTvSearchVisible()
+    val searchShown = settingsSearchShown(LocalTvLayout.current, tvSearchVisible)
     val oftenChanged = remember(usage, searchFocused) { if (searchFocused) usage.oftenChanged() else emptyList() }
     var jump by remember { mutableStateOf<SettingsSearchEntry?>(null) }
     // The scrolling page's top on the screen, where a jumped-to setting lines up.
@@ -1014,6 +1016,7 @@ internal fun SubtitleSettingsDialog(
                                     .verticalScroll(scrollState)
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                         ) {
+                            SettingsSearchEntry(searchQuery, searchShown, onFocusChange = { searchFocused = it }) { searchQuery = it }
                             LocalTabSettings.current?.let { tabSettings ->
                                 SettingsExpandableCard(
                                     title = stringResource(R.string.tab_settings_group_title),
@@ -1030,10 +1033,10 @@ internal fun SubtitleSettingsDialog(
                                         CurrentTabSettingsNote(tabSettings)
                                     }
                                 }
+                                // The Default-tab editor takes the page: Search stays above it, the other groups wait.
                                 if (tabSettingsOpen && tabSettingsScope == TabSettingsScope.DEFAULT) return@Column
+                                Spacer(Modifier.height(SETTINGS_PAGE_GAP))
                             }
-                            SettingsSearchField(searchQuery, onFocusChange = { searchFocused = it }) { searchQuery = it }
-                            Spacer(Modifier.height(SETTINGS_PAGE_GAP))
                             if (searchQuery.isNotBlank()) {
                                 SettingsSearchResults(searchSettings(searchEntries, searchQuery), pickSetting)
                             } else {
@@ -1234,6 +1237,7 @@ internal fun SettingsExpandableCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .tvFocusRing(shape)
                         .clickable(role = Role.Button, onClick = onToggle)
                         .semantics { stateDescription = expansionState }
                         .testTag(testTag)
@@ -1689,7 +1693,7 @@ internal fun SettingsSwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            modifier = Modifier.testTag(testTag),
+            modifier = Modifier.tvFocusRing(CircleShape).testTag(testTag),
             enabled = enabled,
         )
     }

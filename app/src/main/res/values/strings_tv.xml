@@ -23,4 +23,6 @@
     <string name="tv_home_try_again">Try again</string>
     <string name="tv_home_start_hint">Search for a video in the language you are learning, or open the YouTube page. On a video, ◀ ▶ move between lines and ▼ goes to the subtitles.</string>
     <string name="tv_home_cc" translatable="false">CC</string>
+    <string name="tv_search_visible_title">Show Search Settings on TV</string>
+    <string name="tv_search_visible_description">Puts the Search settings box at the top of the settings page on this TV. Off: the page starts at Tab settings and the remote never stops on Search.</string>
 </resources>

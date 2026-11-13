@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">无法搜索 YouTube。请检查网络连接后重试。</string>
     <string name="tv_home_try_again">重试</string>
     <string name="tv_home_start_hint">搜索你正在学习的语言的视频，或打开 YouTube 页面。在视频上，◀ ▶ 在句子之间切换，▼ 进入字幕。</string>
+    <string name="tv_search_visible_title">在电视上显示设置搜索</string>
+    <string name="tv_search_visible_description">在此电视的设置页面顶部显示设置搜索框。关闭：页面从标签页设置开始，遥控器不会停在搜索上。</string>
 </resources>

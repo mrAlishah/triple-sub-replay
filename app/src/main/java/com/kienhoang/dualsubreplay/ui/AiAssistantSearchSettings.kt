@@ -187,7 +187,12 @@ private fun AiTavilyKey(
             typed = it
             notice = null
         },
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("ai_tavily_key_field"),
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("ai_tavily_key_field"),
         label = { Text(stringResource(R.string.ai_search_tavily_key_label)) },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),

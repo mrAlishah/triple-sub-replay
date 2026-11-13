@@ -261,7 +261,7 @@ private fun DefaultTextRows(
         value = view.fontScale,
         onValueChange = { scale -> edit { it.with("font_scale", normalizeFontScale(scale)) } },
         valueRange = MIN_FONT_SCALE..MAX_FONT_SCALE,
-        modifier = Modifier.testTag("default_font_scale_slider"),
+        modifier = Modifier.tvArrowsLeave().testTag("default_font_scale_slider"),
     )
     SubtitleSlot.entries.forEach { slot ->
         ChoiceRow(

@@ -150,7 +150,12 @@ internal fun AiChatGptModelSettings(chatGpt: ChatGptActions) {
     OutlinedTextField(
         value = text,
         onValueChange = { text = it },
-        modifier = Modifier.fillMaxWidth().testTag("ai_model").onFocusChanged { if (!it.isFocused) commit() },
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .testTag("ai_model")
+                .onFocusChanged { if (!it.isFocused) commit() },
         label = { Text(stringResource(R.string.ai_settings_model)) },
         singleLine = true,
         isError = text.isBlank(),

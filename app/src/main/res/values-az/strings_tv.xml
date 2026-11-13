@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">YouTube-da axtarmaq mümkün olmadı. Bağlantını yoxlayın və yenidən cəhd edin.</string>
     <string name="tv_home_try_again">Yenidən cəhd et</string>
     <string name="tv_home_start_hint">Öyrəndiyiniz dildə video axtarın və ya YouTube səhifəsini açın. Videoda ◀ ▶ sətirlər arasında keçir, ▼ isə altyazılara keçir.</string>
+    <string name="tv_search_visible_title">TV-də Parametr axtarışını göstər</string>
+    <string name="tv_search_visible_description">Bu TV-də parametrlər səhifəsinin yuxarısında parametr axtarış qutusunu göstərir. Söndürülü: səhifə tab parametrlərindən başlayır və pult heç vaxt axtarışda dayanmır.</string>
 </resources>

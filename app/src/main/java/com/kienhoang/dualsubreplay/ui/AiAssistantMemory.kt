@@ -97,7 +97,12 @@ private fun AiInstructionsField(
     OutlinedTextField(
         value = text,
         onValueChange = { text = it.take(MAX_AI_INSTRUCTIONS_CHARS) },
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("ai_instructions"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .tvArrowsLeave()
+                .testTag("ai_instructions"),
         label = { Text(stringResource(R.string.ai_instructions_title)) },
         placeholder = { Text(stringResource(R.string.ai_instructions_placeholder)) },
         supportingText = { Text(stringResource(R.string.ai_instructions_count, text.length, MAX_AI_INSTRUCTIONS_CHARS)) },
@@ -187,7 +192,11 @@ internal fun AiMemoryEditDialog(
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_AI_MEMORY_CHARS) },
-                modifier = Modifier.fillMaxWidth().testTag("ai_memory_edit_field"),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .tvArrowsLeave()
+                        .testTag("ai_memory_edit_field"),
                 supportingText = { Text(stringResource(R.string.ai_instructions_count, text.length, MAX_AI_MEMORY_CHARS)) },
                 isError = !valid,
                 maxLines = 4,

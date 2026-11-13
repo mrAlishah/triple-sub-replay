@@ -178,7 +178,11 @@ internal fun DeckNameDialog(
                 { text = it.take(MAX_DECK_NAME_LENGTH) },
                 label = { Text(stringResource(R.string.practice_deck_name_label)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("deck_name_field"),
+                modifier =
+                    Modifier
+                        .tvArrowsLeave()
+                        .fillMaxWidth()
+                        .testTag("deck_name_field"),
             )
         },
         confirmButton = {

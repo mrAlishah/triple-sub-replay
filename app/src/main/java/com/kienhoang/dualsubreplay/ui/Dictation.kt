@@ -150,7 +150,7 @@ internal fun DictationBox(
                 value = answer,
                 onValueChange = { text -> key?.let { dictation.type(it, text) } },
                 enabled = key != null,
-                modifier = Modifier.fillMaxWidth().testTag("dictation_answer"),
+                modifier = Modifier.fillMaxWidth().tvArrowsLeave().testTag("dictation_answer"),
                 placeholder = { Text(stringResource(R.string.dictation_type_what_you_heard)) },
                 maxLines = 3,
                 textStyle = MaterialTheme.typography.bodyLarge,

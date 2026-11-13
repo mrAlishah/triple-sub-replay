@@ -202,7 +202,12 @@ internal fun SavedWordsScreen(
                             queue = due.map { it.id }; practice = true
                         }) { Text(stringResource(R.string.practice_due_words_button)) }
                         if (sources.isNotEmpty()) SourceFilterPicker(sources, activeSource) { sourceFilter = it }
-                        OutlinedTextField(search, { search = it }, label = { Text(searchLabel) }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(
+                            search,
+                            { search = it },
+                            label = { Text(searchLabel) },
+                            modifier = Modifier.tvArrowsLeave().fillMaxWidth(),
+                        )
                         if (words.isEmpty()) Text(stringResource(R.string.practice_empty_hint))
                         else if (due.isEmpty()) sourceWords.minOfOrNull { it.dueAt }?.let {
                             val next = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, locale).format(Date(it))

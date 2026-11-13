@@ -67,6 +67,7 @@ internal fun CheckForUpdatesRow(onOpen: () -> Unit) {
         modifier =
             Modifier
                 .fillMaxWidth()
+                .tvFocusRing(RoundedCornerShape(28.dp))
                 .clip(RoundedCornerShape(28.dp))
                 .clickable(role = Role.Button) {
                     onOpen()

@@ -192,7 +192,12 @@ internal fun SlotLayoutControls(
             value = scale,
             onValueChange = { controls.onFontScaleChange(slot, (it * 20).roundToInt() / 20f) },
             valueRange = SLOT_SCALE_MIN..SLOT_SCALE_MAX,
-            modifier = Modifier.weight(1f).testTag("${tag}_size").semantics { contentDescription = sizeLabel },
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .tvArrowsLeave()
+                    .testTag("${tag}_size")
+                    .semantics { contentDescription = sizeLabel },
         )
         Text(stringResource(R.string.settings_slot_size_value, (scale * 100).roundToInt()), style = MaterialTheme.typography.bodyMedium)
     }

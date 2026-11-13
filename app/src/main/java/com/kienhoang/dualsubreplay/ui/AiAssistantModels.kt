@@ -245,7 +245,12 @@ internal fun AiModelsPage(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).testTag("ai_models_search"),
+            modifier =
+                Modifier
+                    .tvArrowsLeave()
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .testTag("ai_models_search"),
             placeholder = { Text(stringResource(R.string.ai_models_search)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,

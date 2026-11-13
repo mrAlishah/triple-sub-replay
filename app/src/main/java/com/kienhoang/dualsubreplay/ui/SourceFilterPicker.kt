@@ -71,7 +71,11 @@ internal fun SourceFilterPicker(
                     { query = it },
                     label = { Text(stringResource(R.string.practice_source_search)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("source_search"),
+                    modifier =
+                        Modifier
+                            .tvArrowsLeave()
+                            .fillMaxWidth()
+                            .testTag("source_search"),
                 )
                 LazyColumn(Modifier.heightIn(max = 360.dp)) {
                     if (query.isBlank()) {
@@ -158,7 +162,11 @@ internal fun SourceTitleEditor(
         textStyle = TextStyle(textDirection = TextDirection.Content),
         label = { Text(stringResource(R.string.practice_source_title_label)) },
         singleLine = true,
-        modifier = Modifier.fillMaxWidth().testTag("source_title_field"),
+        modifier =
+            Modifier
+                .tvArrowsLeave()
+                .fillMaxWidth()
+                .testTag("source_title_field"),
     )
     if (changed) {
         TextButton(enabled = enabled, onClick = onSave, modifier = Modifier.testTag("save_source_title")) {

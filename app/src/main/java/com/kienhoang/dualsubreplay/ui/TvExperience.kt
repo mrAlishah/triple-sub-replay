@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.focusProperties
 import com.kienhoang.dualsubreplay.playback.WebVideoBridge
 import com.kienhoang.dualsubreplay.playback.WebVideoCommand
@@ -33,6 +34,7 @@ internal fun TvLayer(
     homeShown: Boolean,
     onHomeShownChange: (Boolean) -> Unit,
     actions: TvLayerActions,
+    navigationOpen: Boolean = false,
 ) {
     if (!LocalTvLayout.current) return
     BindTvRemote(state, webController, homeShown, actions.showPanel) { onHomeShownChange(true) }
@@ -47,6 +49,7 @@ internal fun TvLayer(
         home = home,
         tabs = state.browserTabs,
         videoOpen = state.activeVideoId != null,
+        backEnabled = !navigationOpen,
         actions =
             TvHomeActions(
                 openVideo = { videoId ->
@@ -73,7 +76,12 @@ internal fun TvLayer(
                 settings = actions.settings,
             ),
         // The page and player stay under TV home; the remote's focus must not wander onto them.
-        modifier = Modifier.focusProperties { onExit = { cancelFocusChange() } }.focusGroup(),
+        modifier =
+            Modifier
+                .focusProperties {
+                    // ▲ may leave for the menu button in the top bar; any other exit would land on the page.
+                    onExit = { if (requestedFocusDirection != FocusDirection.Up) cancelFocusChange() }
+                }.focusGroup(),
     )
 }
 

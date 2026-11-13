@@ -361,7 +361,12 @@ internal fun MeaningPanel(
                             onChange,
                             enabled = enabled,
                             textStyle = MaterialTheme.typography.titleLarge.copy(textDirection = direction),
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 4.dp).testTag("word_meaning$tagSuffix"),
+                            modifier =
+                                Modifier
+                                    .tvArrowsLeave()
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp, end = 4.dp)
+                                    .testTag("word_meaning$tagSuffix"),
                         )
                     else ->
                         Text(

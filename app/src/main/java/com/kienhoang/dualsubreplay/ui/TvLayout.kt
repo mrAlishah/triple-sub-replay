@@ -47,8 +47,11 @@ import kotlin.math.roundToInt
 
 internal const val TV_LAYOUT_PREFERENCE = "tv_layout"
 
-/** Reset all settings brings the TV layout back to its default (on, on a TV). */
-internal val TV_LAYOUT_SETTING_KEYS = listOf(TV_LAYOUT_PREFERENCE)
+/** Settings → Android TV (beta) → Show Search Settings on TV (owner request 2026-11-13); on unless turned off. */
+internal const val TV_SETTINGS_SEARCH_PREFERENCE = "tv_settings_search_visible"
+
+/** Reset all settings brings the TV layout, and its Search Settings, back to their defaults (on). */
+internal val TV_LAYOUT_SETTING_KEYS = listOf(TV_LAYOUT_PREFERENCE, TV_SETTINGS_SEARCH_PREFERENCE)
 
 /** Panel text on a TV is read from across the room. */
 internal const val TV_TEXT_SCALE = 1.25f
@@ -109,6 +112,26 @@ internal fun rememberTvLayout(): State<Boolean> {
     return on
 }
 
+/** Whether the TV settings page shows Search Settings, following every change; only read in the TV layout. */
+@Composable
+internal fun rememberTvSearchVisible(): State<Boolean> {
+    val context = LocalContext.current
+    val preferences = remember(context) { studyPreferences(context) }
+    val visible = remember(preferences) { mutableStateOf(preferences.getBoolean(TV_SETTINGS_SEARCH_PREFERENCE, true)) }
+    DisposableEffect(preferences) {
+        val listener =
+            SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == null || key == TV_SETTINGS_SEARCH_PREFERENCE) {
+                    visible.value = preferences.getBoolean(TV_SETTINGS_SEARCH_PREFERENCE, true)
+                }
+            }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        visible.value = preferences.getBoolean(TV_SETTINGS_SEARCH_PREFERENCE, true)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    return visible
+}
+
 /** True while the app shows its TV layout; false everywhere else, including isolated UI tests. */
 internal val LocalTvLayout = compositionLocalOf { false }
 
@@ -128,6 +151,15 @@ internal fun TvLayoutSettingsSection() {
         enabled = television,
     )
     SettingsHint(stringResource(if (television) R.string.tv_layout_note else R.string.tv_layout_needs_tv))
+    val searchVisible by rememberTvSearchVisible()
+    SettingsSwitchRow(
+        title = stringResource(R.string.tv_search_visible_title),
+        description = stringResource(R.string.tv_search_visible_description),
+        checked = searchVisible,
+        onCheckedChange = { preferences.edit().putBoolean(TV_SETTINGS_SEARCH_PREFERENCE, it).apply() },
+        testTag = "tv_search_visible_switch",
+        enabled = television,
+    )
 }
 
 /**
@@ -163,22 +195,53 @@ private const val TV_FONT_SCALE_STEP = 0.05f
 
 /**
  * ▲ and ▼ leave a slider or a text field in the TV layout, instead of changing the value or moving
- * the cursor, so the remote can reach what is above and below it.
+ * the cursor, so the remote can reach what is above and below it. Every text field takes ▲/▼ for its
+ * cursor (Compose maps them in single-line fields too) and a Material slider takes them as value
+ * steps, so each needs this. ◀ and ▶ stay with the slider and the text. The on-screen keyboard, when
+ * open, gets the keys before this and keeps its own navigation; Back closes it.
  */
-internal fun Modifier.tvArrowsLeave(): Modifier =
+
+internal fun Modifier.tvArrowsLeave(sequentialFallback: Boolean = true): Modifier =
     composed {
         if (!LocalTvLayout.current) return@composed Modifier
         val focusManager = LocalFocusManager.current
+        // The press that moved focus is the press whose release is taken too; nothing else is held back.
+        var tookDown by remember { mutableStateOf(false) }
         Modifier.onPreviewKeyEvent { event ->
-            val direction =
-                when (event.key) {
-                    Key.DirectionUp -> FocusDirection.Up
-                    Key.DirectionDown -> FocusDirection.Down
-                    else -> return@onPreviewKeyEvent false
+            val direction = tvArrowDirection(event.key) ?: return@onPreviewKeyEvent false
+            when (event.type) {
+                KeyEventType.KeyDown -> {
+                    tookDown = tvLeaveAttempts(direction, sequentialFallback).any { focusManager.moveFocus(it) }
+                    tookDown
                 }
-            if (event.type == KeyEventType.KeyDown) focusManager.moveFocus(direction)
-            true
+                KeyEventType.KeyUp -> tookDown.also { tookDown = false }
+                else -> false
+            }
         }
+    }
+
+/**
+ * The moves tried, in order, to take ▲ / ▼ out of a field or slider: the spatial move first, then, when
+ * that finds no candidate, the next or previous control in the page's focus order (which wraps at the
+ * page's ends, so the first control of a page asks for [sequentialFallback] = false). When none moves, the
+ * press is not taken: that is the page's top or bottom, and the field or slider keeps its own arrow.
+ */
+internal fun tvLeaveAttempts(
+    direction: FocusDirection,
+    sequentialFallback: Boolean = true,
+): List<FocusDirection> =
+    when {
+        !sequentialFallback -> listOf(direction)
+        direction == FocusDirection.Up -> listOf(FocusDirection.Up, FocusDirection.Previous)
+        else -> listOf(FocusDirection.Down, FocusDirection.Next)
+    }
+
+/** The focus direction of ▲ / ▼, the only arrows [tvArrowsLeave] hands to focus; null for any other key. */
+internal fun tvArrowDirection(key: Key): FocusDirection? =
+    when (key) {
+        Key.DirectionUp -> FocusDirection.Up
+        Key.DirectionDown -> FocusDirection.Down
+        else -> null
     }
 
 /**

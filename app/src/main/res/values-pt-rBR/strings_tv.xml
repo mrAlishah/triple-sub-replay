@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">Não foi possível pesquisar no YouTube. Verifique a conexão e tente de novo.</string>
     <string name="tv_home_try_again">Tentar de novo</string>
     <string name="tv_home_start_hint">Pesquise um vídeo no idioma que você está aprendendo ou abra a página do YouTube. Em um vídeo, ◀ ▶ mudam de linha e ▼ vai para as legendas.</string>
+    <string name="tv_search_visible_title">Mostrar a busca de configurações na TV</string>
+    <string name="tv_search_visible_description">Coloca a caixa de busca de configurações no topo da página de configurações nesta TV. Desligado: a página começa nas configurações da aba e o controle nunca para na busca.</string>
 </resources>

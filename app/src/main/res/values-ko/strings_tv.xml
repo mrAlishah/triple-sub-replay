@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">YouTube를 검색할 수 없습니다. 연결을 확인하고 다시 시도하세요.</string>
     <string name="tv_home_try_again">다시 시도</string>
     <string name="tv_home_start_hint">배우는 언어로 된 영상을 검색하거나 YouTube 페이지를 여세요. 영상에서 ◀ ▶로 줄을 이동하고 ▼로 자막으로 갑니다.</string>
+    <string name="tv_search_visible_title">TV에서 설정 검색 표시</string>
+    <string name="tv_search_visible_description">이 TV의 설정 페이지 맨 위에 설정 검색 상자를 표시합니다. 끄면 페이지가 탭 설정부터 시작하고 리모컨이 검색에서 멈추지 않습니다.</string>
 </resources>

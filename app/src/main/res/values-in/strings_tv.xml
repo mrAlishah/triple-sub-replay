@@ -22,4 +22,6 @@
     <string name="tv_home_search_failed">Tidak bisa mencari di YouTube. Periksa koneksi lalu coba lagi.</string>
     <string name="tv_home_try_again">Coba lagi</string>
     <string name="tv_home_start_hint">Cari video dalam bahasa yang sedang kamu pelajari, atau buka halaman YouTube. Pada video, ◀ ▶ berpindah baris dan ▼ ke subtitle.</string>
+    <string name="tv_search_visible_title">Tampilkan Cari Pengaturan di TV</string>
+    <string name="tv_search_visible_description">Menaruh kotak pencarian pengaturan di bagian atas halaman pengaturan di TV ini. Mati: halaman dimulai dari pengaturan tab dan remote tidak pernah berhenti di pencarian.</string>
 </resources>

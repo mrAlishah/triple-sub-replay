@@ -177,7 +177,7 @@ class AnkiDroidSenderTest {
     fun soundsAndThePictureGoIntoTheV5FieldsAndSourceKeepsTheLink() {
         val anki = FakeAnki().also(::ready)
         val media = FakeMedia(AnkiCardFiles(File("w.m4a"), File("s.m4a"), File("p.jpg")))
-        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(audio = true, picture = true))
+        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(CardPlace.FRONT, CardPlace.BACK, CardPlace.BACK))
         assertEquals(AnkiSendResult(sent = 1), result)
         val byName = TRIPLE_FIELDS.zip(anki.notes.single().second).toMap()
         assertEquals("[sound:w.m4a]", byName["Word audio"])
@@ -191,7 +191,7 @@ class AnkiDroidSenderTest {
     fun aCardSentBeforeItsSentenceClipWaitsForItInTheSentenceAudioField() {
         val anki = FakeAnki().also(::ready)
         val media = FakeMedia(AnkiCardFiles(word = File("w.m4a")))
-        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(audio = true))
+        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(CardPlace.FRONT, CardPlace.BACK))
         assertEquals(AnkiSendResult(sent = 1, waiting = 1), result)
         assertEquals(ANKI_SENTENCE_AUDIO_FIELD, media.waiting.single().field)
     }

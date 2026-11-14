@@ -7,10 +7,10 @@ import java.util.zip.ZipInputStream
 import kotlin.math.exp
 
 /**
- * Apache OpenNLP's English (Universal Dependencies EWT) and German (GSD) part-of-speech models
- * (maxent, beam 3), run without the OpenNLP library: its loader asks Android's XML parser for a
- * feature that Android rejects. The features below are the ones OpenNLP 2.5.4 uses with these
- * models' `generator.featuregen` (identical in both), so the tags are the same. Tags are UD parts of speech (NOUN, VERB, AUX,
+ * Apache OpenNLP's part-of-speech models (Universal Dependencies English EWT, German GSD and Spanish GSD,
+ * maxent, beam 3), run without the OpenNLP library: its loader asks Android's XML parser for a feature that
+ * Android rejects. The features below are the ones OpenNLP 2.5.4 uses with these models'
+ * `generator.featuregen` (the same file in all three), so the tags are the same. Tags are UD parts of speech (NOUN, VERB, AUX,
  * …); a contraction kept whole is tagged as its parts (`can't` AUX+PART).
  *
  * OpenNLP runs a beam of 3, but the model caches each word's features (`cache="true"`) from the
@@ -70,7 +70,7 @@ internal class OpenNlpPosTagger private constructor(
 
         /** OpenNLP's binary GIS format: type, correction constants, outcomes, outcome patterns, predicates, weights. */
         private fun readGisModel(data: DataInputStream): OpenNlpPosTagger {
-            if (data.readUTF() != "GIS") throw IOException("The part-of-speech model is not a GIS model.")
+            if (data.readUTF() != "GIS") throw IOException("The model is not a GIS model.")
             data.readInt()
             data.readDouble()
             val outcomes = Array(data.readInt()) { data.readUTF() }

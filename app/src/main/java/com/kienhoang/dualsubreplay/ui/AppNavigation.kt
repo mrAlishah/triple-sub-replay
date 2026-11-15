@@ -5,12 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.School
@@ -22,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.testTag
@@ -167,14 +166,15 @@ private fun DrawerHeader(onClose: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The app logo, as on the launcher and in the README: a rounded square in the accent color.
         Surface(
             modifier = Modifier.size(40.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.primary,
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.ClosedCaption, contentDescription = null, modifier = Modifier.size(22.dp))
+                Icon(painterResource(R.drawable.ic_app_logo_mark), contentDescription = null, modifier = Modifier.size(26.dp))
             }
         }
         Spacer(Modifier.width(12.dp))

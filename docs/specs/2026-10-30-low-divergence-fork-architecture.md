@@ -205,3 +205,30 @@ Merge base `ed6e09c`. Resolved in the working tree, uncommitted. JVM-checked onl
 - Spanish and German lines: word colors, tap card, grammar; both analyzers loading in one session.
 - Anki: card places (word sound, sentence sound, picture each Front, Back, Off) on AnkiDroid and AnkiConnect, v5 template updates when a place changes, a Basic card.
 - Not run: lint, `formatCheck`, `complexityCheck`, the full unit suite, `assembleDebug`, androidTest on a device.
+
+## Upstream sync record: `main` (0370cc0) into `mydevelop` (2026-11-15)
+
+Merge base `51817f2`. Resolved in the working tree, uncommitted. Compiled only (`compileDebugKotlin`, `compileDebugAndroidTestKotlin`); no unit, Python or device tests were run, nothing was checked on a device.
+
+### Accepted from upstream
+
+- The German learner help the owner contributed (PR #233) came back with the maintainer's review fixes: the word's role now sits inside the Grammar section (`GrammarExplanations`, upstream test `theWordsRoleFollowsTheGrammarSection`), `GermanMorphology.sentence` keeps the last line, data files and spec use the maintainer's wording ("DualSub Replay" data headers, contributor provenance).
+- AI request budget (`AiRequestBudgetTest`, `AiKeyPacer`): a refused JSON schema or thinking setting is retried on the key's next turn (`nextTurn`), not at once.
+- Closed subtitles stay closed until the app is closed, the sentence sound survives a long pause, recording continues after an ad, Play first for card sounds, the drawer's logo bubble (`ic_app_logo_mark`), outside-PR risk flags, release signing key in a main-only environment, CI size limit and memory report, shorter `AGENTS.md` with the architecture details in `docs/project/tech-stack.md`.
+
+### Adapted to the fork
+
+- `AiTranslationAccess.completeWhenBusy`: upstream's `nextTurn()` pacing together with the fork's `dropRefusedEffort` switch, so Test translation still reports a refused thinking setting.
+- `AGENTS.md`: upstream's short architecture rules, plus a "Fork architecture rules" block for what only the fork has (ChatGPT Subscription limits, central AI connections and the decision not to adopt "AI thinking for translation", the TripleSub v5 note type). The long per-feature paragraphs are not kept in `AGENTS.md`; the fork's are in `tech-stack.md` and `fork-customizations.md`.
+- German tests keep the fork's three-argument `onSave` of `WordLearningDialog` (upstream's has two).
+- `LanguageAwareTokenizer`: Git merged both sides' German branch and `isGermanCode` without a conflict, which did not compile; one copy of each kept.
+
+### Excluded (fork behaviour kept)
+
+- README: upstream's badges, "How to install" and "Is it safe?" describe upstream's signed `DualSub-Replay.apk` and developer verification, not the fork's releases; the fork README stays.
+
+### Remaining manual verification (owner)
+
+- German word card on a phone: the role appears once, inside Grammar; closing Grammar hides it.
+- Drawer logo and TV drawer focus together (`AppNavigation.kt` took upstream's logo and kept the fork's focus handling).
+- `AiRequestBudgetTest`, `testDebugUnitTest`, `lintDebug`, `formatCheck`, `complexityCheck`, `assembleDebug`, `assembleDebugAndroidTest`, Python tool tests and the managed-device tests: NOT RUN.

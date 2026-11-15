@@ -33,6 +33,11 @@ data class DualSubUiState(
     /** Titles the user typed, by video id; they win over [videoTitle]. */
     val manualVideoTitles: Map<String, String> = emptyMap(),
     val subtitlePanelVisible: Boolean = true,
+    /**
+     * The person closed the subtitles (panel or box). They stay closed on other videos and across
+     * fullscreen until the bubble is tapped; kept in memory only, so closing the app resets it.
+     */
+    val subtitlesClosedByUser: Boolean = false,
     val sourcePreference: String = "auto",
     val targetLanguage: String = DEFAULT_SECOND_LANGUAGE,
     /** Recent "Translate to" picks, newest first; see [recentLanguagesToShow]. */
@@ -318,3 +323,6 @@ internal fun initialGuideCompleted(
     preferenceValue: Boolean,
     onboardingCompleted: Boolean,
 ): Boolean = if (preferenceExists) preferenceValue else onboardingCompleted
+
+/** A new video or an automatic restore opens the panel, but never after the person closed the subtitles. */
+internal fun DualSubUiState.withPanelShown(): DualSubUiState = if (subtitlesClosedByUser) this else copy(subtitlePanelVisible = true)

@@ -166,7 +166,7 @@ internal fun annotatedSubtitleText(
 }
 
 /**
- * Changes once the Japanese, English, German, Chinese or Spanish analyzer finishes loading in the
+ * Changes once the Japanese, English, Chinese, German or Spanish analyzer finishes loading in the
  * background. Use it as a `remember` key wherever subtitle text is tokenized, so lines shown before
  * it loaded are split again. Each revision only grows, so their sum changes whenever one does.
  */

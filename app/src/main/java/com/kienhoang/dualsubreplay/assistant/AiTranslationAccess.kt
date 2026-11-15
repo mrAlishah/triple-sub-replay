@@ -284,7 +284,12 @@ private class KeyedAiTranslationModel(
                         responseFormat = null
                         if (!nextTurn()) throw error
                     }
-                    dropRefusedEffort && effort != null && error.kind in setOf(AiErrorKind.UNSUPPORTED_THINKING, AiErrorKind.BAD_REQUEST) -> {
+                    dropRefusedEffort && effort != null && error.kind in
+                        setOf(
+                            AiErrorKind.UNSUPPORTED_THINKING,
+                            AiErrorKind.BAD_REQUEST,
+                        )
+                    -> {
                         effort = null
                         if (!nextTurn()) throw error
                     }

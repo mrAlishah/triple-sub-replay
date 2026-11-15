@@ -19,6 +19,12 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 - **Per-tab settings.** Each YouTube tab now keeps its own subtitle languages, Subtitle 2 switch, translation mode (Google, AI with Google, AI only, on-device), Translation AI Service with its model and thinking, text size, per-subtitle size, alignment and RTL, subtitle order, caption format and visibility, subtitle colors and highlight, panel and subtitle-button positions, landscape split, playback speed and word-learning options, and restores them when you switch tabs and after a restart. Settings → Current tab | Default for new tabs: the Default is copied into each new tab at creation and never changes existing tabs or the playing video; "Reset this tab to the default" replaces only the open tab, and "Use the settings of this tab as the default" copies the open tab (positions, play modes, AI model included) into the Default. Accounts, API keys, the ChatGPT sign-in, the Chat AI Service, saved words, Practice, Anki, the app language and theme stay global. Existing users keep what they had: on the first start the Default and every tab begin with the current settings. Tab ids are never reused, even after a tab is closed or the saved tab list cannot be read. A Settings screen closes when the open tab changes, and the assistant's waiting cards and Undo buttons are dropped, so nothing can write to the wrong tab. Not tested on a device yet. See `docs/specs/2026-11-02-per-tab-settings-profiles.md`.
 
+### Changed
+
+- **Smaller Codex instruction context.** Codex uses a generated core and reads the existing area rules when needed; the shared drift check detects stale instructions.
+
+- **Smaller Claude Code context.** Claude Code now loads a short `CLAUDE.md` core (memory files 7.2k tokens in total, measured with `/context`) instead of all of `AGENTS.md` (21.9k in total before). The area rules in `.claude/rules/` and the PR and release skill load on demand and are generated from `AGENTS.md`, and a CI test fails when they drift. `AGENTS.md` and the app are unchanged.
+
 ### Fixed
 
 - **Android TV drawer navigation.** With the menu open, the remote's arrows, OK and Back now belong to the menu even over a playing video (before, the video's line keys could take them first), and focus can no longer leave the menu for TV home or the page behind it. Not tested on a real TV yet.

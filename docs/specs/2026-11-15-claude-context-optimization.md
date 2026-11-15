@@ -96,3 +96,19 @@ Destinations (item counts and bytes of `AGENTS.md` text): core 41 / 8,272; skill
 Codex discovers `AGENTS.override.md` before `AGENTS.md` at the repository root. Generate the override from the checked Claude core with Codex-specific routing and explicit Git authorization; `AGENTS.md` remains authoritative and unchanged. Codex must explicitly read the relevant `.claude/rules/` files and the PR skill as a file before dependent work, including Serena or other MCP access. Existing unit mapping and generated rules remain shared. `check` fails for missing or stale Codex output, oversized output, or ambiguous generation anchors; `sync` regenerates it. A changed source digest still needs human review.
 
 Acceptance: the generator check and Python tests pass; every mapped core item appears in the generated core and every scoped destination is routed; ambiguous anchors and modified output fail; `AGENTS.md` remains unchanged; fresh Codex sessions demonstrate discovery and area, cross-area and Serena-first rule reads; fresh Claude sessions show unchanged instruction behavior. Record observed token counts and unverified scenarios separately. No live behavior or token saving is asserted until measured. The change is non-APK and qualifies for `release:skip` if a PR is later authorized.
+
+## Reconciliation with the merged `mydevelop` (2026-11-15)
+
+The upstream sync moved the per-area invariants out of `AGENTS.md` into `docs/project/tech-stack.md#architecture-invariants` and left one digest line per area under "Architecture rules" (`AGENTS.md` fell from 55,876 to 28,841 bytes). Rules:
+
+- The detail now lives in `tech-stack.md`, so each generated rule embeds, verbatim, the `tech-stack.md` sections for its area (`"docs"` in the map's targets) after the `AGENTS.md` digest units. A matching Read still loads the full text; there is one generator and one map.
+- `check` fails when an embedded heading is missing or renamed, when an `AGENTS.md` link `tech-stack.md#anchor` points at no heading, or when a `must_keep` literal is in neither `AGENTS.md` nor an embedded section.
+- The 16 new "Architecture rules" and "Fork architecture rules" units were assigned by hand (rule and digest tag); `sync` left them as `?` and failed until then. The first-launch and "Before changing an area" items stay in `CLAUDE.md` verbatim; four digests were shortened to stay under the 16,384-byte cap (now 16,378).
+- Updated core items: the Python-tests command, `kotlinx-coroutines-test`, the AI request budget; the PR skill gained the release-signing and outside-PR flag text.
+
+Measured (Claude Code, `claude -p "/context all"` in this worktree): memory files 7.2k tokens (6.9k before the merge), whole session at start 22.6k. Bytes: `CLAUDE.md` 15,948 to 16,378, `AGENTS.override.md` 16,565 to 16,995. Not measured: the token cost with `AGENTS.md` loaded whole after the merge, and a Serena-only invariant probe. Passed: Python suite (93 tests), drift check, a live Read probe that loaded `webview-playback.md` with the embedded "Player and YouTube page" section, and two negative probes (renamed heading).
+
+Follow-up fixes (same day):
+- Links: the generator rebases every relative link of an `AGENTS.md` unit or embedded `tech-stack.md` section so it resolves from the generated file, and `check` fails on a link to a missing file or heading in any generated file (`rebase_links`, `broken_links`).
+- Headroom: Testing conventions moved to the new path-scoped rule `testing` (test sources and `tools/tests`); `CLAUDE.md` keeps a one-line digest, the `formatNewCode` item and a routing row. `CLAUDE.md` is 15,019 of 16,384 bytes; `AGENTS.override.md` 15,636 of 18,432.
+- `AiTranslationAccess.kt`: one condition re-wrapped by `formatNewCode` to clear the four `formatCheck` violations inherited from `mydevelop`; no token changes except whitespace and a trailing comma.

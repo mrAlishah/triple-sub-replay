@@ -37,7 +37,8 @@ internal fun TvLayer(
     navigationOpen: Boolean = false,
 ) {
     if (!LocalTvLayout.current) return
-    BindTvRemote(state, webController, homeShown, actions.showPanel) { onHomeShownChange(true) }
+    // While the drawer is open the keys belong to it: the video's line keys and Back must not take them first.
+    BindTvRemote(state, webController, homeShown || navigationOpen, actions.showPanel) { onHomeShownChange(true) }
     val home = rememberTvHomeState()
     // Leaving TV home hands the remote to the page, so OK and the arrows work on the video at once.
     LaunchedEffect(homeShown) {

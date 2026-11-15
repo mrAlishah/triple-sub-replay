@@ -9,6 +9,8 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Added
 
+- **Upstream sync (2026-11-15).** Adopted upstream's German review fixes (the word's role inside Grammar), closed subtitles that stay closed, the sentence sound after a long pause, the AI request budget (refused settings retry on the key's next turn) and the new drawer logo. Kept the fork README and the fork's ChatGPT Subscription and AI connection rules.
+
 - **Quality checks pass again.** `formatCheck` now finds `python3`, `python` or `py -3` (and says so clearly if none exists), the Default-tab settings editor is split into smaller parts (no change in what it shows or saves), and formatting findings in fork files are fixed. See `docs/specs/2026-11-12-quality-gates-green.md`.
 - **Subtitle 2 uses the selected Translation AI Service.** Gemini API and the other keyed services now translate Subtitle 2 too (before, only ChatGPT Subscription did), straight from the Original, with the same mode rules (Google only, AI with Google, AI only, on-device). Subtitle 2's language picker also shows a Recent group of its own (kept separately from Subtitle 1's, saved in backups). Not tested on a device or with real AI services yet. See `docs/specs/2026-11-12-subtitle2-ai-service-and-recent-languages.md`.
 - **Upstream sync (2026-11-12).** Adopted upstream's backup and shared setups, settings groups with current values and Search entries, Flashcards section, Hide while playing in the quick language popup, Dictation play mode, AI subtitles for videos without captions, Meaning in this sentence (AI), card sound, picture and card front, smaller and retried app updates. Cards for Anki now use the new note type `TripleSub Replay v5` (v4 plus word and sentence sound); older cards are untouched. The fork keeps its three subtitle slots instead of upstream's third line.
@@ -21,10 +23,11 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 - **Smaller Codex instruction context.** Codex uses a generated core and reads the existing area rules when needed; the shared drift check detects stale instructions.
 
-- **Smaller Claude Code context.** Claude Code now loads a short `CLAUDE.md` core (5.9k tokens, measured with `/context`) instead of all of `AGENTS.md` (20.9k). The area rules in `.claude/rules/` and the PR and release skill load on demand and are generated from `AGENTS.md`, and a CI test fails when they drift. `AGENTS.md` and the app are unchanged.
+- **Smaller Claude Code context.** Claude Code now loads a short `CLAUDE.md` core (memory files 7.2k tokens in total, measured with `/context`) instead of all of `AGENTS.md` (21.9k in total before). The area rules in `.claude/rules/` and the PR and release skill load on demand and are generated from `AGENTS.md`, and a CI test fails when they drift. `AGENTS.md` and the app are unchanged.
 
 ### Fixed
 
+- **Android TV drawer navigation.** With the menu open, the remote's arrows, OK and Back now belong to the menu even over a playing video (before, the video's line keys could take them first), and focus can no longer leave the menu for TV home or the page behind it. Not tested on a real TV yet.
 - **Search settings on Android TV.** On a TV, Search settings is now a button: moving over it with the remote no longer opens the keyboard, and OK or a click opens a search box of its own (Back closes the keyboard, then the box). It no longer bounces the remote between Search and Per-tab Settings. Search settings now comes first on the settings page, above Per-tab Settings, on every device. New switch Settings → Android TV (beta) → Show Search Settings on TV (on by default; Reset all settings turns it on). Not tested on a real TV yet.
 - **Android TV remote navigation.** The menu (hamburger) button now shows in the TV layout, also over TV home, and opens the drawer with OK or a mouse click; the remote enters the drawer, walks all of it, and Back closes it with focus back on the button. ▲/▼ now leave every text field (including Search settings) and every slider (including Font Size and Portrait Panel Position), falling back to the next or previous control when the spatial move finds none; ◀/▶ still change sliders. Focus rings were added to section headers, switches and the update row. Not tested on a real TV yet.
 

@@ -100,6 +100,7 @@ abstract class LearnerLanguageData : DefaultTask() {
                 "opennlp-en-ud-ewt-pos-1.3-2.5.4.bin" to "en-pos.zip",
                 "opennlp-de-ud-gsd-pos-1.3-2.5.4.bin" to "de-pos.zip",
                 "opennlp-es-ud-gsd-pos-1.3-2.5.4.bin" to "es-pos.zip",
+                "opennlp-de-ud-gsd-pos-1.3-2.5.4.bin" to "de-pos.zip",
             )
         val directory = output.dir("learner-data").get().asFile
         directory.mkdirs()
@@ -343,6 +344,7 @@ dependencies {
     learnerData("org.apache.opennlp:opennlp-models-pos-en:1.3.0")
     learnerData("org.apache.opennlp:opennlp-models-pos-de:1.3.0")
     learnerData("org.apache.opennlp:opennlp-models-pos-es:1.3.0")
+    learnerData("org.apache.opennlp:opennlp-models-pos-de:1.3.0")
     learnerData("net.sf.extjwnl:extjwnl-data-wn31:1.2")
     learnerData("com.huaban:jieba-analysis:1.0.2")
     learnerData("com.hankcs:hanlp:portable-1.8.6")
@@ -351,6 +353,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")
+    // Virtual time for the AI request budget tests (minutes of pacing run in milliseconds); tests only.
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

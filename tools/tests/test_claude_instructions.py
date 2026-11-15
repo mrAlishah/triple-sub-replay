@@ -73,5 +73,54 @@ class CodexCoreTest(unittest.TestCase):
                 self.assertTrue(any("stale or missing" in x for x in ci.problems()))
 
 
+class DocSectionTest(unittest.TestCase):
+    def test_section_stops_at_next_heading_of_same_or_higher_level(self):
+        text = ci.doc_section("docs/project/tech-stack.md", "Captions")
+        self.assertTrue(text.startswith("### Captions"))
+        self.assertNotIn("### Translation", text)
+
+    def test_missing_heading_fails_closed(self):
+        with self.assertRaises(ValueError):
+            ci.doc_section("docs/project/tech-stack.md", "No such heading")
+
+    def test_slug_matches_github_anchors(self):
+        self.assertEqual("app-updates-remote-switches-and-problem-reports",
+                         ci.slug("App updates, remote switches and problem reports"))
+
+    def test_every_embedded_section_is_in_its_rule(self):
+        m = ci.load_map()
+        for dest, cfg in m["targets"].items():
+            for path, heading in cfg.get("docs", []):
+                target = ci.target_path(*ci.split_dest(dest))
+                rule = target.read_text(encoding="utf-8")
+                expected = ci.rebase_links(ci.doc_section(path, heading), path, str(target.relative_to(ci.ROOT)))
+                self.assertIn(expected, rule)
+
+
+class LinkTest(unittest.TestCase):
+    def test_rebase_resolves_from_the_generated_file(self):
+        dest = ".claude/rules/x.md"
+        self.assertEqual("[a](../../docs/specs/s.md#h)",
+                         ci.rebase_links("[a](../specs/s.md#h)", "docs/project/tech-stack.md", dest))
+        self.assertEqual("[a](../../docs/project/tech-stack.md#h)",
+                         ci.rebase_links("[a](docs/project/tech-stack.md#h)", "AGENTS.md", dest))
+        self.assertEqual("[a](../../docs/project/tech-stack.md#h)",
+                         ci.rebase_links("[a](#h)", "docs/project/tech-stack.md", dest))
+
+    def test_urls_and_absolute_links_are_untouched(self):
+        text = "[a](https://example.com/x#y) [b](/abs) [c](mailto:a@b.c)"
+        self.assertEqual(text, ci.rebase_links(text, "AGENTS.md", ".claude/rules/x.md"))
+
+    def test_generated_files_have_no_broken_links(self):
+        units = ci.parse(ci.AGENTS.read_text(encoding="utf-8"))
+        for path, text in ci.generated_files(units, ci.load_map()).items():
+            self.assertEqual([], ci.broken_links(path, text))
+
+    def test_unrebased_text_is_reported(self):
+        path = ci.ROOT / ".claude/rules/x.md"
+        self.assertTrue(ci.broken_links(path, "[a](docs/project/tech-stack.md#first-launch)"))
+        self.assertTrue(ci.broken_links(path, "[a](../../docs/project/tech-stack.md#no-such-heading)"))
+
+
 if __name__ == "__main__":
     unittest.main()

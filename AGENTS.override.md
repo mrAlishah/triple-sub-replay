@@ -15,6 +15,7 @@ This file is generated from the maintained `CLAUDE.md` core by `tools/claude_ins
 | Study tools, Send to, Anki, known words (`data/*Anki*`, `ui/Dictation*`) | `.claude/rules/study-anki.md` |
 | App updates, ads and sponsors, remote switches (`update/`, `ui/AdSkipScripts.kt`) | `.claude/rules/updates-ads-remote.md` |
 | Strings, theme, dialogs, settings page, backup and sharing (`res/values*`, `ui/theme/`, `ui/Settings*`) | `.claude/rules/ui-settings.md` |
+| Writing or changing tests (`app/src/test`, `app/src/androidTest`, `tools/tests`) | `.claude/rules/testing.md` |
 | Subtitle slots, order, size, alignment (`ui/SubtitleSlot*`, `ui/TripleSubtitle*`) | `.claude/rules/subtitle-slots.md` |
 | Opening, updating, reviewing or handing off a PR; release label or version; CI status; preview link | `.claude/skills/pr-handoff-release/SKILL.md` (read as a file) |
 
@@ -54,6 +55,7 @@ On macOS or Linux run `./gradlew` where the commands below say `.\gradlew.bat`.
 
 - Managed-device tests require the API 36 AOSP x86_64 system image. On headless hosts add `-Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect` (CI also passes `--no-parallel --max-workers=2`).
 - Debug APK output: `app/build/outputs/apk/debug/app-debug.apk`.
+- Test workflow and release-tool changes with `python3 -m unittest discover -s tools/tests -p 'test_*.py' -v` and validate workflow YAML/shell. These tests also run in Android PR CI.
 
 ## Fork maintenance
 
@@ -90,17 +92,13 @@ When `main` (or any upstream) is merged into `mydevelop`:
 
 ## First-launch flow
 
-- First-launch flow is `LanguageSetupScreen` → `GuideScreen` → main experience. Preserve the guide migration behavior: if `guide_completed` is absent, users who already completed onboarding are treated as guide-complete, while brand-new users see the guide. Do not simplify this to `getBoolean("guide_completed", false)` or existing users will see the guide after upgrading.
+- **First launch** ([details](docs/project/tech-stack.md#first-launch)): keep the guide migration; never simplify it to `getBoolean("guide_completed", false)`.
 
 ## Testing conventions
 
-- Unit tests are plain JUnit4 — no Robolectric or mocking library. They call `internal` top-level functions directly (same package), so keep new logic in small testable `internal` functions. `org.json` is a unit-test-only dependency.
-- `unitTests.isReturnDefaultValues = true`: Android framework calls return defaults instead of throwing in unit tests.
-- Instrumented tests build Compose UI in isolation (`createComposeRule`) and WebView fixtures run offline — tests never hit the live YouTube site.
-- The CI emulator sometimes shows "System UI isn't responding", which holds window focus. Call `closeSystemDialogs()` (`ui/SystemDialogs.kt` in `androidTest`) just before Espresso's `pressBack` or `closeSoftKeyboard` in a new test.
-- Compose merges a `Text` inside a clickable `Row` into the row's node, so a test that looks for that text needs `useUnmergedTree = true`.
-- When a check fails, the CI job summary lists the failed tests (`tools/report_failed_tests.py`). For device tests, the full JUnit XML is in the `pixel2-api36-test-reports` artifact; the managed-device log does not print failing test names.
-- The transcript the player holds is a window of lines around the playing time, not the whole video. Code that keeps a line across seeks (loops, repeats) must handle that line leaving the window. Check long seeks and ads on an emulator with a real video; unit tests alone miss both cases.
+<!-- digest:TESTING -->
+- **Tests** (rule `testing`): plain JUnit4, no Robolectric or mocking library; instrumented tests run offline and never hit live YouTube; check long seeks and ads on an emulator with a real video, because the player holds only a window of transcript lines; a new automatic AI request path goes through `AiKeyPacer` with an `AiRequestBudgetTest` scenario.
+
 - `formatNewCode -PformatFiles=...` reformats each whole file, including code you did not touch. Revert unrelated hunks so the PR stays focused; `formatCheck` only ratchets per-file counts.
 
 ## Hard rules for PRs and agents
@@ -114,8 +112,10 @@ When `main` (or any upstream) is merged into `mydevelop`:
 
 ## Invariants (digests; the rule file has the verbatim text)
 
+Before changing an area, read its section in the [technical context](docs/project/tech-stack.md#architecture-invariants) and the specs it links. That file holds the current design; specs are dated records and an older one may be superseded. Tests enforce most of it. The rules that must never break:
+
 <!-- digest:WEBVIEW -->
-- **WebView and navigation:** exactly one WebView (`SingleYouTubePage`); tabs are saved addresses loaded one at a time; never add a second online player or WebView; a tab of another Google account uses `tabCookieManager`, never `CookieManager.getInstance()`. Main-frame URLs go through `classifyMainFrameUrl`; JS scripts re-verify the executing origin (`https:` + `*.youtube.com`) and `PlaybackArchitectureTest` asserts the literal script text. The playback service only sends play, pause and seek scripts to the page video; it is not a second player.
+- **WebView and navigation:** exactly one WebView (`SingleYouTubePage`); tabs are saved addresses loaded one at a time; never add a second online player or WebView; a tab of another Google account uses `tabCookieManager`, never `CookieManager.getInstance()`. Main-frame URLs go through `classifyMainFrameUrl`; JS scripts re-verify the executing origin (`https:` + `*.youtube.com`) and `PlaybackArchitectureTest` asserts the literal script text.
 
 <!-- digest:CAPTIONS -->
 - **Captions and translation:** caption discovery stays behind `CaptionProvider` (host allowlist, 8 MiB cap); the page token never leaves the page and `webPageTranscriptScript` keeps its one `fetch(`. Translation defaults to Google's unofficial web endpoint or on-device ML Kit; no user- or developer-provided service key is ever required.
@@ -130,7 +130,7 @@ When `main` (or any upstream) is merged into `mydevelop`:
 - **Strings:** user-visible text lives in `values/strings_<area>.xml` with the same file in every translated `values-*` folder (`AppLanguageTest`, lint `MissingTranslation`; offered languages are `APP_LANGUAGES`); never a UI literal in Kotlin; take the product name from `R.string.app_name`.
 
 <!-- digest:LEARNER -->
-- **Learner help (zh, en, es, de, kanji, hanzi):** bundle data files only, no third-party code; keep the licence credits in `THIRD_PARTY_NOTICES.md` and the licence screen; regenerate data with its `tools/` script, never hand-edit; every grammar point needs its own example sentence in its catalogue test and its text in all 9 interface languages; mnemonics are the project's own, never copied.
+- **Learner help (zh, en, es, de, kanji, hanzi):** bundle data files only, no third-party code; keep the licence credits in `THIRD_PARTY_NOTICES.md` and the licence screen; regenerate data with its `tools/` script, never hand-edit; every grammar point needs its example test and its text in all 9 interface languages; mnemonics are never copied.
 
 <!-- digest:ANKI -->
 - **Send to and Anki:** one split Send to button, never one per app; AnkiConnect is `http://127.0.0.1:8765` and nothing else may be cleartext; known words stay in `files/known-words/`.
@@ -145,7 +145,7 @@ When `main` (or any upstream) is merged into `mydevelop`:
 - **Settings keys:** every key in `dual_sub_preferences` and `ai_assistant` needs a scope and type in `SETTING_SPECS`; anything that uses an API key stays out of SHARE (`BackupSharingTest`).
 
 <!-- digest:UI -->
-- **UI:** every screen, dialog and overlay uses `DualSubTheme` and `MaterialTheme.colorScheme` roles, never new hex literals; every dialog gets the X from `DialogTitle` except confirmations the person must answer and TV dialogs; a new settings section joins a group and every switch is in `SearchableSetting`; check UI changes on the Light theme and in the saved Compose screenshots.
+- **UI:** every screen, dialog and overlay uses `DualSubTheme` and `MaterialTheme.colorScheme` roles, never new hex literals; every dialog gets the X from `DialogTitle` except confirmations the person must answer and TV dialogs; check UI changes on the Light theme and in the saved Compose screenshots.
 
 <!-- digest:SLOTS -->
-- **Subtitle slots:** three slots named by role, never by language: Original (`ORIGINAL`), Subtitle 1 (`SECOND`), Subtitle 2 (`THIRD`). Language, visibility, size and mappings stay keyed by the slot (`stableId`); visual order is only the `subtitle_order` preference. Never rename `SavedWord.meaning`, `meanings`, `personalNotes` or the JSON backup keys; changing an Anki field list needs a new note type name (current: `TripleSub Replay v5`).
+- **Subtitle slots:** three slots named by role, never by language: Original (`ORIGINAL`), Subtitle 1 (`SECOND`), Subtitle 2 (`THIRD`). Settings stay keyed by the slot (`stableId`); visual order is only `subtitle_order`. Never rename `SavedWord.meaning`, `meanings`, `personalNotes` or the JSON backup keys; changing an Anki field list needs a new note type name (current: `TripleSub Replay v5`).

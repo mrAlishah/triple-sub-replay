@@ -13,6 +13,7 @@ rule or skill file. Rule and skill files are generated; only CLAUDE.md is hand-w
 import collections
 import hashlib
 import json
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -110,7 +111,23 @@ def split_dest(dest):
     return kind, name
 
 
+LINK = re.compile(r"(\]\()([^)\s]+)(\))")
+
+
+def rebase_links(text, src, dest):
+    """Rewrite relative links written for the file `src` so they resolve from the generated file `dest` (repo-relative paths)."""
+    def fix(m):
+        target = m.group(2)
+        if re.match(r"^(?:[a-z][a-z0-9+.-]*:|/)", target, re.I):
+            return m.group(0)
+        path, hash_, fragment = target.partition("#")
+        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(src), path)) if path else src
+        return m.group(1) + posixpath.relpath(resolved, posixpath.dirname(dest)) + hash_ + fragment + m.group(3)
+    return LINK.sub(fix, text)
+
+
 def render(kind, name, cfg, units):
+    dest = str(target_path(kind, name).relative_to(ROOT))
     out = ["---"]
     if kind == "rule":
         out += ["paths:"] + ['  - "%s"' % p for p in cfg["paths"]]
@@ -122,8 +139,47 @@ def render(kind, name, cfg, units):
         if u.section != section:
             section = u.section
             out += ["## " + section, ""]
-        out += [u.canon, ""]
+        out += [rebase_links(u.canon, "AGENTS.md", dest), ""]
+    for path, heading in cfg.get("docs", []):
+        out += ["## Full text: %s, section '%s'" % (path, heading), "",
+                rebase_links(doc_section(path, heading), path, dest), ""]
     return "\n".join(out).rstrip() + "\n"
+
+
+def doc_section(path, heading):
+    """Verbatim text of one heading block of a documentation file, down to the next heading of its level or higher."""
+    lines = (ROOT / path).read_text(encoding="utf-8").splitlines()
+    for i, line in enumerate(lines):
+        h = re.match(r"^(#{1,6})\s+(.*\S)\s*$", line)
+        if h and h.group(2) == heading:
+            out = [line]
+            for nxt in lines[i + 1:]:
+                n = re.match(r"^(#{1,6})\s", nxt)
+                if n and len(n.group(1)) <= len(h.group(1)):
+                    break
+                out.append(nxt)
+            return "\n".join(out).rstrip()
+    raise ValueError("%s has no heading %r" % (path, heading))
+
+
+def broken_links(path, text):
+    out = []
+    for _, target, _ in LINK.findall(text):
+        if re.match(r"^(?:[a-z][a-z0-9+.-]*:|/)", target, re.I):
+            continue
+        name, _, fragment = target.partition("#")
+        file = (path.parent / name).resolve() if name else path
+        if not file.exists():
+            out.append("%s: link %s does not resolve" % (path.relative_to(ROOT), target))
+        elif fragment and file.suffix == ".md":
+            heads = {slug(h) for h in re.findall(r"^#{1,6}\s+(.*\S)\s*$", file.read_text(encoding="utf-8"), re.M)}
+            if fragment not in heads:
+                out.append("%s: link %s has no such heading" % (path.relative_to(ROOT), target))
+    return out
+
+
+def slug(heading):
+    return re.sub(r"\s", "-", re.sub(r"[^\w\s-]", "", heading.lower()))
 
 
 def generated_files(units, m):
@@ -203,8 +259,17 @@ def problems():
         out.append(str(e))
 
     corpus = core
-    files = generated_files(units, m)
+    try:
+        files = generated_files(units, m)
+    except ValueError as e:
+        return out + [str(e)]
+    tech = (ROOT / "docs/project/tech-stack.md").read_text(encoding="utf-8")
+    anchors = {slug(h) for h in re.findall(r"^#{1,6}\s+(.*\S)\s*$", tech, re.M)}
+    for a in sorted(set(re.findall(r"tech-stack\.md#([\w-]+)", AGENTS.read_text(encoding="utf-8")))):
+        if a not in anchors:
+            out.append("AGENTS.md links to tech-stack.md#%s, which is not a heading there" % a)
     for path, expected in files.items():
+        out += broken_links(path, expected)
         actual = path.read_text(encoding="utf-8") if path.exists() else None
         if actual != expected:
             out.append("%s is stale or missing; run sync" % path.relative_to(ROOT))
@@ -237,9 +302,10 @@ def problems():
                 out.append("%s: path pattern %r matches no file" % (dest, pattern))
         if kind == "skill" and len(cfg["description"]) > 1536:
             out.append("%s: description is over 1536 characters" % dest)
+    docs_text = "".join(doc_section(p, h) for c in m["targets"].values() for p, h in c.get("docs", []))
     for literal in m["must_keep"]:
-        if literal not in agents_text:
-            out.append("must_keep literal not in AGENTS.md any more: %r" % literal)
+        if literal not in agents_text and literal not in docs_text:
+            out.append("must_keep literal in neither AGENTS.md nor an embedded tech-stack section: %r" % literal)
         if literal not in corpus:
             out.append("must_keep literal missing from CLAUDE.md and rules: %r" % literal)
     return out

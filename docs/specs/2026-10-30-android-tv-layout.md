@@ -309,3 +309,67 @@ moment it is focused.
 5. Switch off Show Search Settings on TV: the page starts at Per-tab Settings; switch on: Search is back first.
 6. Restart the app: the switch keeps its state. Reset all settings turns it on.
 7. A mouse click on Search opens the dialog once. Hamburger, drawer and sliders still work.
+
+## Owner TV test, round 4: the hamburger drawer and the navigation contract (2026-11-15)
+
+Owner on a real TV: the hamburger shows and OK opens the drawer, but the arrow keys do not walk its items.
+
+### Failure mechanism (what is demonstrated, and what is not)
+
+Not reproduced offline (no device). From the code and the Compose 1.12.1 / Material3 1.4.0 sources:
+
+1. DEMONSTRATED, key path. `MainActivity.dispatchKeyEvent` runs `TvRemoteKeys` before any view or Compose sees a key.
+   On a watch page with the page holding view focus, `tvRemoteAction` takes ◀ ▶ ▲ ▼, OK and Back for the video
+   (line jumps, replay, TV home). The drawer opened over a playing video was never told to the remote, so while the
+   page held view focus (a mouse click on the menu button does not move it) the arrows and Back went to the video.
+2. DEMONSTRATED, containment. Focus properties stop at the nearest focus target above a node
+   (`FocusTargetNode.fetchFocusProperties`: `visitSelfAndAncestors(untilType = FocusTarget)`). The round-2 "screen
+   behind the drawer is not focusable" guard therefore never reached TV home's focus group, and the drawer group had
+   no exit rule, so ▲/▼/◀/▶ could leave the drawer for the TV home buttons behind the scrim.
+3. HYPOTHESIS, timing. That guard also made the focused menu button unfocusable the moment the drawer opened, which
+   clears focus asynchronously and can race with the drawer's own initial focus request.
+4. Ruled out: Material3's drawer has no focus code of its own; entering a focus group with a `FocusRequester` picks the
+   top-left-most child when children are focusable; the drawer items are `Surface(onClick)` and focusable.
+
+### Fix (TV layout only)
+
+- While the drawer is open the remote handler treats the screen as modal (`TvLayer`: `homeShown || navigationOpen`), so
+  only media keys are taken; arrows, OK and Back reach Compose and the drawer's Back handler.
+- The drawer's focus group cancels every exit while open (`onExit`), a real modal trap; no wrap, no escape to TV home
+  or the page. While closed its children are not focusable. The screen-wide guard is gone.
+- Unchanged: focus enters the drawer on open and returns to the menu button on close (`AppNavigation`).
+
+### Audit of the other surfaces (code reading only; none run on a TV)
+
+| Surface | Status |
+|---|---|
+| TV home, search dialog | Correct in code; emulator and owner tested |
+| Hamburger drawer | Defects found and fixed above |
+| Settings, sliders, switches, accordions | Correct in code (owner accepted); collapsed sections leave composition |
+| Search settings | Button + dialog; owner flow in round 3 |
+| Per-tab Settings | Sliders and fields carry `tvArrowsLeave`; device check |
+| AI connection / chat | Fields carry `tvArrowsLeave`; dropdown and panel behaviour device-only |
+| Player, subtitle panel, word card | Existing key map kept (`TvRemoteKeys`); device-only |
+| Saved words, Progress | Plain clickable rows and buttons; no custom key handlers; device-only |
+| Update dialog, language picker, other dialogs | Compose `Dialog` windows; the first D-pad press focuses their first item; device-only |
+| Custom gestures | Only drags (split divider, subtitle button, panel position) are pointer-only; their settings have sliders |
+
+No other `onKeyEvent` consumers exist in app UI. Not changed on purpose: a Compose dialog does not take initial focus
+by itself on a TV (one extra key press).
+
+### Tests
+
+- JVM: `TvLayoutTest.anOpenModalSurfaceKeepsTheVideoKeysButNotTheArrowsOrBack` (a modal place hands arrows, OK and Back
+  on to Android and keeps media keys).
+- Device (compiled, NOT run): `TvRemoteNavigationUiTest.theDrawerTakesFocusKeepsItInsideAndGivesItBackEveryTimeItOpens`
+  (first item focused, ▼/▲ walk, no exit past either end, nothing behind focused, Back returns to the menu button, opened twice).
+
+### MANUAL TEST REQUIRED on the TV
+
+1. Hamburger OK: the first drawer item (Tabs or Practice) has focus. ▼ walks every item to the footer; ▲ walks back.
+2. ▲ on the first and ▼ on the last item do nothing; ◀ ▶ do not leave the drawer.
+3. Settings from the drawer works; reopen the drawer: it still takes focus.
+4. Back closes the drawer; the menu button has focus. Repeat with a video playing and the page last focused.
+5. From the menu button ▼ reaches TV home without entering the page.
+6. Open the drawer with a mouse click over a playing video: the arrows move in the drawer, not the video.
+7. Switch between mouse and remote; a phone/tablet still opens the drawer by touch as before.

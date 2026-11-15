@@ -19,6 +19,7 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Fixed
 
+- **Android TV drawer navigation.** With the menu open, the remote's arrows, OK and Back now belong to the menu even over a playing video (before, the video's line keys could take them first), and focus can no longer leave the menu for TV home or the page behind it. Not tested on a real TV yet.
 - **Search settings on Android TV.** On a TV, Search settings is now a button: moving over it with the remote no longer opens the keyboard, and OK or a click opens a search box of its own (Back closes the keyboard, then the box). It no longer bounces the remote between Search and Per-tab Settings. Search settings now comes first on the settings page, above Per-tab Settings, on every device. New switch Settings → Android TV (beta) → Show Search Settings on TV (on by default; Reset all settings turns it on). Not tested on a real TV yet.
 - **Android TV remote navigation.** The menu (hamburger) button now shows in the TV layout, also over TV home, and opens the drawer with OK or a mouse click; the remote enters the drawer, walks all of it, and Back closes it with focus back on the button. ▲/▼ now leave every text field (including Search settings) and every slider (including Font Size and Portrait Panel Position), falling back to the next or previous control when the spatial move finds none; ◀/▶ still change sliders. Focus rings were added to section headers, switches and the update row. Not tested on a real TV yet.
 

@@ -15,6 +15,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -122,6 +124,37 @@ class TvRemoteNavigationUiTest {
         compose.waitForIdle()
         compose.onNodeWithTag("settings_search").assertDoesNotExist()
         assertTrue("the hidden search keeps no query", query.isEmpty())
+    }
+
+    @Test
+    fun theDrawerTakesFocusKeepsItInsideAndGivesItBackEveryTimeItOpens() {
+        setTvContent {
+            AppNavigation(onPractice = {}, onSettings = {}) { menuButton ->
+                Column {
+                    menuButton()
+                    Button(onClick = {}, modifier = Modifier.testTag("behind")) { Text("behind") }
+                }
+            }
+        }
+        repeat(2) {
+            compose.onNodeWithTag("navigation_menu_button").requestFocus()
+            press("navigation_menu_button", Key.DirectionCenter)
+            compose.waitForIdle()
+            // The first item has focus, ▼ and ▲ walk the items, and ▲ at the top stays in the drawer.
+            compose.onNodeWithTag("open_saved_words").assertIsFocused()
+            compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionDown) }
+            compose.onNodeWithTag("open_progress").assertIsFocused()
+            compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
+            compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
+            compose.onNodeWithTag("open_saved_words").assertIsFocused()
+            // Walking to the end and past it never reaches the screen behind the drawer.
+            repeat(12) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionDown) } }
+            compose.onNodeWithTag("behind").assertIsNotFocused()
+            closeSystemDialogs()
+            pressBack()
+            compose.waitForIdle()
+            compose.onNodeWithTag("navigation_menu_button").assertIsFocused()
+        }
     }
 
     @Test

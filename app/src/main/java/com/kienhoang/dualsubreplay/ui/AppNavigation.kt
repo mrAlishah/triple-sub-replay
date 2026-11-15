@@ -75,6 +75,9 @@ internal fun AppNavigation(
                             .heightIn(min = maxHeight)
                             .padding(12.dp)
                             .focusRequester(drawerFocus)
+                            // A modal trap: while the drawer is open no direction leaves it, so the remote cannot
+                            // reach the screen behind the scrim (focus properties do not cross a focus group).
+                            .focusProperties { onExit = { if (drawerActive && tvLayout) cancelFocusChange() } }
                             .focusGroup()
                             // The sheet stays composed while closed: the remote may only reach it while it is open.
                             // After focusGroup() on purpose: focus properties stop at the nearest focus target above.
@@ -123,10 +126,7 @@ internal fun AppNavigation(
         },
     ) {
         AppUpdateDialogHost()
-        // While the drawer is open the remote must not reach the screen behind its scrim.
-        Box(Modifier.fillMaxSize().focusProperties { canFocus = !(drawerActive && tvLayout) }) {
-            content { NavigationMenuButton(menuFocus) { scope.launch { drawer.open() } } }
-        }
+        content { NavigationMenuButton(menuFocus) { scope.launch { drawer.open() } } }
         AppNoticesHost()
     }
 }

@@ -56,6 +56,25 @@ class TvLayoutTest {
     }
 
     @Test
+    fun anOpenModalSurfaceKeepsTheVideoKeysButNotTheArrowsOrBack() {
+        // The drawer (like TV home) is "homeShown" to the remote: even with the page holding view focus on a watch page.
+        val modal = TvKeyPlace(homeShown = true, onPage = true, watchPage = true)
+        val taken =
+            listOf(
+                KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_DPAD_DOWN,
+                KeyEvent.KEYCODE_DPAD_LEFT,
+                KeyEvent.KEYCODE_DPAD_RIGHT,
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_BACK,
+            )
+        for (key in taken) assertNull(tvRemoteAction(key, modal))
+        assertEquals(TvRemoteAction.TOGGLE_PLAY, tvRemoteAction(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, modal))
+        val onVideo = TvKeyPlace(onPage = true, watchPage = true)
+        assertEquals(TvRemoteAction.REPLAY_LINE, tvRemoteAction(KeyEvent.KEYCODE_DPAD_UP, onVideo))
+    }
+
+    @Test
     fun anyWayOfSayingTvCounts() {
         assertTrue(isTelevision(televisionUiMode = true, leanback = false, fireTv = false))
         assertTrue(isTelevision(televisionUiMode = false, leanback = true, fireTv = false))

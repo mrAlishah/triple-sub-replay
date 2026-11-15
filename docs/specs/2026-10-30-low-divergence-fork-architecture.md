@@ -179,3 +179,29 @@ Merge base `ae9c1be`. Resolved in the working tree, uncommitted. JVM-checked onl
 - Meaning in this sentence with each Translation AI Service, including ChatGPT sign-in and no key; AI subtitles for a video with no captions; Dictation.
 - Not run: lint, `formatCheck`, `complexityCheck`, the full unit suite, `assembleDebug`, androidTest on a device.
 
+
+## Upstream sync record: `main` (51817f2) into `mydevelop` (2026-11-14)
+
+Merge base `ed6e09c`. Resolved in the working tree, uncommitted. JVM-checked only; nothing was run on a device.
+
+### Accepted from upstream
+
+- Spanish learner help (OpenNLP Spanish tagger, `Spanish*` data and grammar files, `es-pos.zip` extraction, `tools/spanish/`), card sound, picture and word-sound places (`CardPlace`, `CardSides`, `CardOptions`), `CardMediaProvider` (`.m4a` reported as `audio/mp4`), background loop steering off screen, Captions & translation section naming.
+
+### Adapted to the fork
+
+- German and Spanish both stay: `LanguageAwareTokenizer` (analyzer revision sum, language dispatch, `isGermanCode` and `isSpanishCode`), `SubtitleWordHighlight` revision key, both OpenNLP models in `app/build.gradle.kts`, one generic model-load error text.
+- Card places reach the fork's note type: `tripleCardTemplate`, `AnkiDroidSender` and `ankiConnectFields` take `CardSides`; `soundOnFront` and `CardOptions.audio` are gone. AnkiConnect and AnkiDroid keep the fork's `TripleSub Replay v5` note type and `ankiTags`. A Basic card with the picture on the front keeps the extra fields and the video link on its back.
+- AnkiDroid sending stays in `AnkiDroidSender`; upstream's inline copy in `AnkiDroidNotes.kt` was dropped.
+- README stays the fork's own; `AGENTS.md` takes upstream's wording for the study tools and section names with the fork's note type and thinking decision.
+
+### Excluded
+
+- AI thinking for translation (`storedAiTranslationThinking` import dropped; its 2026-11-02 spec file arrives from upstream but the setting stays out).
+- Upstream README text for Spanish learner help (the fork README has no learner section).
+
+### Manual verification (owner)
+
+- Spanish and German lines: word colors, tap card, grammar; both analyzers loading in one session.
+- Anki: card places (word sound, sentence sound, picture each Front, Back, Off) on AnkiDroid and AnkiConnect, v5 template updates when a place changes, a Basic card.
+- Not run: lint, `formatCheck`, `complexityCheck`, the full unit suite, `assembleDebug`, androidTest on a device.

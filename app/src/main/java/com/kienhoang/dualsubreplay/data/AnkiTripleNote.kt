@@ -24,9 +24,9 @@ internal val TRIPLE_FIELDS = TRIPLE_V4_FIELDS + listOf(ANKI_WORD_AUDIO_FIELD, AN
  */
 internal fun tripleCardTemplate(
     front: CardFront,
-    frontSound: Boolean = false,
+    sides: CardSides = CardSides(),
 ): AnkiCardTemplate {
-    val template = ankiCardTemplate(front, frontSound)
+    val template = ankiCardTemplate(front, sides)
     return template.copy(
         answer =
             template.answer

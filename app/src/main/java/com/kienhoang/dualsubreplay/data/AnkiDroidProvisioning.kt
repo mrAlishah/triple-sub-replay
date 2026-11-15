@@ -137,7 +137,7 @@ internal class AnkiDroidSender(
         same.firstOrNull { it.fields == TRIPLE_FIELDS }?.let { found ->
             // A layout the learner changed in Anki is replaced only when they pick another front.
             val applied = cardFronts.applied(found.id.toString())
-            if (cardFrontNeedsUpdate(applied, options.front, options.soundOnFront)) styleNoteType(found.id, options)
+            if (cardFrontNeedsUpdate(applied, options.front, options.sides)) styleNoteType(found.id, options)
             return found.id
         }
         if (same.isNotEmpty()) throw Stop(AnkiProblem.NOTE_TYPE_CONFLICT)
@@ -155,8 +155,8 @@ internal class AnkiDroidSender(
         id: Long,
         options: CardOptions,
     ) {
-        val applied = runCatching { provider.styleNoteType(id, tripleCardTemplate(options.front, options.soundOnFront)) }.isSuccess
-        if (applied) cardFronts.remember(id.toString(), options.front, options.soundOnFront)
+        val applied = runCatching { provider.styleNoteType(id, tripleCardTemplate(options.front, options.sides)) }.isSuccess
+        if (applied) cardFronts.remember(id.toString(), options.front, options.sides)
     }
 
     /** A note AnkiDroid took: [placed] false when its card stayed in the note type's own deck, [waiting] when its sentence sound comes later. */
@@ -183,7 +183,7 @@ internal class AnkiDroidSender(
         val placed = runCatching { provider.moveToDeck(noteId, deck) }.isSuccess
         val line = audioLineOf(word)
         val pending =
-            if (media != null && line != null && options.audio && fieldMedia.sentence.isEmpty()) {
+            if (media != null && line != null && options.sentenceAudio && fieldMedia.sentence.isEmpty()) {
                 PendingCardAudio(PENDING_ANKIDROID, noteId, line, ANKI_SENTENCE_AUDIO_FIELD, "", System.currentTimeMillis())
             } else {
                 null

@@ -1,0 +1,826 @@
+{
+ "version": 1,
+ "targets": {
+  "rule:webview-playback": {
+   "title": "WebView, playback and navigation",
+   "paths": [
+    "app/src/main/java/**/playback/*.kt",
+    "app/src/main/java/**/ui/YouTube*.kt",
+    "app/src/main/java/**/ui/BrowserTabs.kt",
+    "app/src/main/java/**/ui/*WebScripts.kt",
+    "app/src/test/**/PlaybackArchitectureTest.kt",
+    "app/src/test/**/WebNavigationPolicyTest.kt"
+   ]
+  },
+  "rule:captions-translation": {
+   "title": "Captions and translation",
+   "paths": [
+    "app/src/main/java/**/data/*Caption*.kt",
+    "app/src/main/java/**/data/PageTranslationSource.kt",
+    "app/src/main/java/**/translation/*.kt",
+    "app/src/main/java/**/ui/PageTokenScript.kt"
+   ]
+  },
+  "rule:ai-assistant": {
+   "title": "AI assistant and ChatGPT Subscription",
+   "paths": [
+    "app/src/main/java/**/assistant/*.kt",
+    "app/src/main/java/**/chatgpt/*.kt",
+    "app/src/main/java/**/ui/AiAssistant*.kt",
+    "app/src/main/java/**/ui/AiConnection*.kt",
+    "app/src/main/assets/ai/*"
+   ]
+  },
+  "rule:learner-help": {
+   "title": "Learner help, grammar, kanji and hanzi",
+   "paths": [
+    "app/src/main/learner-data/*",
+    "app/src/main/java/**/data/*Grammar*.kt",
+    "app/src/main/java/**/data/*Morphology*.kt",
+    "app/src/main/java/**/data/Chinese*.kt",
+    "app/src/main/java/**/data/Japanese*.kt",
+    "tools/spanish/*",
+    "tools/german/*",
+    "tools/kanji/*",
+    "tools/hanzi/*"
+   ]
+  },
+  "rule:study-anki": {
+   "title": "Study tools, Send to and Anki",
+   "paths": [
+    "app/src/main/java/**/data/*Anki*.kt",
+    "app/src/main/java/**/data/CardMediaProvider.kt",
+    "app/src/main/java/**/ui/Dictation*.kt",
+    "app/src/main/java/**/ui/LineAudio*.kt"
+   ]
+  },
+  "rule:updates-ads-remote": {
+   "title": "App updates, ads and sponsors, remote switches",
+   "paths": [
+    "app/src/main/java/**/update/*.kt",
+    "app/src/main/java/**/ui/AdSkipScripts.kt",
+    "app/src/main/java/**/data/SponsorSegments.kt"
+   ]
+  },
+  "rule:ui-settings": {
+   "title": "Strings, theme, dialogs, settings page, backup and sharing",
+   "paths": [
+    "app/src/main/res/values/strings*.xml",
+    "app/src/main/res/xml/locales_config.xml",
+    "app/src/main/java/**/ui/theme/*.kt",
+    "app/src/main/java/**/ui/Settings*.kt",
+    "app/src/main/java/**/ui/SubtitleSettingsDialog.kt",
+    "app/src/main/java/**/ui/DialogClose.kt",
+    "app/src/main/java/**/ui/AppLanguage.kt",
+    "app/src/main/java/**/data/SettingsTransfer.kt"
+   ]
+  },
+  "rule:subtitle-slots": {
+   "title": "Subtitle slots: roles, order, size, alignment",
+   "paths": [
+    "app/src/main/java/**/ui/SubtitleSlot*.kt",
+    "app/src/main/java/**/ui/TripleSubtitle*.kt"
+   ]
+  },
+  "skill:pr-handoff-release": {
+   "title": "Pull request handoff, release intent and CI",
+   "description": "Use when opening, updating, reviewing or handing off a pull request in this repository: choosing release:patch, minor, major or skip or a Release-Version directive, checking final-head Android CI (verify-build, managed-device-tests), sending the owner the preview release page link, or acting as a coding agent for an outside contributor."
+  }
+ },
+ "must_keep": [
+  "SingleYouTubePage",
+  "classifyMainFrameUrl",
+  "WEB_KEEP_PLAYING_WHEN_HIDDEN_SCRIPT",
+  "tabCookieManager",
+  "PlaybackArchitectureTest",
+  "webPageTranscriptScript",
+  "AiActions.kt",
+  "BackupRulesTest",
+  "backend-api",
+  "SETTING_SPECS",
+  "BackupSharingTest",
+  "SearchableSetting",
+  "APP_LANGUAGES",
+  "AppLanguageTest",
+  "DualSubTheme",
+  "DialogTitle",
+  "THIRD_PARTY_NOTICES.md",
+  "TripleSub Replay v5",
+  "127.0.0.1:8765",
+  "guide_completed",
+  "Theme.DualSubReplay",
+  "ANKI_DECK_NAME",
+  "release:skip",
+  "verify-build",
+  "managed-device-tests",
+  "formatNewCode",
+  "closeSystemDialogs",
+  "ANDROID_RELEASE_",
+  "hoangkien1703"
+ ],
+ "units": [
+  {
+   "h": "c91f9a29f7649cafd1068e27ec14ae2d8020e88d994fd597d1d66c9188c4c6aa",
+   "section": "Personal SoT Bootstrap",
+   "start": "Repository: `mrAlishah/myPersonal-SoT`",
+   "end": "Repository: `mrAlishah/myPersonal-SoT`",
+   "dest": "core"
+  },
+  {
+   "h": "bf392cb41f1b29a8c309e6a02dbb39b6676793f06d5bb61412e6cf7d54de047c",
+   "section": "Personal SoT Bootstrap",
+   "start": "Ref: `main`",
+   "end": "Ref: `main`",
+   "dest": "core"
+  },
+  {
+   "h": "ee27a8c5e5b4dc10f9c7a9729f41d0f112434fd1b2574446db1ae53238636345",
+   "section": "Personal SoT Bootstrap",
+   "start": "Entrypoint: `workspace/adapters/runtime_entrypoi",
+   "end": "oint: `workspace/adapters/runtime_entrypoint.md`",
+   "dest": "core"
+  },
+  {
+   "h": "535dd771d569e0ae6c2a58a812be99d91911952dd4704cd628c6e887011ee440",
+   "section": "Personal SoT Bootstrap",
+   "start": "Local checkout: `~/Projects/myPersonal-SoT`",
+   "end": "Local checkout: `~/Projects/myPersonal-SoT`",
+   "dest": "core"
+  },
+  {
+   "h": "0949714bc3730c4171305037ab49753c23dd923f02698f3ff7aa94099c28097b",
+   "section": "Personal SoT Bootstrap",
+   "start": "Before coding or mutating Git:",
+   "end": "Before coding or mutating Git:",
+   "dest": "core"
+  },
+  {
+   "h": "e8bf3c4de6b915d09a4447c6fc5fcdbeb8f289fb5ee1241e36a31e488716faef",
+   "section": "Personal SoT Bootstrap",
+   "start": "Resolve the current SoT from local `main` withou",
+   "end": "oT from local `main` without switching branches.",
+   "dest": "core"
+  },
+  {
+   "h": "51f686780ce001777e42d2f30437d2195c055f3a036baa2f795e6874c3574f64",
+   "section": "Personal SoT Bootstrap",
+   "start": "Otherwise use authenticated private GitHub acces",
+   "end": "herwise use authenticated private GitHub access.",
+   "dest": "core"
+  },
+  {
+   "h": "09324a56803b2b84313c2dbadada5de88af273271760fdd48769acbee8227695",
+   "section": "Personal SoT Bootstrap",
+   "start": "Follow the canonical entrypoint and its referenc",
+   "end": "nonical entrypoint and its referenced contracts.",
+   "dest": "core"
+  },
+  {
+   "h": "619fd09b84ca48ba596edc3b2a738b074b9fa1edecd2a619d776b4f7cc8cce93",
+   "section": "Personal SoT Bootstrap",
+   "start": "Load `workspace/context/personal/policies/develo",
+   "end": "t/personal/policies/development_conventions.md`.",
+   "dest": "core"
+  },
+  {
+   "h": "d08f964321944a7489f816236366a984cc830aba17327d0ac44757fb2706993b",
+   "section": "Personal SoT Bootstrap",
+   "start": "Do not use stale or copied policies.",
+   "end": "Do not use stale or copied policies.",
+   "dest": "core"
+  },
+  {
+   "h": "ea1828df90fceaa027ba6bb49e83966568e30c2ce27d5f7ea5a2f93d5fab4471",
+   "section": "Personal SoT Bootstrap",
+   "start": "If canonical instructions are unavailable, repor",
+   "end": "navailable, report and stop dependent mutations.",
+   "dest": "core"
+  },
+  {
+   "h": "5ed2d3c9549bc99c51a1a584b9612120fa594aa215763824bccbf22799340df6",
+   "section": "Project",
+   "start": "Android app (`:app`, package `com.kienhoang.dual",
+   "end": "DK 17, compile SDK 37, target SDK 36, minSdk 26.",
+   "dest": "core"
+  },
+  {
+   "h": "fbc4ef0975d4c6de0f8a3fda196208a743d6734e328a5fd8782beb1956db5f45",
+   "section": "Commands",
+   "start": "```powershell .\\gradlew.bat formatCheck complexi",
+   "end": "ay.data.SubtitleMergerTest\" # one test class ```",
+   "dest": "core"
+  },
+  {
+   "h": "b1052791a4e3442055a5ae97c5d101cdb6d50eb546f0dd868cd20491a30824a7",
+   "section": "Commands",
+   "start": "Managed-device tests require the API 36 AOSP x86",
+   "end": "CI also passes `--no-parallel --max-workers=2`).",
+   "dest": "core"
+  },
+  {
+   "h": "a8a4c058c4624185cfa2d4f309e57ba2ba4592b9c28a5de6314950160a186fae",
+   "section": "Commands",
+   "start": "Debug APK output: `app/build/outputs/apk/debug/a",
+   "end": "ut: `app/build/outputs/apk/debug/app-debug.apk`.",
+   "dest": "core"
+  },
+  {
+   "h": "b4b0565237a23c681668f155733b36fb2ce5cefe783fcf3e411667112e30077f",
+   "section": "Fork maintenance",
+   "start": "Before any upstream sync or fork refactor, read ",
+   "end": "opment/upstream-integration.md) (how to decide).",
+   "dest": "core"
+  },
+  {
+   "h": "7b04dcebd5f106b109465479030042e0b9e98064a9e1d1b6137cabbb7a5d181a",
+   "section": "Development workflow",
+   "start": "Before significant work, read [mission](docs/pro",
+   "end": "elongs in the repository, not only chat history.",
+   "dest": "core"
+  },
+  {
+   "h": "1d4cae6520b5e73041cf6e2df59c6a23caf377819de6b73f30d5bf0f66cbcc04",
+   "section": "Development workflow",
+   "start": "Create/update a [feature spec](docs/specs/README",
+   "end": "es need only a clear PR and acceptance criteria.",
+   "dest": "core"
+  },
+  {
+   "h": "2791263ad46f75f8199383e9b1fb6caf98554d9d4d2e6137b5b12772d6225771",
+   "section": "Development workflow",
+   "start": "Record release intent before implementation wher",
+   "end": "out unresolved material scope/product decisions.",
+   "dest": "core"
+  },
+  {
+   "h": "1b9dccf2d3faadf920c6a20b5c573d5692190cec2c4d71c3f77a77ab951c235c",
+   "section": "Development workflow",
+   "start": "Implement the smallest coherent solution and val",
+   "end": "tablish physical-device or live-YouTube success.",
+   "dest": "core"
+  },
+  {
+   "h": "f89f034e408950ac8b6eb3772d9c2c1bdf34b0d553805d341d503205ad233e51",
+   "section": "Development workflow",
+   "start": "Update relevant permanent docs in the same PR wh",
+   "end": " its feature spec; keep QA evidence in docs/qa/.",
+   "dest": "core"
+  },
+  {
+   "h": "9f9549976650d15789b45b63f51db104d0e75057eac7b2d034877a91681f5b63",
+   "section": "Development workflow",
+   "start": "Open a focused PR against `main` linking the spe",
+   "end": "r publish releases unless explicitly instructed.",
+   "dest": "core"
+  },
+  {
+   "h": "700bb11ac701272d72f51d6d54adb13022e70e25945375b038372afac52724b6",
+   "section": "Branding",
+   "start": "The product users see is **TripleSub Replay**: l",
+   "end": "e from `R.string.app_name` instead of a literal.",
+   "dest": "core"
+  },
+  {
+   "h": "c2628084392ad9a4ee8f2840758f46fbbf1da1bd279993fc30a26db2f6134f07",
+   "section": "Branding",
+   "start": "**DualSub Replay** is the upstream project. Keep",
+   "end": " the app is a fork of DualSub Replay when asked.",
+   "dest": "core"
+  },
+  {
+   "h": "58f1a1b4467712ff8a1c09cd142a1e7d8d1f15aaa82b7218a9c94c602e5ebe48",
+   "section": "Branding",
+   "start": "Never rename technical contracts for branding: a",
+   "end": "y each occurrence; no global search-and-replace.",
+   "dest": "core"
+  },
+  {
+   "h": "f8c91780817df1718f09cb82b293d02d27abe30c513c63b19c241af253b6751b",
+   "section": "Merge conflict priorities",
+   "start": "When `main` (or any upstream) is merged into `my",
+   "end": "n` (or any upstream) is merged into `mydevelop`:",
+   "dest": "core"
+  },
+  {
+   "h": "665d96f70c8a761b74286f4c7756668154220f1d3621db207817eb4403844332",
+   "section": "Merge conflict priorities",
+   "start": "**`mydevelop` wins** for the Google Translate ha",
+   "end": "emove references the dropped code leaves behind.",
+   "dest": "core"
+  },
+  {
+   "h": "09bd6ff9f0568bd93b872f095853793562a4f0137b5275255dcfcb37f4449369",
+   "section": "Merge conflict priorities",
+   "start": "Formatting-only hunks (line wrapping, trailing c",
+   "end": "p` side so triple-subtitle code keeps its shape.",
+   "dest": "core"
+  },
+  {
+   "h": "89a1aba5560f2af8de8c35a56c09a4e1b5488a0b4a17344b667bc5cf1155f28d",
+   "section": "Merge conflict priorities",
+   "start": "Everything else: resolve by meaning, keep non-co",
+   "end": "n, docs), and never accept a whole side blindly.",
+   "dest": "core"
+  },
+  {
+   "h": "542f10e6323edb4aa1934ba04711aa60e2e79b95251717db576c85c863c3db2d",
+   "section": "Merge conflict priorities",
+   "start": "Resolve hunk by hunk, never by checking out a wh",
+   "end": "eep the merge reversible until the build passes.",
+   "dest": "core"
+  },
+  {
+   "h": "91584a908ed40f4a3ed06c4575400ebcbd0bdbe44161d1c1de1bd0ffd093648f",
+   "section": "Merge conflict priorities",
+   "start": "Before committing the merge: no conflict markers",
+   "end": "r push the merge without explicit authorization.",
+   "dest": "core"
+  },
+  {
+   "h": "5f313e721028d2e27127ac95e435e74ed7560191da319e4c347e00c0fcce5ed2",
+   "section": "Preparing PRs for owner merge",
+   "start": "Read `.github/workflows/release-on-main.yml` and",
+   "end": "md#release-intent-is-a-decision-not-automation).",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "bd1856aeb43bb47a97fa5f2da1b6e98a1a90849da81d9d99bb1ffa9792f84fb9",
+   "section": "Preparing PRs for owner merge",
+   "start": "Follow explicit owner release intent; otherwise ",
+   "end": "s changes or you are unsure, keep patch and ask.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "4a5f14f39c82453ecce513aa04e1cb75b5c755ae7ec2c16c88f7071a990abf96",
+   "section": "Preparing PRs for owner merge",
+   "start": "Apply and verify the actual GitHub label or stan",
+   "end": "ng action and do not call the PR ready to merge.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "451ed28545755814972b1d4e44a73e4f5da716abe6bf0cc307c6b17fa4e0aa42",
+   "section": "Preparing PRs for owner merge",
+   "start": "State intent, reason, and expected version (or w",
+   "end": "e versions or create release tags in normal PRs.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "cfb55f3bdc63de2e1316189bae2da3b26a746dc7543639f42fb22c6dbcf4390a",
+   "section": "Preparing PRs for owner merge",
+   "start": "When the final-head CI passes, send the owner th",
+   "end": " APK on that page does not mean the PR is green.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "843ebececf76efd8ca33db205487921e49d23d82a014895f3fd1297b0b0ba4a0",
+   "section": "Preparing PRs for owner merge",
+   "start": "Before calling a PR ready to merge, verify its l",
+   "end": "ng/failed/skipped/unavailable checks explicitly.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "b45d89924f2a22aab698546d3be174f1c2db10ac6ecd4deae729aff1bf993c7a",
+   "section": "Preparing PRs for owner merge",
+   "start": "Handoff: owner reviews the preview and green che",
+   "end": "; use existing reservation/retry recovery below.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "a5cdd171e2f003543bf1c250465e7f0dc2b5a87cbc0ae6ae18b20f7f95a0b345",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "When `hoangkien1703` merges a PR into `main`, `r",
+   "end": "es for PR runs; those runs never count as PR CI.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "9a77019a69298b02af1d84faaec6f72af3f1a6105288d5a47e240f23e61bb26b",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Default: bump the highest existing/reserved stab",
+   "end": " bump Gradle version constants in feature PRs.**",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "3ef91de56c22689ee4f728c6bf035217bd59cc5d87fc768a5a17bbe52b421a85",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Before merge, apply at most one GitHub label (`r",
+   "end": "s fail closed. `release:skip` publishes nothing.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "6f612a83289be3c444825329dec746d81042e2ec93f6ef20470fcb21b8056d4b",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Release versions live in a release-only commit/t",
+   "end": "to `main` or branch-protection bypass is needed.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "ee1ec6b55d27d42150e3f5002b623537b949ec77548cdd5ffba41695b1d3fb93",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Draft release metadata reserves version/name/cod",
+   "end": "n marker to retry. Published merges are a no-op.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "33f8c8ad0727f0ea2bee035aeb12ab6e211c3ad24d4a94d7b47b5e93935a103f",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Production signature, package, and version are v",
+   "end": "r retries cannot replace a newer Latest release.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "f41137e8f21353bc2a47bdccc169504e5b89812908a93588dd3804085a7be03b",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Merges into `main` publish no preview APK (owner",
+   "end": "only be checked on the first PR after it merges.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "24de03e212963cb3cc90590904eaa737b469c0f283b30dd6dea7b5a9a3df974c",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Release builds require the four `ANDROID_RELEASE",
+   "end": " material (`*.jks`/`*.keystore` are gitignored).",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "03ae75b2d21de97db994394471615a810015454ed4f6202ea203db7d3b7c9a39",
+   "section": "Releases happen automatically after an approved PR merge",
+   "start": "Test workflow changes with `python3 -m unittest ",
+   "end": "ML/shell. These tests also run in Android PR CI.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "0084e71efa22fb8c159d3017331479ae5f7064b2e172415c5fcc9fd1bcdef202",
+   "section": "Architecture invariants",
+   "start": "Exactly one WebView exists (`SingleYouTubePage` ",
+   "end": "moved; never add a second online player/WebView.",
+   "dest": "rule:webview-playback",
+   "digest": "WEBVIEW"
+  },
+  {
+   "h": "8844543cefa196088ec16e0fd7abf91702c1ad763d9b8b904a863b0f6841f6f3",
+   "section": "Architecture invariants",
+   "start": "Screen-off playback and earphone controls (owner",
+   "end": "1-13-card-sound-places-and-background-loop.md)).",
+   "dest": "rule:webview-playback",
+   "digest": "WEBVIEW"
+  },
+  {
+   "h": "636853b66381329fb813447eed0ca8d2e453eb1a43690365d635687a05356187",
+   "section": "Architecture invariants",
+   "start": "Main-frame navigation goes through `classifyMain",
+   "end": "chitectureTest` asserts the literal script text.",
+   "dest": "rule:webview-playback",
+   "digest": "WEBVIEW"
+  },
+  {
+   "h": "3f46826627b603d954b5e5761d420696bdd520cb3c46aa2681141ca8eeca78ff",
+   "section": "Architecture invariants",
+   "start": "Caption discovery uses watch-page metadata and u",
+   "end": "webPageTranscriptScript` keeps its one `fetch(`.",
+   "dest": "rule:captions-translation",
+   "digest": "CAPTIONS"
+  },
+  {
+   "h": "0e5952f1fb2dd0ac37bbe11cfe3466e69c1ede1964da3e5d0dd45ac0bfd8c5f9",
+   "section": "Architecture invariants",
+   "start": "Translation uses Google Translate's unofficial w",
+   "end": "ranslation_needs_online` instead of translating.",
+   "dest": "rule:captions-translation",
+   "digest": "CAPTIONS"
+  },
+  {
+   "h": "d3ef1fc9c6af66d72e901e250cda00b5e8ef4b1659489095afb3c07e4348d3fe",
+   "section": "Architecture invariants",
+   "start": "The AI assistant (`assistant/`, `ui/AiAssistant*",
+   "end": "-10-11-gemini-flash-lite-default-and-claude.md).",
+   "dest": "rule:ai-assistant",
+   "digest": "AI"
+  },
+  {
+   "h": "8f3751e84c7f406ee6fbede267c69c1d341aec7f733bade439a9d72069f1bf20",
+   "section": "Architecture invariants",
+   "start": "ChatGPT Subscription (owner request 2026-10-29, ",
+   "end": "d an explicit effort is part of the cache scope.",
+   "dest": "rule:ai-assistant",
+   "digest": "CHATGPT"
+  },
+  {
+   "h": "364df8b23e62f6506bd8c39930b6f07f577532a6f055c39b8642b41f69da7406",
+   "section": "Architecture invariants",
+   "start": "User-visible text lives in `app/src/main/res/val",
+   "end": "cs/specs/2026-10-02-app-interface-languages.md).",
+   "dest": "rule:ui-settings",
+   "digest": "STRINGS"
+  },
+  {
+   "h": "b353ec734602e6f153597a430e7e0bb88355688199340bde6b94dab9f5ddbe05",
+   "section": "Architecture invariants",
+   "start": "Chinese learner help (owner decision 2026-10-18,",
+   "end": "Test` and its text in all 9 interface languages.",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "98743fc033d183f952a499350421fbc614da397d1fbb1ff91aceda155ada1411",
+   "section": "Architecture invariants",
+   "start": "English learner help (owner request 2026-10-18, ",
+   "end": "Test` and its text in all 9 interface languages.",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "2a9e4e6387b36407fabf7aede358832bd05628306da0f4582cc10ca99a927db8",
+   "section": "Architecture invariants",
+   "start": "Spanish learner help (owner request 2026-11-13, ",
+   "end": " interface languages (`strings_grammar_es.xml`).",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "cede2252469b504e013042c35e186863429d18ae1adf060d5ac8b85650954e42",
+   "section": "Architecture invariants",
+   "start": "German learner help (owner request 2026-11-14, [",
+   "end": "button shows for German like for every language.",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "5db0cda35b99f8f70014b69eebf497cc36c7f83304a4010325dd5c30485d50e2",
+   "section": "Architecture invariants",
+   "start": "Kanji details on the word card (owner request 20",
+   "end": "mese story names a Hán Việt reading in capitals.",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "adf2746fdbc8a77b8942386441df805c6667645495af1c7e3ffe84c397c7681e",
+   "section": "Architecture invariants",
+   "start": "Chinese character details (owner request 2026-10",
+   "end": "als when there is one (`ChineseCharactersTest`).",
+   "dest": "rule:learner-help",
+   "digest": "LEARNER"
+  },
+  {
+   "h": "cfd9c408cde13029ee61ea289b744ec779028eaa4c864fc130c1e131f229f513",
+   "section": "Architecture invariants",
+   "start": "Study tools (owner request 2026-10-20, [spec](do",
+   "end": "ge them (`page_token_captions` waits for a tap).",
+   "dest": "rule:study-anki",
+   "digest": "ANKI"
+  },
+  {
+   "h": "c7e9ee529879579800012d90c6279621739118e7000e2f670fcb9f092cd455ca",
+   "section": "Architecture invariants",
+   "start": "App updates (owner request 2026-10-20, [spec](do",
+   "end": "the person sends; nothing is uploaded by itself.",
+   "dest": "rule:updates-ads-remote",
+   "digest": "UPDATES"
+  },
+  {
+   "h": "23ebf9529ef376e48af2cbaa8a096dc4b6f4b9c7c6feae0752f9ba46c1612ca0",
+   "section": "Architecture invariants",
+   "start": "Ads & sponsors (owner request 2026-10-25, [spec]",
+   "end": "off by default, owner request 2026-10-25) is on.",
+   "dest": "rule:updates-ads-remote",
+   "digest": "ADS"
+  },
+  {
+   "h": "0f141b148f7381bf2ad5c9a4dd38ce5532a46ff344b5ead49abb75080a0d110c",
+   "section": "Architecture invariants",
+   "start": "Backup & sharing (owner pick 2026-11-10, [spec](",
+   "end": "pe- and range-checked; unknown keys are skipped.",
+   "dest": "rule:ui-settings",
+   "digest": "SETTINGS"
+  },
+  {
+   "h": "9dccfdfd0d068cef25bd929b0e59bea468f7adef245ff6f52dd0863f1597ff13",
+   "section": "Architecture invariants",
+   "start": "First-launch flow is `LanguageSetupScreen` → `Gu",
+   "end": "isting users will see the guide after upgrading.",
+   "dest": "core"
+  },
+  {
+   "h": "10ccbdc683e6e15b9cf0d9be521e5464b230a4bf897e2228acc560d54683ab22",
+   "section": "Default settings",
+   "start": "Defaults are the most stable choice (owner decis",
+   "end": "s and \"Another story with AI\" run only on a tap.",
+   "dest": "core"
+  },
+  {
+   "h": "5946fae8c20c0a5008571e45367316c19aeb68d82385fe77294cdc4bd91fdedf",
+   "section": "UI conventions",
+   "start": "Every screen, panel, dialog, sheet and overlay u",
+   "end": "anelUiTest` checks the assistant panel's color).",
+   "dest": "rule:ui-settings",
+   "digest": "UI"
+  },
+  {
+   "h": "447b26703a1fd881c2d7071dc2ff5550271bdd3b518fc30e666c04751be8eec1",
+   "section": "UI conventions",
+   "start": "Take colors from `MaterialTheme.colorScheme` rol",
+   "end": "olors. Check a UI change on the Light theme too.",
+   "dest": "rule:ui-settings",
+   "digest": "UI"
+  },
+  {
+   "h": "c92f48423a0d79bf2c8191e07594da3bb89ba8a852e824fa8992488a753e1d77",
+   "section": "UI conventions",
+   "start": "Every dialog has an X at the top right (owner re",
+   "end": " dropping changed text (`DiscardChangesDialog`).",
+   "dest": "rule:ui-settings",
+   "digest": "UI"
+  },
+  {
+   "h": "2418559220974d78857f3e6f00119af07b0c31783c14dd42051d51c10ca75e09",
+   "section": "UI conventions",
+   "start": "The settings page (owner pick 2026-11-11, [spec]",
+   "end": " `SettingsSearchTest` fails when one is missing.",
+   "dest": "rule:ui-settings",
+   "digest": "UI"
+  },
+  {
+   "h": "b6c062928e44837719b6f6da3ff94ef43affb61ec328839f437bbc3d8205fcea",
+   "section": "UI conventions",
+   "start": "Before handing off a UI change, look at it in th",
+   "end": "and check that it matches the screens around it.",
+   "dest": "rule:ui-settings",
+   "digest": "UI"
+  },
+  {
+   "h": "85dad9768e9a698d47d96e90ca3e68f7ee32ac8c30993762e685769643ee9459",
+   "section": "Subtitle slot conventions",
+   "start": "Three logical slots, named by role, never by lan",
+   "end": "). Subtitle 1 is not the video's original track.",
+   "dest": "rule:subtitle-slots",
+   "digest": "SLOTS"
+  },
+  {
+   "h": "9126474ec29cab6d197a2a0e1e289f15abe9e2da040a8de93b8223b1f2bfdde7",
+   "section": "Subtitle slot conventions",
+   "start": "Short labels (`subtitle_role_*`, `slotRoleLabel`",
+   "end": " stays only where it means a dictionary meaning.",
+   "dest": "rule:subtitle-slots",
+   "digest": "SLOTS"
+  },
+  {
+   "h": "15ae880cfe9362d0aee1307d423e028a96227a2aaccdcc41084b0fdbe78ddab9",
+   "section": "Subtitle slot conventions",
+   "start": "Display naming and persistence: do not rename `S",
+   "end": " a type only when name and fields match exactly.",
+   "dest": "rule:subtitle-slots",
+   "digest": "SLOTS"
+  },
+  {
+   "h": "f383e4f257eff9d97f1efa8a3577e8d934c04235015284f08efbcb4fd0d20fd6",
+   "section": "Subtitle slot conventions",
+   "start": "Slot identity and visual position are separate. ",
+   "end": "ion decides; choosing it clears the saved order.",
+   "dest": "rule:subtitle-slots",
+   "digest": "SLOTS"
+  },
+  {
+   "h": "238a8755a3be5e0073dd5558dff8bfbbb2b12e8e6c0d7f4ae08946c534b0927d",
+   "section": "Subtitle slot conventions",
+   "start": "Size is a per-slot multiplier (`font_scale_<id>`",
+   "end": "slot-accordions-and-whole-sentence-default.md)).",
+   "dest": "rule:subtitle-slots",
+   "digest": "SLOTS"
+  },
+  {
+   "h": "f59700eccaeba870362e9f84a6c9d9adadc172410017c5143d59880887c7092e",
+   "section": "Testing conventions",
+   "start": "Unit tests are plain JUnit4 — no Robolectric or ",
+   "end": "ions. `org.json` is a unit-test-only dependency.",
+   "dest": "core"
+  },
+  {
+   "h": "64add3bd1179d6167b1c5ca17adb909faeff7c1ff94227d47a89a2b3bb24ccaf",
+   "section": "Testing conventions",
+   "start": "`unitTests.isReturnDefaultValues = true`: Androi",
+   "end": "turn defaults instead of throwing in unit tests.",
+   "dest": "core"
+  },
+  {
+   "h": "bdb69f82c669a7334f86e68d4087fa3b087a2a0ad3d7de084038452bd0317cec",
+   "section": "Testing conventions",
+   "start": "Instrumented tests build Compose UI in isolation",
+   "end": "offline — tests never hit the live YouTube site.",
+   "dest": "core"
+  },
+  {
+   "h": "18f63420827ecefa8437f7e21b6dfb9a7c505566ff256a50626c3a45d52804f5",
+   "section": "Testing conventions",
+   "start": "The CI emulator sometimes shows \"System UI isn't",
+   "end": "pressBack` or `closeSoftKeyboard` in a new test.",
+   "dest": "core"
+  },
+  {
+   "h": "5310ac6492afef6f462a08b80984c1dd5a80c5075715e844277b774fed496c5d",
+   "section": "Testing conventions",
+   "start": "Compose merges a `Text` inside a clickable `Row`",
+   "end": "ks for that text needs `useUnmergedTree = true`.",
+   "dest": "core"
+  },
+  {
+   "h": "3a5eba351c9af085bca5fccf3dbfd6bf160098dd3814abc92943e47f5424ebb5",
+   "section": "Testing conventions",
+   "start": "When a check fails, the CI job summary lists the",
+   "end": "ed-device log does not print failing test names.",
+   "dest": "core"
+  },
+  {
+   "h": "6c795e14dcfa690d85ee9a771c5bba4b301a36ba070ece31b1d6b9b34b4e27c6",
+   "section": "Testing conventions",
+   "start": "The transcript the player holds is a window of l",
+   "end": " a real video; unit tests alone miss both cases.",
+   "dest": "core"
+  },
+  {
+   "h": "798a61a8aa4fa55a20365b8132ff804c7a4f380cc2d20fc71a323347c8e0e4b7",
+   "section": "Testing conventions",
+   "start": "`formatNewCode -PformatFiles=...` reformats each",
+   "end": "ed; `formatCheck` only ratchets per-file counts.",
+   "dest": "core"
+  },
+  {
+   "h": "6fd33de08b2a24264f2c77c397eee634d641e8f34357de973d49b88fe12e41dd",
+   "section": "AI agents opening or updating pull requests",
+   "start": "These rules apply to any coding agent (Claude, C",
+   "end": "TING.md#how-review-works); agents follow it too.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "d0b3f2e871ce94f9f10674bf2ec48fe64e782866057e95d07ab35d1499cf11d7",
+   "section": "AI agents opening or updating pull requests",
+   "start": "One focused change per PR, from its own branch. ",
+   "end": "the PR template honestly: not run is not passed.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "e9f203e2e2cccfc31df07887d4494a8d4404984c03f59bcf39055c15f7466119",
+   "section": "AI agents opening or updating pull requests",
+   "start": "Never commit or paste secrets: API keys, tokens,",
+   "end": " text. Keep test fixtures offline and synthetic.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "b7042bdecc180eee94cc7e1fb33cf696b9c84ef3f475a56d82748d84aed657aa",
+   "section": "AI agents opening or updating pull requests",
+   "start": "Do not bump the Gradle version constants, create",
+   "end": " signing setup unless that is the agreed change.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "c349fa34f574e251c8018d5e6d0c68235030dff474e507e2851df7347f460d03",
+   "section": "AI agents opening or updating pull requests",
+   "start": "Release labels: an agent working for an outside ",
+   "end": "r follows \"Preparing PRs for owner merge\" above.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "12fe7c16c4fa4dc169822644fc01e3872ecfa1622d174f667917e8c911e04517",
+   "section": "AI agents opening or updating pull requests",
+   "start": "Review is a loop the PR's author drives. Read ev",
+   "end": "eave resolving a comment thread to the reviewer.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "d6f45cae6064dd3cd1e509d2bc512e60b128c2796c5662fa467b68d3c2bff798",
+   "section": "AI agents opening or updating pull requests",
+   "start": "Never merge, enable auto-merge, approve your own",
+   "end": " or skip, disable or loosen a test to get green.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  },
+  {
+   "h": "135334aa99a6285caf23910e4e58caf7467a04038e3f140ff56c3b3af5993fd7",
+   "section": "AI agents opening or updating pull requests",
+   "start": "The owner's agents reviewing an outside contribu",
+   "end": "ce everyone agrees and the app works on a phone.",
+   "dest": "skill:pr-handoff-release",
+   "digest": "PR"
+  }
+ ]
+}

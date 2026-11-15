@@ -12,6 +12,13 @@ Live subscription access is **UNVERIFIED** until Phase 2's gate passes on a devi
 ChatGPT account. Nothing below may be reported as working before that. As of the implementation record at the
 end of this file, the code is complete and mock-tested, and the live gate has **not** been run.
 
+### Current status (checked 2026-11-15)
+
+- The code is in `mydevelop` (`chatgpt/`), complete and mock-tested.
+- Live sign-in, the plan-usage grant, the model list, a real translation, refresh and revoke are **UNVERIFIED**: no device run or ChatGPT account evidence exists in `docs/qa/`.
+- Do not report the feature as working until the Phase 2 gate passes on a device with an eligible account; record the result in `docs/qa/chatgpt-subscription-live-gate.md`.
+- `AGENTS.md` and `CLAUDE.md` defer to this section for the verification status.
+
 ## Context / problem
 
 AI translation ([spec](2026-10-28-ai-subtitle-translation.md)) needs an API key the user pays for.

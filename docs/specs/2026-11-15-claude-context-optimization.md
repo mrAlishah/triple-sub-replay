@@ -89,4 +89,10 @@ Destinations (item counts and bytes of `AGENTS.md` text): core 41 / 8,272; skill
 
 **Passed.** CI Python command (59 tests); drift check; 23 adversarial checks; built-in Read loads exactly the matching rule (`path_glob_match`); Serena-only trials above; five guardrail probes; Codex lists only `AGENTS.md` and does not see `.claude/rules`.
 
-**Not run or unverified.** Gradle and Android tests (no Kotlin, resource or Gradle file changed); rules for the six other areas were not exercised through a live session; Serena-only invariant probes; behavior across a real upstream sync; the effect of the global-file exception (not applied, awaiting approval).
+**Not run or unverified.** Gradle and Android tests (no Kotlin, resource or Gradle file changed); rules for the six other areas were not exercised through a live session; Serena-only invariant probes; behavior across a real upstream sync; the effect of the global-file exception on Claude loading. The global Claude file now contains the exception; its effect has not been measured in a fresh session.
+
+## Codex context extension (proposed)
+
+Codex discovers `AGENTS.override.md` before `AGENTS.md` at the repository root. Generate the override from the checked Claude core with Codex-specific routing and explicit Git authorization; `AGENTS.md` remains authoritative and unchanged. Codex must explicitly read the relevant `.claude/rules/` files and the PR skill as a file before dependent work, including Serena or other MCP access. Existing unit mapping and generated rules remain shared. `check` fails for missing or stale Codex output, oversized output, or ambiguous generation anchors; `sync` regenerates it. A changed source digest still needs human review.
+
+Acceptance: the generator check and Python tests pass; every mapped core item appears in the generated core and every scoped destination is routed; ambiguous anchors and modified output fail; `AGENTS.md` remains unchanged; fresh Codex sessions demonstrate discovery and area, cross-area and Serena-first rule reads; fresh Claude sessions show unchanged instruction behavior. Record observed token counts and unverified scenarios separately. No live behavior or token saving is asserted until measured. The change is non-APK and qualifies for `release:skip` if a PR is later authorized.

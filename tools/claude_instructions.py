@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 AGENTS = ROOT / "AGENTS.md"
 CORE = ROOT / "CLAUDE.md"
 MAP = ROOT / "docs/development/claude-instructions-map.json"
+CODEX_CORE = ROOT / "AGENTS.override.md"
 CORE_MAX_BYTES = 16384
 CORE_MAX_LINES = 200
 GENERATED = ("<!-- Generated from AGENTS.md by tools/claude_instructions.py. "
@@ -135,6 +136,27 @@ def generated_files(units, m):
     return files
 
 
+def codex_core(core):
+    replacements = (
+        ("# CLAUDE.md (TripleSub Replay, Claude Code core)", "# AGENTS.override.md (TripleSub Replay, Codex core)"),
+        ("This file is a derived core of `AGENTS.md`, enforced by a CI drift check: `python3 tools/claude_instructions.py check` fails when this file, a rule or the skill drifts from `AGENTS.md`. `AGENTS.md` stays authoritative and unchanged (other agents read it whole); on any conflict it wins. Do not read all of `AGENTS.md` for routine work: use the routing table. `.claude/rules/*` and the PR skill are generated verbatim from `AGENTS.md`. After `AGENTS.md` changes, run `python3 tools/claude_instructions.py sync`, review what it reports, then commit.",
+         "This file is generated from the maintained `CLAUDE.md` core by `tools/claude_instructions.py`; do not edit it. `AGENTS.md` remains authoritative and wins on conflict. The existing drift check validates the core and generated rule files against it. Read the applicable full rules below before dependent work. If the applicable rule is unclear, read the relevant part of `AGENTS.md`. After upstream changes, reconcile the map, digests and generated files with `python3 tools/claude_instructions.py sync` and review unresolved changes."),
+        ("**Before your first Serena or other MCP call on a file in the table below, and before proposing or making any change there, Read its rule file.** Path-scoped rules autoload only when a built-in Read, Write or Edit touches a matching file; Serena and other MCP tools never trigger them. A task that spans areas needs each rule. The digests below summarize; the rule file has the full text.",
+         "**Before reading or inspecting a relevant source file, including through Serena or any other MCP, and before proposing or making a change, read each applicable rule file below.** Codex does not automatically load Claude path-scoped rules. For cross-area tasks read every applicable rule. These paths are examples, not an exhaustive classifier; use the rule based on the behavior affected. If uncertain, read the relevant section of `AGENTS.md`. The digests below summarize; the rule files contain the full instructions."),
+        ("skill `pr-handoff-release` (Skill tool)", "`.claude/skills/pr-handoff-release/SKILL.md` (read as a file)"),
+        ("follow skill `pr-handoff-release`: load it before opening, updating or handing off a PR.", "follow `.claude/skills/pr-handoff-release/SKILL.md`: read it before opening, updating or handing off a PR."),
+    )
+    for before, after in replacements:
+        if core.count(before) != 1:
+            raise ValueError("CLAUDE.md Codex transformation anchor missing or ambiguous: " + before[:80])
+        core = core.replace(before, after, 1)
+    anchor = "## Project\n"
+    if core.count(anchor) != 1:
+        raise ValueError("CLAUDE.md project heading missing or ambiguous")
+    core = core.replace(anchor, "## Git authorization\n\nBefore coding verify the assigned worktree, branch and existing changes. Do not commit, push, merge, rebase, reset, deploy or release without explicit authorization for that action. Do not create or update a pull request, including one targeting upstream, without separate explicit authorization. Approval to implement does not authorize these actions. Preserve unrelated work and fork behavior; resolve upstream conflicts by meaning.\n\n" + anchor, 1)
+    return core
+
+
 def problems():
     try:
         units = parse(AGENTS.read_text(encoding="utf-8"))
@@ -169,6 +191,16 @@ def problems():
     for u in units:
         if by_key.get(u.key, {}).get("dest") == "core" and u.norm not in core_norm:
             out.append("CLAUDE.md lacks core item [%s] L%d: %r" % (u.section, u.line, u.start))
+
+    try:
+        expected_codex = codex_core(core)
+        actual_codex = CODEX_CORE.read_text(encoding="utf-8") if CODEX_CORE.exists() else None
+        if actual_codex != expected_codex:
+            out.append("AGENTS.override.md is stale or missing; run sync")
+        if len(expected_codex.encode("utf-8")) > 18432:
+            out.append("AGENTS.override.md exceeds 18432 bytes")
+    except ValueError as e:
+        out.append(str(e))
 
     corpus = core
     files = generated_files(units, m)
@@ -248,7 +280,9 @@ def sync():
             notes.append("NEEDS A HUMAN [%s] %r: set \"dest\" in the map" % (u.section, u.start))
         entries.append(entry)
     m["units"] = entries
+    codex = codex_core(CORE.read_text(encoding="utf-8"))
     MAP.write_text(json.dumps(m, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    CODEX_CORE.write_text(codex, encoding="utf-8")
     for path, text in generated_files(units, m).items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")

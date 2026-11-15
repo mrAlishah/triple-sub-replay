@@ -40,5 +40,38 @@ class KeyTest(unittest.TestCase):
                 ci.parse("## S\n\n%s\n" % bad)
 
 
+class CodexCoreTest(unittest.TestCase):
+    def test_codex_core_routes_all_targets_and_preserves_core_units(self):
+        core = ci.codex_core(ci.CORE.read_text(encoding="utf-8"))
+        units = ci.parse(ci.AGENTS.read_text(encoding="utf-8"))
+        mapping = ci.load_map()
+        by_key = {e["h"]: e for e in mapping["units"]}
+        normalized = ci.re.sub(r"\s+", " ", core)
+        for unit in units:
+            if by_key[unit.key]["dest"] == "core":
+                self.assertIn(unit.norm, normalized)
+        for dest in mapping["targets"]:
+            kind, name = ci.split_dest(dest)
+            path = ci.target_path(kind, name).relative_to(ci.ROOT).as_posix()
+            self.assertIn(path, core)
+        self.assertIn("before reading or inspecting", core.lower())
+        self.assertIn("including through Serena", core)
+        self.assertIn("Do not commit, push, merge, rebase, reset, deploy or release", core)
+        self.assertIn("Do not create or update a pull request, including one targeting upstream, without separate explicit authorization.", core)
+
+    def test_anchor_change_fails_closed(self):
+        with self.assertRaises(ValueError):
+            ci.codex_core("# changed")
+
+    def test_check_detects_changed_override(self):
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+        with TemporaryDirectory() as directory:
+            target = Path(directory) / "AGENTS.override.md"
+            target.write_text("stale", encoding="utf-8")
+            with patch.object(ci, "CODEX_CORE", target):
+                self.assertTrue(any("stale or missing" in x for x in ci.problems()))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,8 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Changed
 
+- **Smaller Codex instruction context.** Codex uses a generated core and reads the existing area rules when needed; the shared drift check detects stale instructions.
+
 - **Smaller Claude Code context.** Claude Code now loads a short `CLAUDE.md` core (5.9k tokens, measured with `/context`) instead of all of `AGENTS.md` (20.9k). The area rules in `.claude/rules/` and the PR and release skill load on demand and are generated from `AGENTS.md`, and a CI test fails when they drift. `AGENTS.md` and the app are unchanged.
 
 ### Fixed

@@ -20,10 +20,11 @@ internal fun PracticeSelectableText(
     language: String,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     modifier: Modifier = Modifier,
+    annotated: AnnotatedString = AnnotatedString(text),
 ) {
     SelectableSubtitleText(
         text = text,
-        annotated = AnnotatedString(text),
+        annotated = annotated,
         style = style.copy(color = LocalContentColor.current),
         languageCode = language,
         segment = null,

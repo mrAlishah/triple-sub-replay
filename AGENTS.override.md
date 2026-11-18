@@ -88,7 +88,7 @@ When `main` (or any upstream) is merged into `mydevelop`:
 
 ## Default settings
 
-- Defaults are the most stable choice (owner decision 2026-11-11): a new user must be able to use the app without changing any setting and without an AI key. Anything that spends a user's AI key quota is off by default, or runs only on an explicit tap or inside an assistant chat the user started; never turn such a setting on by default, run it in the background, or enable it in a migration. Current examples: AI translation (Google is the default), AI thinking for translation, Meaning in this sentence (AI), web search and Full access are off; AI subtitles for videos without captions and "Another story with AI" run only on a tap.
+- Defaults are the most stable choice (owner decision 2026-11-11): a new user must be able to use the app without changing any setting and without an AI key. Anything that spends a user's AI key quota is off by default, or runs only on an explicit tap or inside an assistant chat the user started; never turn such a setting on by default, run it in the background, or enable it in a migration. Current examples: AI translation (Google is the default), AI thinking for translation, Meaning in this sentence (AI), web search and Full access are off; AI subtitles for videos without captions, the AI transcript (Gemini) and "Another story with AI" run only on a tap.
 
 ## First-launch flow
 
@@ -97,7 +97,7 @@ When `main` (or any upstream) is merged into `mydevelop`:
 ## Testing conventions
 
 <!-- digest:TESTING -->
-- **Tests** (rule `testing`): plain JUnit4, no Robolectric or mocking library; instrumented tests run offline and never hit live YouTube; check long seeks and ads on an emulator with a real video, because the player holds only a window of transcript lines; a new automatic AI request path goes through `AiKeyPacer` with an `AiRequestBudgetTest` scenario.
+- **Tests** (rule `testing`): plain JUnit4, no Robolectric or mocking library; instrumented tests run offline and never hit live YouTube; check long seeks and ads on an emulator with a real video, because the player holds only a window of transcript lines; a new automatic AI request path goes through `AiKeyPacer` with an `AiRequestBudgetTest` scenario; a failed device run retries its failed tests once (`tools/retry_device_tests.py`), and a "passed on retry" warning is a bug to fix, not noise.
 
 - `formatNewCode -PformatFiles=...` reformats each whole file, including code you did not touch. Revert unrelated hunks so the PR stays focused; `formatCheck` only ratchets per-file counts.
 
@@ -133,7 +133,7 @@ Before changing an area, read its section in the [technical context](docs/projec
 - **Learner help (zh, en, es, de, kanji, hanzi):** bundle data files only, no third-party code; keep the licence credits in `THIRD_PARTY_NOTICES.md` and the licence screen; regenerate data with its `tools/` script, never hand-edit; every grammar point needs its example test and its text in all 9 interface languages; mnemonics are never copied.
 
 <!-- digest:ANKI -->
-- **Send to and Anki:** one split Send to button, never one per app; AnkiConnect is `http://127.0.0.1:8765` and nothing else may be cleartext; known words stay in `files/known-words/`.
+- **Send to and Anki:** one Send to button (the word card's Anki button, Export's split Send all), never one per app; AnkiConnect is `http://127.0.0.1:8765` and nothing else may be cleartext; known words stay in `files/known-words/`.
 
 <!-- digest:UPDATES -->
 - **App updates and remote switches:** downloads only from GitHub hosts, matching GitHub's SHA-256 and newer than the installed version; never add a project server or a store. Remote config carries switches only, never code, scripts, selectors or addresses.

@@ -4,6 +4,7 @@ import com.kienhoang.dualsubreplay.data.AudioLine
 import com.kienhoang.dualsubreplay.data.CardFront
 import com.kienhoang.dualsubreplay.data.CardOptions
 import com.kienhoang.dualsubreplay.data.CardPlace
+import com.kienhoang.dualsubreplay.data.CardReadAloud
 import com.kienhoang.dualsubreplay.data.audioLine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -52,6 +53,17 @@ class LineAudioScriptsTest {
         assertTrue("state.stream.addEventListener('addtrack', follow);" in script)
         assertTrue("tracks[tracks.length - 1]" in script)
         assertTrue("else follow();" in script)
+    }
+
+    @Test
+    fun theRecorderTakesBigBlocksAndTimesThemByTheAudioClock() {
+        val script = webLineAudioScript(on = true, videoId = "abcdefghijk")
+        // Small blocks lost pieces of sound on a busy page (choppy clips, Kien 2026-11-17).
+        assertTrue("createScriptProcessor(16384, 1, 1)" in script)
+        assertTrue("state.context.currentTime - state.got / rate" in script)
+        // A video paused at the line's end keeps the line's tail from a block that arrived late.
+        assertTrue("document.addEventListener('pause', paused, true);" in script)
+        assertTrue("document.removeEventListener('pause', paused, true);" in script)
     }
 
     @Test
@@ -117,7 +129,7 @@ class LineAudioScriptsTest {
         assertFalse(linePictureWanted(on.copy(cardPicture = CardPlace.OFF), ankiDroidInstalled = true))
         assertTrue(linePictureWanted(on.copy(cardSentenceSound = CardPlace.OFF), ankiDroidInstalled = true))
         assertEquals(
-            CardOptions(CardPlace.FRONT, CardPlace.BACK, CardPlace.OFF, CardFront.WORD),
+            CardOptions(CardPlace.FRONT, CardPlace.BACK, CardPlace.OFF, CardFront.WORD, readAloud = CardReadAloud()),
             on.copy(cardPicture = CardPlace.OFF, cardFront = CardFront.WORD).cardOptions,
         )
     }

@@ -1,5 +1,6 @@
 package com.kienhoang.dualsubreplay.ui
 
+import android.content.SharedPreferences
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,6 +53,7 @@ import com.kienhoang.dualsubreplay.data.KnownWordsRepository
 import com.kienhoang.dualsubreplay.data.PageTokenMode
 import com.kienhoang.dualsubreplay.data.usualWordSoundPlace
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Settings → Study tools: play modes, loop button, skip silence and blur box. */
 @Composable
@@ -128,12 +138,19 @@ internal fun KnownWordsAndCharacterSettings() {
     )
 }
 
-/** Settings → Flashcards & Anki: Send to and card audio (owner pick 2026-11-09). */
+/** Settings → Flashcards & Anki: the saved words' video example, Send to and card audio (owner pick 2026-11-09). */
 @Composable
 internal fun FlashcardSettingsSection() {
     val context = LocalContext.current
     val preferences = remember(context) { studyPreferences(context) }
     val settings by rememberStudySettings()
+    SettingsSwitchRow(
+        title = stringResource(R.string.study_saved_word_video_example_title),
+        description = stringResource(R.string.study_saved_word_video_example_description),
+        checked = settings.savedWordVideoExample,
+        onCheckedChange = { preferences.edit().putBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, it).apply() },
+        testTag = "saved_word_video_example_switch",
+    )
     SettingsSwitchRow(
         title = stringResource(R.string.study_anki_title),
         description = stringResource(R.string.study_anki_description),
@@ -150,6 +167,13 @@ internal fun FlashcardSettingsSection() {
                 if (deck == null) editor.remove(ANKICONNECT_DECK_PREFERENCE) else editor.putString(ANKICONNECT_DECK_PREFERENCE, deck)
                 editor.apply()
             },
+        )
+        SettingsSwitchRow(
+            title = stringResource(R.string.study_send_on_save_title),
+            description = stringResource(R.string.study_send_on_save_description, stringResource(settings.sendTo.nameRes)),
+            checked = settings.sendOnSave,
+            onCheckedChange = { preferences.edit().putBoolean(SEND_ON_SAVE_PREFERENCE, it).apply() },
+            testTag = "send_on_save_switch",
         )
         CardFrontSettings(
             front = settings.cardFront,
@@ -181,8 +205,10 @@ internal fun FlashcardSettingsSection() {
             onChange = { preferences.edit().putString(CARD_SENTENCE_SOUND_PREFERENCE, it.storageValue).apply() },
             testTag = "card_sentence_sound",
         )
-        // The order only matters where both sounds go on a card; a Listening front starts with the line.
-        if (!listening && settings.cardWordSound != CardPlace.OFF && settings.cardSentenceSound != CardPlace.OFF) {
+        // The order only matters where both sounds go on a card; a Listening front has the line's sound
+        // on the front, so there it matters when the word's voice is on the front too.
+        val bothSounds = settings.cardWordSound != CardPlace.OFF && settings.cardSentenceSound != CardPlace.OFF
+        if (if (listening) settings.cardWordSound == CardPlace.FRONT else bothSounds) {
             CardChoiceSettings(
                 title = stringResource(R.string.study_card_sound_first_title),
                 description = stringResource(R.string.study_card_sound_first_description),
@@ -194,6 +220,7 @@ internal fun FlashcardSettingsSection() {
                 testTag = "card_sound_first",
             )
         }
+        CardReadingAndReadAloudSettings(settings, preferences)
         CardPlaceSettings(
             title = stringResource(R.string.study_card_picture_place_title),
             description = stringResource(R.string.study_card_picture_description),
@@ -206,6 +233,54 @@ internal fun FlashcardSettingsSection() {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 16.dp, bottom = 6.dp),
+        )
+    }
+}
+
+/**
+ * Flashcards & Anki → Reading (where the card shows kana, pinyin or an English word's IPA) and Read
+ * aloud on the back (lion737, #81, 2026-11-15; owner pick 2026-11-16: all three on by default).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CardReadingAndReadAloudSettings(
+    settings: StudySettings,
+    preferences: SharedPreferences,
+) {
+    CardPlaceSettings(
+        title = stringResource(R.string.study_card_reading_title),
+        description = stringResource(R.string.study_card_reading_description),
+        place = settings.cardReading,
+        onChange = { preferences.edit().putString(CARD_READING_PLACE_PREFERENCE, it.storageValue).apply() },
+        testTag = "card_reading",
+    )
+    val readAloud = settings.cardReadAloud
+    Column(Modifier.fillMaxWidth().settingAnchor("card_read_aloud").padding(start = 16.dp, bottom = 6.dp)) {
+        Text(stringResource(R.string.study_card_read_aloud_title), style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                Triple(CARD_READ_MEANING_PREFERENCE, readAloud.meaningInSentence, R.string.study_card_read_aloud_meaning),
+                Triple(CARD_READ_DICTIONARY_PREFERENCE, readAloud.dictionaryMeaning, R.string.study_card_read_aloud_dictionary),
+                Triple(CARD_READ_TRANSLATION_PREFERENCE, readAloud.translation, R.string.study_card_read_aloud_translation),
+            ).forEach { (key, on, label) ->
+                FilterChip(
+                    selected = on,
+                    onClick = { preferences.edit().putBoolean(key, !on).apply() },
+                    label = { Text(stringResource(label)) },
+                    leadingIcon =
+                        if (on) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                        } else {
+                            null
+                        },
+                    modifier = Modifier.testTag(key),
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.study_card_read_aloud_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -360,20 +435,68 @@ private fun studyRepeatCountLabel(count: Int): String =
         pluralStringResource(R.plurals.study_repeat_count, count, count)
     }
 
+/**
+ * 2, 3, 5, 10 and Forever as chips, and Custom for any count in [STUDY_REPEAT_CUSTOM_RANGE]: a slider
+ * with − and + buttons, so an exact count is easy to reach (25kiuo, Discussion #81, 2026-11-17).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StudyRepeatCountSettings(
     count: Int,
     onChange: (Int) -> Unit,
 ) {
-    FlowRow(Modifier.padding(start = 48.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        STUDY_REPEAT_COUNTS.forEach { option ->
+    var customOpen by remember { mutableStateOf(false) }
+    val custom = customOpen || count !in STUDY_REPEAT_COUNTS
+    Column(Modifier.padding(start = 48.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            STUDY_REPEAT_COUNTS.forEach { option ->
+                FilterChip(
+                    selected = !custom && count == option,
+                    onClick = {
+                        customOpen = false
+                        onChange(option)
+                    },
+                    label = { Text(studyRepeatCountLabel(option)) },
+                    modifier = Modifier.testTag("study_repeat_$option"),
+                )
+            }
             FilterChip(
-                selected = count == option,
-                onClick = { onChange(option) },
-                label = { Text(studyRepeatCountLabel(option)) },
-                modifier = Modifier.testTag("study_repeat_$option"),
+                selected = custom,
+                onClick = {
+                    customOpen = true
+                    if (count == STUDY_REPEAT_FOREVER) onChange(STUDY_REPEAT_COUNTS.first())
+                },
+                label = { Text(stringResource(R.string.study_repeat_custom)) },
+                modifier = Modifier.testTag("study_repeat_custom"),
             )
+        }
+        if (custom && count != STUDY_REPEAT_FOREVER) {
+            val range = STUDY_REPEAT_CUSTOM_RANGE
+            // The count sits above the slider so the slider gets the whole width.
+            Text(
+                pluralStringResource(R.plurals.study_repeat_count, count, count),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp, start = 12.dp).testTag("study_repeat_custom_count"),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("study_repeat_custom_row")) {
+                IconButton(
+                    onClick = { onChange((count - 1).coerceIn(range)) },
+                    enabled = count > range.first,
+                    modifier = Modifier.testTag("study_repeat_less"),
+                ) { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.study_repeat_less)) }
+                Slider(
+                    value = count.toFloat(),
+                    onValueChange = { onChange(it.roundToInt().coerceIn(range)) },
+                    valueRange = range.first.toFloat()..range.last.toFloat(),
+                    modifier = Modifier.weight(1f).tvArrowsLeave().testTag("study_repeat_slider"),
+                )
+                IconButton(
+                    onClick = { onChange((count + 1).coerceIn(range)) },
+                    enabled = count < range.last,
+                    modifier = Modifier.testTag("study_repeat_more"),
+                ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.study_repeat_more)) }
+            }
         }
     }
 }

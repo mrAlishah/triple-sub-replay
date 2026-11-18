@@ -588,12 +588,13 @@
    "digest": "LEARNER"
   },
   {
-   "h": "20b9af3ce3dabb385ab80caf9adc3b2b0dac22ed46c3d6356b58efdba4833f9f",
+   "h": "004ea56f62cab60e4adda825b37cbfe44f217f04a372e7784c039b0de16c0576",
    "section": "Architecture rules",
    "start": "**Study tools and Anki** ([details](docs/project",
    "end": "y listens to the page video and never downloads.",
    "dest": "rule:study-anki",
-   "digest": "ANKI"
+   "digest": "ANKI",
+   "review": false
   },
   {
    "h": "46bffad662032dbfe8a0e8c575a05113c5e25fde6388b9efedfb1b4d208b46b0",
@@ -648,13 +649,14 @@
    "start": "**Anki**: new cards use the `TripleSub Replay v5",
    "end": "A changed field list needs a new note type name.",
    "dest": "rule:study-anki",
-   "digest": "ANKI"
+   "digest": "ANKI",
+   "review": false
   },
   {
-   "h": "10ccbdc683e6e15b9cf0d9be521e5464b230a4bf897e2228acc560d54683ab22",
+   "h": "27c66c992676183b8b50866647672b25e62bb35ea8c417d4291e40467197ce8b",
    "section": "Default settings",
    "start": "Defaults are the most stable choice (owner decis",
-   "end": "s and \"Another story with AI\" run only on a tap.",
+   "end": ") and \"Another story with AI\" run only on a tap.",
    "dest": "core"
   },
   {
@@ -743,7 +745,8 @@
    "start": "Unit tests are plain JUnit4 — no Robolectric or ",
    "end": "st` (virtual time, for tests that wait minutes).",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "6a747f1c3fa0da8b86e4a39f7d5eaa811b1cb5ea72aa5bf161d8cfe8c8cfbc40",
@@ -751,7 +754,8 @@
    "start": "AI request budget ([spec](docs/specs/2026-11-15-",
    "end": " through `AiKeyPacer` and gets a scenario there.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "64add3bd1179d6167b1c5ca17adb909faeff7c1ff94227d47a89a2b3bb24ccaf",
@@ -759,7 +763,8 @@
    "start": "`unitTests.isReturnDefaultValues = true`: Androi",
    "end": "turn defaults instead of throwing in unit tests.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "bdb69f82c669a7334f86e68d4087fa3b087a2a0ad3d7de084038452bd0317cec",
@@ -767,7 +772,8 @@
    "start": "Instrumented tests build Compose UI in isolation",
    "end": "offline — tests never hit the live YouTube site.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "18f63420827ecefa8437f7e21b6dfb9a7c505566ff256a50626c3a45d52804f5",
@@ -775,7 +781,8 @@
    "start": "The CI emulator sometimes shows \"System UI isn't",
    "end": "pressBack` or `closeSoftKeyboard` in a new test.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "5310ac6492afef6f462a08b80984c1dd5a80c5075715e844277b774fed496c5d",
@@ -783,15 +790,17 @@
    "start": "Compose merges a `Text` inside a clickable `Row`",
    "end": "ks for that text needs `useUnmergedTree = true`.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
-   "h": "3a5eba351c9af085bca5fccf3dbfd6bf160098dd3814abc92943e47f5424ebb5",
+   "h": "d303b1adba51348b6b91ba36b1a6bdbefb1246919c8d6477b9be09c000cae006",
    "section": "Testing conventions",
    "start": "When a check fails, the CI job summary lists the",
-   "end": "ed-device log does not print failing test names.",
+   "end": "t a repeated warning as a bug to fix, not noise.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "6c795e14dcfa690d85ee9a771c5bba4b301a36ba070ece31b1d6b9b34b4e27c6",
@@ -799,7 +808,8 @@
    "start": "The transcript the player holds is a window of l",
    "end": " a real video; unit tests alone miss both cases.",
    "dest": "rule:testing",
-   "digest": "TESTING"
+   "digest": "TESTING",
+   "review": false
   },
   {
    "h": "798a61a8aa4fa55a20365b8132ff804c7a4f380cc2d20fc71a323347c8e0e4b7",

@@ -23,6 +23,6 @@ paths:
 
 - Compose merges a `Text` inside a clickable `Row` into the row's node, so a test that looks for that text needs `useUnmergedTree = true`.
 
-- When a check fails, the CI job summary lists the failed tests (`tools/report_failed_tests.py`). For device tests, the full JUnit XML is in the `pixel2-api36-test-reports` artifact; the managed-device log does not print failing test names.
+- When a check fails, the CI job summary lists the failed tests (`tools/report_failed_tests.py`). For device tests, the full JUnit XML is in the `pixel2-api36-test-reports` artifact; the managed-device log does not print failing test names. A failed device run retries only its failed tests once (`tools/retry_device_tests.py`; all tests when the instrumentation crashed); a test that fails twice fails the job, and one that passes on retry shows as a "passed on retry" warning: treat a repeated warning as a bug to fix, not noise.
 
 - The transcript the player holds is a window of lines around the playing time, not the whole video. Code that keeps a line across seeks (loops, repeats) must handle that line leaving the window. Check long seeks and ads on an emulator with a real video; unit tests alone miss both cases.

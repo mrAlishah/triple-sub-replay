@@ -67,8 +67,9 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 
 - Ownership: Shared + Fork. Status: Implemented.
 - Purpose: source video title and id on saved words, editable title, filtering Practice and Due Words by source, personal notes.
+- Word card (2026-11-18): the bar is upstream's `ui/WordCardActions.kt`; the fork keeps Subtitle 2 meanings (`ExtraMeanings` in `WordLearningSheet.kt`), the per-card Online example box, `wordToSend` (`ui/StudyTools.kt`) for Send to, and selectable Practice text.
 - Fork files: `data/ManualVideoTitles.kt`, `data/SourceFilter.kt`, `ui/SourceFilterPicker.kt`, `ui/VideoTitleHeader.kt`, `ui/PersonalNotesEditor.kt`, `ui/PracticeSelectableText.kt`.
-- Integration files (Shared): `data/SavedWord.kt`, `data/VocabularyRepository.kt`, `ui/SavedWordsScreen.kt` (+183), `ui/WordLearningSheet.kt`, `data/PracticeTransfer.kt`.
+- Integration files (Shared): `data/SavedWord.kt`, `data/VocabularyRepository.kt`, `ui/SavedWordsScreen.kt` (+183), `ui/WordLearningSheet.kt`, `data/PracticeTransfer.kt`. Since 2026-11-18 the word card's bar is upstream's `ui/WordCardActions.kt`; the fork keeps `ExtraMeanings` in `WordLearningSheet.kt`, `wordToSend` in `ui/StudyTools.kt` and the Practice card's selectable text.
 - Invariants: do not rename `SavedWord.meaning`/`meanings`/`personalNotes` or JSON backup keys; old backups still import; review history and scheduling unchanged.
 - Persistence: saved-word JSON, `files/known-words/`, backups.
 - Conflict sensitivity: medium-high (`SavedWordsScreen.kt`).
@@ -79,7 +80,7 @@ Ownership: **Fork** = file exists only here. **Shared** = upstream file with for
 - Ownership: Shared + Fork. Status: Implemented.
 - Purpose: note type `TripleSub Replay v5` (fields `Subtitle 1`, `Subtitle 2`, `Text`, `Source Title`, `Word audio`, `Sentence audio`; card sound, picture in `Source` and card front through `tripleCardTemplate`, since 2026-11-12), v4 and v3 kept as AnkiConnect fallbacks; TSV columns `subtitle1`, `subtitle1Language`, `subtitle2`, `text`, old headers still imported.
 - Fork files: `data/AnkiTripleNote.kt`, `data/AnkiDroidProvisioning.kt`, `ui/PracticeSendToAnki.kt`.
-- Integration files (Shared): `data/AnkiDroidNotes.kt` (+135), `data/AnkiConnectNotes.kt`, `data/PracticeTransfer.kt`, `data/AnkiCardLayout.kt` (upstream-owned; `MEANING_HTML` and `SOURCE_HTML` are `internal` for `tripleCardTemplate`). `AnkiDroidNotes.send` only delegates to `AnkiDroidSender` (media, card front and pending sentence audio go through it).
+- Integration files (Shared): `data/AnkiDroidNotes.kt` (+135), `data/AnkiConnectNotes.kt`, `data/PracticeTransfer.kt`, `data/AnkiCardLayout.kt` (upstream-owned; `MEANING_HTML` and `SOURCE_HTML` are `internal` for `tripleCardTemplate`). `AnkiDroidNotes.send` only delegates to `AnkiDroidSender` (media, card front and pending sentence audio go through it), and so do the card's meaning and translation sounds and the sentence label. Upstream's per-language AnkiDroid subdecks are not taken (owner decision pending, 2026-11-18).
 - Invariants: never change an existing note type's field list; a field change needs a new note type name; export and import keep backward compatibility.
 - Tests: `app/src/androidTest/.../ui/PracticeSendToAnkiUiTest.kt`.
 

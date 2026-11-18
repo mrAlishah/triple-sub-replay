@@ -73,7 +73,10 @@ internal val AI_CARD_PLACES = listOf("front", "back", "off")
 internal val AI_CARD_SOUNDS_FIRST = listOf("word", "sentence")
 
 /** The plays of each line in Repeat each line (`STUDY_REPEAT_COUNTS`), which a test keeps equal. */
-internal val AI_STUDY_REPEAT_COUNTS = listOf("2", "3", "5", AI_REPEAT_FOREVER)
+internal val AI_STUDY_REPEAT_COUNTS = listOf("2", "3", "5", "10", AI_REPEAT_FOREVER)
+
+/** Repeat each line's Custom counts, which the assistant may set too. */
+internal val AI_STUDY_REPEAT_RANGE = 2..99
 
 /** Repeat each line's count with no limit (`STUDY_REPEAT_FOREVER`). */
 internal const val AI_REPEAT_FOREVER = "forever"
@@ -114,6 +117,8 @@ internal enum class AiSetting(
     PHONE_VOICE("phone_voice"),
     MEANING_IN_CONTEXT("meaning_in_context"),
     MEANING_ORDER("meaning_order", listOf("sentence_first", "dictionary_first")),
+    PREPARE_MEANINGS("prepare_meanings_ahead"),
+    TAP_BAR_READING("tap_bar_reading"),
     WORD_LEARNING_MODE("word_learning_mode"),
     COLORED_SUBTITLE_LINES("colored_subtitle_lines", listOf("original", "translation", "both")),
     TAP_WORD_FOR_DEFINITION("tap_word_for_definition"),
@@ -139,11 +144,19 @@ internal enum class AiSetting(
     MARK_NEW_WORDS("mark_new_words"),
     SEND_TO_ANKIDROID("send_to_ankidroid"),
     SEND_TO_APP("send_to_app", AI_SEND_TO_APPS),
+
+    /** Flashcards & Anki → Also send saved words and Video example for saved words (2026-11-17). */
+    SEND_SAVED_WORDS("send_saved_words"),
+    SAVED_WORD_VIDEO_EXAMPLE("saved_word_video_example"),
     CARD_FRONT("anki_card_front", AI_CARD_FRONTS),
     CARD_WORD_SOUND("anki_card_word_sound", AI_CARD_PLACES),
     CARD_SENTENCE_SOUND("anki_card_sentence_sound", AI_CARD_PLACES),
     CARD_PICTURE("anki_card_picture_place", AI_CARD_PLACES),
     CARD_SOUND_FIRST("anki_card_sound_first", AI_CARD_SOUNDS_FIRST),
+    CARD_READING("anki_card_reading_place", AI_CARD_PLACES),
+    CARD_READ_MEANING("anki_card_read_meaning"),
+    CARD_READ_DICTIONARY("anki_card_read_dictionary"),
+    CARD_READ_TRANSLATION("anki_card_read_translation"),
     BLUR_BOX("blur_box"),
     LOOP_BUTTON("loop_button"),
     KANJI_DETAILS("kanji_details"),
@@ -156,6 +169,10 @@ internal enum class AiSetting(
 
     /** Settings → YouTube tabs (2026-10-27). */
     DIFFERENT_TAB_ACCOUNTS("different_tab_accounts"),
+
+    /** Settings → Playback (2026-11-16). */
+    SLEEP_TIMER_QUICK("sleep_timer_in_quick_settings"),
+    WHOLE_TRANSCRIPT("whole_transcript"),
 
     /** Settings → App updates (2026-10-30): reads GitHub once a day, so it waits for a tap. */
     UPDATE_REMINDERS("update_reminders", asks = true),
@@ -691,7 +708,11 @@ internal fun aiSettingValue(
                 .removeSuffix("times")
                 .removeSuffix("x")
                 .trim('_')
-                .takeIf { it in setting.choices }
+                .takeIf {
+                    it in setting.choices ||
+                        // Repeat each line also takes Custom's counts.
+                        (setting == AiSetting.STUDY_REPEAT_COUNT && it.toIntOrNull() in AI_STUDY_REPEAT_RANGE)
+                }
         else ->
             listOfNotNull(key, SETTING_CHOICE_ALIASES[setting]?.get(key), CHOICE_ALIASES[key])
                 .firstOrNull { it in setting.choices }
@@ -797,7 +818,8 @@ internal fun aiSettingValues(setting: AiSetting): String =
                 "with exactly one new word and needs known_words on; all need the full transcript)"
         AiSetting.STUDY_REPEAT_COUNT ->
             choiceList(setting.choices) +
-                " (plays of each line in repeat_line; forever loops each line until the user taps another line or seeks)"
+                " (plays of each line in repeat_line, or any whole number from 2 to 99; forever loops each line until the user " +
+                "taps another line or seeks)"
         AiSetting.KNOWN_WORDS ->
             choiceList(setting.choices) +
                 " (auto also counts a word as known after it played in known_words_after lines, each line once per video; " +
@@ -844,6 +866,15 @@ internal fun aiSettingValues(setting: AiSetting): String =
 /** What the settings [aiSettingValues] doesn't list take. */
 private fun otherSettingValues(setting: AiSetting): String =
     when (setting) {
+        AiSetting.SLEEP_TIMER_QUICK ->
+            choiceList(setting.choices) +
+                " (Settings → Playback → Show in quick settings: also shows the Sleep timer row in the small menu the " +
+                "subtitle panel's gear opens; off by default, then the timer is only in Settings → Playback)"
+        AiSetting.WHOLE_TRANSCRIPT ->
+            choiceList(setting.choices) +
+                " (Settings → Playback → Whole transcript: adds Whole transcript to the small menu the subtitle panel's " +
+                "gear opens, a page with every line of the video, search, a tap to jump there, and export as a text or SRT " +
+                "file; off by default)"
         AiSetting.CARD_FRONT ->
             choiceList(setting.choices) +
                 " (what an Anki card sent with Send to shows before it is turned; the rest is on the back: word_sentence the " +
@@ -863,7 +894,23 @@ private fun otherSettingValues(setting: AiSetting): String =
         AiSetting.CARD_SOUND_FIRST ->
             choiceList(setting.choices) +
                 " (which sound an Anki card plays first on a side that has both the word's voice and the line's sound; " +
-                "word by default; a listening front always starts with the line)"
+                "word by default; a listening front starts with the line unless word is picked)"
+        AiSetting.CARD_READING ->
+            choiceList(setting.choices) +
+                " (where an Anki card shows the word's reading: kana, pinyin or an English word's IPA; back by default; " +
+                "front only on fronts that show the word)"
+        AiSetting.CARD_READ_MEANING, AiSetting.CARD_READ_DICTIONARY, AiSetting.CARD_READ_TRANSLATION ->
+            choiceList(setting.choices) +
+                " (Read aloud on the back: new Anki cards read the meaning in this sentence, the dictionary meaning or the " +
+                "sentence translation aloud on the back, in the meaning's language; anki_card_read_meaning on by default, the other two off)"
+        AiSetting.TAP_BAR_READING ->
+            choiceList(setting.choices) +
+                " (Pronunciation in the tap bar: a single tapped word's IPA, kana or pinyin shows above its meaning in the bar " +
+                "that opens on a tap; off by default)"
+        AiSetting.PREPARE_MEANINGS ->
+            choiceList(setting.choices) +
+                " (with meaning_in_context on, asks the AI about every word of each line while it plays, so tapped words show " +
+                "their meaning at once; uses the user's key even for lines they don't tap; off by default)"
         else -> choiceList(setting.choices)
     }
 

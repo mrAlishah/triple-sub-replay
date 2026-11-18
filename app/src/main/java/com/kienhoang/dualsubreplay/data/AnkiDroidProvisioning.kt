@@ -176,15 +176,24 @@ internal class AnkiDroidSender(
         val fieldMedia =
             CardMedia(
                 word = files.word?.let { ankiSound(provider.addMedia(it)) }.orEmpty(),
-                sentence = files.sentence?.let { ankiSound(provider.addMedia(it)) }.orEmpty(),
+                sentence = labeledSentenceSound(media?.sentenceLabel, files.sentence?.let { ankiSound(provider.addMedia(it)) }.orEmpty()),
                 picture = files.picture?.let { ankiPicture(provider.addMedia(it)) }.orEmpty(),
+                meaningSounds = files.meanings.joinToString("") { ankiSound(provider.addMedia(it)) },
+                translationSound = files.translation?.let { ankiSound(provider.addMedia(it)) }.orEmpty(),
             )
         val noteId = step(AnkiProblem.INSERT_FAILED) { provider.insertNote(noteType, tripleNoteFields(word, fieldMedia), ankiTags(word)) }
         val placed = runCatching { provider.moveToDeck(noteId, deck) }.isSuccess
         val line = audioLineOf(word)
         val pending =
             if (media != null && line != null && options.sentenceAudio && fieldMedia.sentence.isEmpty()) {
-                PendingCardAudio(PENDING_ANKIDROID, noteId, line, ANKI_SENTENCE_AUDIO_FIELD, "", System.currentTimeMillis())
+                PendingCardAudio(
+                    PENDING_ANKIDROID,
+                    noteId,
+                    line,
+                    ANKI_SENTENCE_AUDIO_FIELD,
+                    ankiSentenceSoundLabel(media.sentenceLabel),
+                    System.currentTimeMillis(),
+                )
             } else {
                 null
             }

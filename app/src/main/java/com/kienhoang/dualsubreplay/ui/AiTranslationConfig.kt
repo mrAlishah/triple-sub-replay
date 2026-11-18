@@ -125,6 +125,8 @@ internal class AiTranslationConfig(
     private val scope: CoroutineScope,
     /** Builds the keyed model, or null without a key; the last flag keeps a refused effort setting from being dropped. */
     private val buildKeyed: (AiProvider, String, AiEffort, Boolean) -> AiTranslationModel?,
+    /** Like [buildKeyed] for a word the learner just tapped: its requests go ahead of background ones (see AiKeyPacer). */
+    private val buildUrgent: (AiProvider, String, AiEffort) -> AiTranslationModel?,
     /** The provider, model or effort changed: the playing video translates again. */
     private val onChanged: () -> Unit,
 ) {
@@ -259,11 +261,15 @@ internal class AiTranslationConfig(
     }
 
     /** The model subtitles are translated with, or null so Google or the device does (no key or session, no model). */
-    fun translationModel(): AiTranslationModel? {
+    fun translationModel(urgent: Boolean = false): AiTranslationModel? {
         val current = current()
         if (current.isChatGpt) return chatGpt.translationModel()
         val provider = keyedProvider() ?: return null
-        return buildKeyed(provider, current.model, current.effort, true)
+        return if (urgent) {
+            buildUrgent(provider, current.model, current.effort)
+        } else {
+            buildKeyed(provider, current.model, current.effort, true)
+        }
     }
 
     /** After "Reset all settings": the choices are gone, so the state starts again from the assistant's service. */

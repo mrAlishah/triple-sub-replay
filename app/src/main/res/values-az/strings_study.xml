@@ -16,6 +16,9 @@
     <string name="study_play_mode_repeat">Hər sətri təkrarla</string>
     <string name="study_play_mode_repeat_description">Davam etməzdən əvvəl hər sətri bir neçə dəfə oynadır. Sonsuz seçimi başqa sətrə toxunana və ya videonu irəli-geri çəkənə qədər sətri təkrarlayır.</string>
     <string name="study_repeat_forever">Sonsuz</string>
+    <string name="study_repeat_custom">Fərdi</string>
+    <string name="study_repeat_less">Bir dəfə az</string>
+    <string name="study_repeat_more">Bir dəfə çox</string>
     <string name="study_play_mode_new_word">Bir yeni söz olan sətirlərdə dayan</string>
     <string name="study_play_mode_new_word_description">Yalnız hələ bilmədiyiniz düz bir söz olan sətirlərdən sonra dayanır. Bildiyim sözlər lazımdır.</string>
     <string name="study_play_mode_needs_known_words">Bu rejimdən istifadə etmək üçün aşağıda Bildiyim sözlər seçimini yandırın.</string>
@@ -35,7 +38,7 @@
     <string name="study_known_words_clear_message">Bütün dillərdə bilinən kimi işarələdiyiniz hər söz unudulur. Saxlanmış sözlər qalır.</string>
     <string name="study_known_words_clear_confirm">Təmizlə</string>
     <string name="study_anki_title">Fləşkart tətbiqlərinə göndər</string>
-    <string name="study_anki_description">Söz kartında və Məşq → İxrac bölməsində Göndər düyməsini göstərir. Düymədəki və ya aşağıdakı ▾ ilə başqa tətbiq seçməsəniz, AnkiDroid-ə göndərir; sonra düymə həmin tətbiqi göstərir.</string>
+    <string name="study_anki_description">Söz kartında Anki düyməsini, Məşq → İxrac bölməsində isə Hamısını göndər düyməsini göstərir. Hər ikisi aşağıda seçilən tətbiqə göndərir (dəyişməsəniz, AnkiDroid).</string>
     <string name="study_card_picture_description">Kartlara videodan şəkil əlavə olunur, sözün cümləsi ekranda olarkən çəkilir. Şəkil yoxdursa, videonun miniatürü istifadə olunur.</string>
     <string name="study_card_word_sound_title">Söz səsi</string>
     <string name="study_card_word_sound_description">Söz kartının istifadə etdiyi səslə söz.</string>
@@ -48,6 +51,14 @@
     <string name="study_card_place_off">Yox</string>
     <string name="study_card_sound_first_title">Əvvəl səslənən</string>
     <string name="study_card_sound_first_description">Kartın bir üzündə hər iki səs olanda əvvəl bu səslənir.</string>
+    <string name="study_card_reading_title">Oxunuş</string>
+    <string name="study_card_reading_description">Sözün oxunuşu: kana, pinyin və ya ingilis sözünün IPA-sı (necə səsləndiyi). Ön tərəfdə yalnız ön tərəf sözü göstərəndə görünür.</string>
+    <string name="anki_sentence_sound_label">Videodakı cümlə</string>
+    <string name="study_card_read_aloud_title">Arxada səsli oxu</string>
+    <string name="study_card_read_aloud_meaning">Bu cümlədəki mənası</string>
+    <string name="study_card_read_aloud_dictionary">Lüğət mənası</string>
+    <string name="study_card_read_aloud_translation">Cümlənin tərcüməsi</string>
+    <string name="study_card_read_aloud_description">Yeni kartlar bunları arxa tərəfdə mənanın dilində səsli oxuyur, belə ki, ekrana baxmadan təkrar edə bilərsiniz. Dili üçün səs olmayan hissə buraxılır.</string>
     <string name="study_card_place_note">Üzdə olan arxada da görünür, çünki Anki kartın üzünü cavabın üstündə göstərir.</string>
     <string name="study_card_front_title">Kartın üzü</string>
     <string name="study_card_front_word_sentence">Söz və cümlə</string>
@@ -60,9 +71,9 @@
     <string name="study_card_front_listening_description">Üz yalnız cümlənin səsini oxudur; cümlə və söz arxadadır.</string>
     <string name="study_card_front_note">Bunu dəyişmək əvvəl göndərdiyiniz kartları da dəyişir.</string>
     <string name="study_card_sound_waits">Cümlənin səsi cümlə sona qədər oynadıqdan sonra əlavə olunur.</string>
-    <string name="study_card_sound_replaying">Səsi karta əlavə olunsun deyə cümlə bir dəfə oynadılır.</string>
+    <string name="study_card_sound_replaying">Səsi karta əlavə olunsun deyə cümlə səssiz bir dəfə oynadılır.</string>
     <string name="study_send_to_app_title">Sözləri göndər</string>
-    <string name="study_ankidroid_description">Kartlar DualSub Replay dəstəsinə gedir. AnkiDroid-i arxa planda açıq saxlayın: bir çox telefonda o, kartları yalnız işləyərkən qəbul edir.</string>
+    <string name="study_ankidroid_description">Kartlar DualSub Replay dəstəsinə, hər dil (və ya Məşq dəstəsi) üçün ayrıca alt dəstəyə gedir. AnkiDroid-i arxa planda açıq saxlayın: bir çox telefonda o, kartları yalnız işləyərkən qəbul edir.</string>
     <string name="study_ankiconnect_description">Bu telefondakı AnkiConnect-ə (127.0.0.1:8765) göndərir, ondan AnkiConnect Android tətbiqi, Yomitan və asbplayer istifadə edir. Serverinin işləməsi üçün AnkiConnect Android-i bir dəfə açın. AnkiConnect DualSub Replay qeyd növü yarada bilmədikdə kartlar Anki-nin Basic qeyd növündən istifadə edir.</string>
     <string name="study_ankiconnect_deck_title">AnkiConnect dəstəsi</string>
     <string name="study_ankiconnect_deck_value">Dəstə: %1$s</string>
@@ -81,7 +92,6 @@
     <string name="study_known_word_toggle">Bu sözü bilirəm</string>
     <string name="study_send_to_anki">Göndər: %1$s</string>
     <string name="study_send_to_choose">Hara göndəriləcəyini seçin</string>
-    <string name="study_sending_to_anki">Göndərilir…</string>
     <string name="study_sent_to_anki">Göndərildi: %1$s</string>
     <string name="study_send_again_title">Bu kart yenidən göndərilsin?</string>
     <string name="study_send_again_text">%1$s artıq bu söz üçün kartı var. Daha biri əlavə olunur, köhnəsini orada silə bilərsiniz.</string>
@@ -128,10 +138,6 @@
     <string name="study_known_words_off">Söndürülüb</string>
     <string name="study_known_words_after_title">Sözü bu qədər gördükdən sonra bilinən say</string>
     <string name="study_word_seen">%2$d dəfədən %1$d dəfə görülüb</string>
-    <string name="study_known_words_offer_title">Bildiyim sözlər yandırılsın?</string>
-    <string name="study_known_words_offer_message">Bundan sonra altyazı paneli hər videonun nə qədərini artıq bildiyinizi göstərir, tez-tez gördüyünüz sözlər isə özü bilinən sayılır. Bunu sonra Ayarlar → Söz öyrənmə bölməsində dəyişə bilərsiniz.</string>
-    <string name="study_known_words_offer_confirm">Yandır</string>
-    <string name="study_known_words_offer_dismiss">İndi yox</string>
     <!-- Machine-translated, not native-reviewed (TripleSub additions). -->
     <string name="study_anki_deck_failed">AnkiDroid-də TripleSub Replay kolodasını yaratmaq mümkün olmadı.</string>
     <string name="study_anki_note_type_failed">AnkiDroid-də TripleSub Replay v3 qeyd növünü yaratmaq mümkün olmadı.</string>
@@ -148,4 +154,9 @@
     <string name="dictation_perfect">Mükəmməl!</string>
     <string name="dictation_score">Düz: %1$d / %2$d</string>
     <string name="dictation_hidden_line">Gizli sətir</string>
+    <string name="study_saved_word_video_example_title">Saxlanılan sözlər üçün video nümunə</string>
+    <string name="study_saved_word_video_example_description">Saxladığınız sözlər Məşqdə öz sətirlərini videodan təkrar oynada bilər. Hər söz üçün bunu orada dəyişə bilərsiniz.</string>
+    <string name="study_send_on_save_title">Saxlanılan sözləri həm də göndər</string>
+    <string name="study_send_on_save_description">Söz kartındakı “Məşqə saxla” sözü həm də %1$s tətbiqinə göndərir.</string>
+    <string name="study_sending_to_anki">Göndərilir…</string>
 </resources>

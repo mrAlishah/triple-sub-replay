@@ -142,7 +142,27 @@ fun DualSubApp(
     var showProgress by remember { mutableStateOf(false) }
     // The no-captions card's "Add a free Gemini key" opens Settings → AI assistant.
     var aiSettingsRequestId by remember { mutableLongStateOf(0L) }
-    val aiSubtitleActions = remember(viewModel) { AiSubtitleActions(viewModel::makeAiSubtitles) { aiSettingsRequestId++ } }
+    // The word card's More → Word card settings opens Settings → Word learning.
+    var wordSettingsRequestId by remember { mutableLongStateOf(0L) }
+    val aiAssistantHost = LocalAiAssistant.current
+    val aiSubtitleActions =
+        remember(viewModel, aiAssistantHost) {
+            AiSubtitleActions(
+                make = viewModel::makeAiSubtitles,
+                openAiSettings = { aiSettingsRequestId++ },
+                // Without a Gemini key and nothing free to try, it opens Settings → AI assistant.
+                useTranscript = {
+                    val keyReady = aiAssistantHost?.controller?.state?.value?.let(::geminiReady) == true
+                    if (!viewModel.useAiTranscript(keyReady)) aiSettingsRequestId++
+                },
+                closeSuggestion = viewModel::closeAiTranscriptSuggestion,
+                videoOpen = { viewModel.state.value.activeVideoId != null },
+            )
+        }
+    val wholeTranscript =
+        remember(viewModel) {
+            WholeTranscriptAccess(viewModel.wholeTranscript, viewModel.transcriptExport) { viewModel.state.value.let { it.titleOf(it.activeVideoId) } }
+        }
 
     DualSubTheme {
         if (!state.onboardingCompleted) {
@@ -158,6 +178,7 @@ fun DualSubApp(
                 LocalLineLoop provides studyRunner.lineLoop,
                 LocalDictation provides studyRunner.dictation,
                 LocalAiSubtitleActions provides aiSubtitleActions,
+                LocalWholeTranscript provides wholeTranscript,
             ) {
                 DualSubExperience(
                     state = state,
@@ -174,6 +195,7 @@ fun DualSubApp(
                     onPlayerModeChange = onPlayerModeChange,
                     externalSettingsRequestId = externalSettingsRequestId,
                     aiSettingsRequestId = aiSettingsRequestId,
+                    wordSettingsRequestId = wordSettingsRequestId,
                     fullscreenLearningOverlay = fullscreenLearningOverlay,
                     onNavigationVisibilityChange = onNavigationVisibilityChange,
                     onPageChanged = viewModel::onYouTubePageChanged,
@@ -182,7 +204,9 @@ fun DualSubApp(
                     onShowSubtitles = { viewModel.reopenSubtitles() },
                     onHideSubtitles = viewModel::closeSubtitles,
                     onRetry = viewModel::retryCaptions,
-                    onSourceChange = viewModel::setSourcePreference,
+                    onSourceChange = { choice ->
+                        if (choice == AI_TRANSCRIPT_CHOICE) aiSubtitleActions.useTranscript() else viewModel.setSourcePreference(choice)
+                    },
                     onTargetChange = viewModel::setTargetLanguage,
                     onCaptionVisibilityChange = viewModel::setCaptionVisibility,
                     onFontScaleChange = viewModel::setFontScale,
@@ -222,7 +246,10 @@ fun DualSubApp(
         // A setup link from the landing site or a chat asks before it changes anything.
         if (state.onboardingCompleted) PendingSetupDialog()
         state.selectedLearningWord?.let { selection ->
-            SelectedWordDialog(selection, state, savedWords, viewModel, webController, pronouncer)
+            SelectedWordDialog(selection, state, savedWords, viewModel, webController, pronouncer) {
+                viewModel.selectLearningWord(null)
+                wordSettingsRequestId++
+            }
         }
         if (showVocabulary) SavedWordsScreen(
             repository = viewModel.vocabulary,
@@ -254,10 +281,16 @@ private fun SelectedWordDialog(
     viewModel: AppViewModel,
     webController: YouTubeWebController,
     pronouncer: WordPronouncer,
+    onOpenSettings: () -> Unit,
 ) {
     androidx.compose.runtime.key(selection) {
         androidx.compose.runtime.DisposableEffect(selection) {
             onDispose { pronouncer.stop() }
+        }
+        // The word's voice and its line's other words are fetched while the card is read (lion737, #81).
+        androidx.compose.runtime.LaunchedEffect(selection) {
+            val words = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { lineSpokenWords(selection) }
+            pronouncer.prepare(words, selection.wordLanguage)
         }
         val context = LocalContext.current
         val existingWord = savedWords.firstOrNull { it.id == com.kienhoang.dualsubreplay.data.savedWordFrom(selection, "", false).id }
@@ -289,6 +322,7 @@ private fun SelectedWordDialog(
             speechMessage = pronouncer.message,
             onSpeechSettings = if (pronouncer.showSpeechSettings) pronouncer::openSpeechSettings else null,
             onDismiss = { viewModel.selectLearningWord(null) },
+            onOpenSettings = onOpenSettings,
             onSpeakPart = { part ->
                 webController.pause()
                 pronouncer.speak(spokenWord(part.text, part.reading), selection.wordLanguage)
@@ -310,6 +344,7 @@ private fun DualSubExperience(
     onPlayerModeChange: (PlayerExperienceMode) -> Unit,
     externalSettingsRequestId: Long,
     aiSettingsRequestId: Long = 0L,
+    wordSettingsRequestId: Long = 0L,
     fullscreenLearningOverlay: (@Composable BoxScope.() -> Unit)?,
     onNavigationVisibilityChange: (Boolean) -> Unit,
     onPageChanged: (String) -> Unit,
@@ -366,6 +401,13 @@ private fun DualSubExperience(
     }
     // Gear icons on the player open a small Subtitles popup (languages, Hide while playing); the sidebar opens the full page.
     var showQuickSettings by remember { mutableStateOf(false) }
+    // Opened from the gear popup: every line of the video, search and export (25kiuo, #81, 2026-11-17).
+    var showWholeTranscript by remember { mutableStateOf(false) }
+    val openWholeTranscript =
+        rememberWholeTranscriptOpener {
+            showQuickSettings = false
+            showWholeTranscript = true
+        }
     val configuration = LocalConfiguration.current
     val context = LocalContext.current
     val layoutPreferences =
@@ -433,6 +475,10 @@ private fun DualSubExperience(
     }
     OnSettingsRequest(aiSettingsRequestId) {
         settingsJumpSection = MoreSettingsSection.AI_ASSISTANT
+        showSettings = true
+    }
+    OnSettingsRequest(wordSettingsRequestId) {
+        settingsJumpSection = MoreSettingsSection.WORD_LEARNING
         showSettings = true
     }
     val differentTabAccounts by rememberDifferentTabAccounts()
@@ -600,9 +646,11 @@ private fun DualSubExperience(
                 showQuickSettings = false
                 showSettings = true
             },
+            onOpenWholeTranscript = openWholeTranscript,
             onDismiss = { showQuickSettings = false },
         )
     }
+    WholeTranscriptPage(showWholeTranscript, state, webController) { showWholeTranscript = false }
     if (showSettings) {
         SubtitleSettingsDialog(
             autoPronounce = state.autoPronounce,
@@ -670,7 +718,19 @@ private fun DualSubExperience(
     }
 }
 
-/** Runs [open] for each new [requestId] above 0, such as the no-captions card's "Add a free Gemini key". */
+/** Runs [open] for each new [requestId] above 0, such as the no-captions card's "Add a free Gemini key" or the word card's Word card settings. */
+@Composable
+private fun WholeTranscriptPage(
+    visible: Boolean,
+    state: DualSubUiState,
+    webController: YouTubeWebController,
+    onDismiss: () -> Unit,
+) {
+    if (visible) {
+        PlayerWholeTranscript(state, onJump = { segment -> webController.replayFrom(segment.startMs / 1_000f) }, onDismiss = onDismiss)
+    }
+}
+
 @Composable
 private fun OnSettingsRequest(
     requestId: Long,
@@ -791,10 +851,23 @@ private fun SubtitlePanel(
                     state.liveFallback -> LiveSubtitlePanel(state, onRetry, onWordClick)
                     state.errorMessage != null -> CompactErrorPanel(state.errorMessage, onRetry)
                     state.segments.isEmpty() -> CompactLoadingPanel(state.statusMessage ?: stringResource(R.string.player_loading_captions))
-                    else -> TranslatedSubtitleTimeline(state, onWordClick, onReplay)
+                    else -> TimelineWithAiTranscriptBanner(state, onWordClick, onReplay)
                 }
             }
         }
+    }
+}
+
+/** The transcript, with the song lyrics card or the AI transcript's progress above it when there is one. */
+@Composable
+private fun TimelineWithAiTranscriptBanner(
+    state: DualSubUiState,
+    onWordClick: (WordTap) -> Unit,
+    onReplay: (SubtitleSegment) -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        AiTranscriptBanner(state)
+        Box(Modifier.fillMaxWidth().weight(1f)) { TranslatedSubtitleTimeline(state, onWordClick, onReplay) }
     }
 }
 
@@ -964,7 +1037,7 @@ private fun SideSubtitlePanel(
                 state.liveFallback -> LiveSubtitlePanel(state, onRetry, onWordClick)
                 state.errorMessage != null -> CompactErrorPanel(state.errorMessage, onRetry)
                 state.segments.isEmpty() -> CompactLoadingPanel(state.statusMessage ?: stringResource(R.string.player_loading_captions))
-                else -> TranslatedSubtitleTimeline(state, onWordClick, onReplay)
+                else -> TimelineWithAiTranscriptBanner(state, onWordClick, onReplay)
             }
         }
     }
@@ -1461,7 +1534,8 @@ private fun sourceDescription(state: DualSubUiState): String {
     val interfaceLocale = currentInterfaceLocale()
     val source = state.resolvedSourceLanguage?.let { resolved ->
         if (state.loadedTrackId == AI_SUBTITLE_TRACK_ID) {
-            return@let stringResource(R.string.ai_subtitles_track_label, languageDisplayName(resolved, interfaceLocale))
+            val label = if (state.loadedLyrics) R.string.ai_transcript_lyrics_track_label else R.string.ai_subtitles_track_label
+            return@let stringResource(label, languageDisplayName(resolved, interfaceLocale))
         }
         // YouTube's own name of the loaded track already says when it is auto-generated.
         state.availableSourceLanguages.firstOrNull { state.loadedTrackId.isNotBlank() && it.trackId == state.loadedTrackId }?.name
@@ -1501,7 +1575,8 @@ private fun BindLineSoundReplay(
         val token =
             LineAudioBridge.bindReplay { word ->
                 val clip = soundReplayClip(word)?.takeIf { it.videoId != null && it.videoId == playing }
-                clip?.let(webController::replayClip)
+                // Silent: the recorder still hears a muted page video (lion737, #81; checked on the emulator 2026-11-16).
+                clip?.let { webController.replayClip(it, muted = true) }
                 clip != null
             }
         onDispose { LineAudioBridge.unbindReplay(token) }

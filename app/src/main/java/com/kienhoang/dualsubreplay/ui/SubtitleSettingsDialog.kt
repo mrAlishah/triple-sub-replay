@@ -30,8 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Subject
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -105,6 +107,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AiConnectionTarget
+import com.kienhoang.dualsubreplay.data.AI_SUBTITLE_TRACK_ID
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.translation.SubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.TranslationLanguages
@@ -189,6 +192,9 @@ internal enum class MoreSettingsSection(
     ),
     ADS("ads", SettingsGroup.VIDEO, R.string.settings_section_ads_title, Icons.Default.FastForward),
     TABS("tabs", SettingsGroup.VIDEO, R.string.settings_section_tabs_title, Icons.Default.Tab),
+
+    /** The Sleep timer, out of the gear popup unless the learner puts it back (owner pick 2026-11-16). */
+    PLAYBACK("playback", SettingsGroup.VIDEO, R.string.settings_section_playback_title, Icons.Default.Bedtime),
     COLORS(
         "colors",
         SettingsGroup.APP,
@@ -373,14 +379,17 @@ internal class LanguagePickerState {
 
 /**
  * [autoLabel] names the "auto" choice; then every caption track of the video, named as YouTube
- * names it, each its own choice ([trackChoiceCode]).
+ * names it, each its own choice ([trackChoiceCode]); last [aiTranscriptLabel]'s AI transcript, when
+ * a video is open in a build with the AI assistant.
  */
 internal fun sourceLanguageChoices(
     availableSourceLanguages: List<CaptionLanguage>,
     autoLabel: String,
+    aiTranscriptLabel: String? = null,
 ): List<LanguageChoice> =
     listOf(LanguageChoice("auto", autoLabel)) +
-        availableSourceLanguages.map { LanguageChoice(trackChoiceCode(it), it.name) }
+        availableSourceLanguages.filter { it.trackId != AI_SUBTITLE_TRACK_ID }.map { LanguageChoice(trackChoiceCode(it), it.name) } +
+        listOfNotNull(aiTranscriptLabel?.let { LanguageChoice(AI_TRANSCRIPT_CHOICE, it) })
 
 /** [sourcePreference] is "auto", a track choice or a language code (see [sourceChoiceSelection]). */
 internal fun sourceLanguageLabel(
@@ -543,7 +552,7 @@ private fun SlotAccordion(
 
 /**
  * The subtitle panel's gear opens this small popup over the video: the languages and Hide while
- * playing (owner pick 2026-11-10). "Settings" leads to the full settings page.
+ * playing (owner pick 2026-11-10), and the Sleep timer when Settings → Playback puts it here. "Settings" leads to the full settings page.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -557,6 +566,7 @@ internal fun QuickLanguageSettingsDialog(
     recentTargetLanguages: List<String> = emptyList(),
     translatedVisibility: CaptionVisibility = CaptionVisibility.ALWAYS,
     onCaptionVisibilityChange: (original: Boolean, visibility: CaptionVisibility) -> Unit = { _, _ -> },
+    onOpenWholeTranscript: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     DismissWhenOpenTabChanges(onDismiss)
@@ -566,7 +576,7 @@ internal fun QuickLanguageSettingsDialog(
     RecordSettingChanges(remember(context) { studyPreferences(context) }, remember(context) { SettingsUsage(context) })
     val autoLabel = stringResource(R.string.settings_source_language_auto)
     val interfaceLocale = currentInterfaceLocale()
-    val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel)
+    val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel, aiTranscriptChoiceLabel())
     val pickerOpen =
         showLanguagePickerIfOpen(
             picker = languagePicker,
@@ -603,10 +613,20 @@ internal fun QuickLanguageSettingsDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 HideWhilePlayingRow(translatedVisibility, onCaptionVisibilityChange)
+                val sleepTimerHere by rememberSleepTimerInQuickSettings()
+                if (sleepTimerHere) SleepTimerRow()
                 HorizontalDivider(
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                     color = MaterialTheme.colorScheme.outlineVariant,
                 )
+                onOpenWholeTranscript?.let { open ->
+                    QuickPopupLink(
+                        icon = Icons.AutoMirrored.Filled.Subject,
+                        label = stringResource(R.string.whole_transcript_title),
+                        tag = "open_whole_transcript",
+                        onClick = open,
+                    )
+                }
                 Row(
                     modifier =
                         Modifier
@@ -633,6 +653,40 @@ internal fun QuickLanguageSettingsDialog(
                 }
             }
         }
+    }
+}
+
+/** A row in the gear popup that opens another screen, like its Settings row. */
+@Composable
+private fun QuickPopupLink(
+    icon: ImageVector,
+    label: String,
+    tag: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(role = Role.Button, onClick = onClick)
+                .testTag(tag)
+                .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -746,7 +800,7 @@ internal fun SubtitleSettingsDialog(
     DismissWhenOpenTabChanges(onDismiss)
     var tabSettingsOpen by rememberSaveable { mutableStateOf(false) }
     val autoLabel = stringResource(R.string.settings_source_language_auto)
-    val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel)
+    val sourceChoices = sourceLanguageChoices(availableSourceLanguages, autoLabel, aiTranscriptChoiceLabel())
     val pickerOpen =
         showLanguagePickerIfOpen(
             picker = languagePicker,
@@ -1173,6 +1227,7 @@ private fun ColumnScope.SectionSettings(
         MoreSettingsSection.OVERLAY -> page.overlay(this)
         MoreSettingsSection.ADS -> AdSkipSettingsSection()
         MoreSettingsSection.TABS -> YouTubeTabsSettingsSection()
+        MoreSettingsSection.PLAYBACK -> PlaybackSettingsSection()
         MoreSettingsSection.COLORS -> page.colors(this)
         MoreSettingsSection.AI_ASSISTANT ->
             LocalAiAssistant.current?.let {
@@ -1304,6 +1359,7 @@ internal fun WordLearningSettings(
     )
     PronunciationVolumeSetting()
     PhoneVoiceSetting()
+    TapBarReadingSetting()
     MeaningInContextSetting()
     SettingsSwitchRow(
         title = stringResource(R.string.settings_word_learning_mode_title),

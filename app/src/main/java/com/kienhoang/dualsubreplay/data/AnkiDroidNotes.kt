@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import com.kienhoang.dualsubreplay.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,15 +63,23 @@ internal fun ankiSentenceHtml(
     return ankiHtml(sentence.substring(0, at)) + "<b>" + ankiHtml(sentence.substring(at, end)) + "</b>" + ankiHtml(sentence.substring(end))
 }
 
-/** A link to the line's moment in the video, or empty text when the word has no video. */
+/**
+ * Links to the line's moment in the video, or empty text when the word has no video. The first link
+ * opens this app (an intent link naming [appPackage], because Android gives youtube.com links to the
+ * YouTube app); the plain YouTube link next to it keeps working in desktop Anki. No text sits between
+ * the links, because a picture-front template hides only the links and line breaks of this field.
+ */
 internal fun ankiSourceLink(
     videoId: String?,
     startMs: Long,
+    appPackage: String = BuildConfig.APPLICATION_ID,
 ): String {
     if (videoId == null || !videoId.matches(Regex("[A-Za-z0-9_-]{11}"))) return ""
     val seconds = (startMs.coerceAtLeast(0) / MS_PER_SECOND).toInt()
     val label = String.format(Locale.ROOT, "%d:%02d", seconds / SECONDS_PER_MINUTE, seconds % SECONDS_PER_MINUTE)
-    return "<a href=\"https://www.youtube.com/watch?v=$videoId&amp;t=${seconds}s\">YouTube $label</a>"
+    val watch = "www.youtube.com/watch?v=$videoId&amp;t=${seconds}s"
+    val app = "<a href=\"intent://$watch#Intent;scheme=https;package=$appPackage;end\">DualSub Replay $label</a>"
+    return "$app<a style=\"margin-left:12px\" href=\"https://$watch\">YouTube</a>"
 }
 
 /**
@@ -81,6 +90,10 @@ internal data class CardMedia(
     val word: String = "",
     val sentence: String = "",
     val picture: String = "",
+    /** Read aloud on the back: the meanings' sounds, after the Meaning field's text. */
+    val meaningSounds: String = "",
+    /** Read aloud on the back: the sentence translation's sound, after the Translation field's text. */
+    val translationSound: String = "",
 )
 
 /** The field text that plays the media file [name] in Anki; empty for a name Anki couldn't play. */
@@ -100,10 +113,10 @@ internal fun ankiNoteFields(
 ): List<String> =
     listOf(
         ankiHtml(word.word),
-        ankiMeaningHtml(word),
+        ankiMeaningHtml(word) + media.meaningSounds,
         ankiHtml(word.reading.orEmpty()),
         ankiSentenceHtml(word.sentence, word.word),
-        ankiTranslationHtml(word),
+        ankiTranslationHtml(word) + media.translationSound,
         listOf(media.picture, ankiSourceLink(word.videoId, word.startMs)).filter { it.isNotEmpty() }.joinToString("<br>"),
         media.word,
         media.sentence,
@@ -136,6 +149,9 @@ internal data class AnkiCardFiles(
     val word: File? = null,
     val sentence: File? = null,
     val picture: File? = null,
+    /** Read aloud on the back: the meaning in this sentence and the dictionary meaning, in the Meaning field's order. */
+    val meanings: List<File> = emptyList(),
+    val translation: File? = null,
 )
 
 /**
@@ -150,10 +166,56 @@ internal interface AnkiCardMedia {
     ): AnkiCardFiles
 
     fun awaitSentence(item: PendingCardAudio)
+
+    /** The small label before the line's sound on the card, in the app's language; empty for none. */
+    val sentenceLabel: String get() = ""
 }
+
+/**
+ * The text before the line's play button in the Sentence audio field, so learners know that button
+ * plays the line from the video (owner request 2026-11-16); empty for an empty [label].
+ */
+internal fun ankiSentenceSoundLabel(label: String?): String =
+    label?.takeIf { it.isNotBlank() }?.let { "<span style=\"font-size:14px;opacity:.7\">${ankiHtml(it)}</span> " }.orEmpty()
+
+/** [sound] with [label] before it; empty without a sound, so a card that waits for its clip shows no label yet. */
+internal fun labeledSentenceSound(
+    label: String?,
+    sound: String,
+): String = if (sound.isEmpty()) "" else ankiSentenceSoundLabel(label) + sound
 
 /** The authority of the provider that lends AnkiDroid the media files (read-only, for one copy). */
 internal fun cardAudioAuthority(context: Context): String = "${context.packageName}.cardaudio"
+
+/**
+ * The AnkiDroid deck for [word], split like Practice (owner pick 2026-11-16): a subdeck of
+ * DualSub Replay named after the word's Practice deck, else after its language in English (so the
+ * name doesn't change with the app's language). Anki reviews a parent deck with all its subdecks.
+ * Not used by any send path: the fork keeps its one `TripleSub Replay` deck (owner decision 2026-11-18); a later
+ * subdeck feature passes `TRIPLE_DECK_NAME` as [parent].
+ */
+internal fun ankiDeckName(
+    word: SavedWord,
+    parent: String = ANKI_DECK_NAME,
+): String {
+    val sub = word.deck?.let(::ankiDeckPart) ?: ankiDeckPart(ankiLanguageName(word.wordLanguage))
+    return sub?.let { "$parent::$it" } ?: parent
+}
+
+/** [code]'s language name in English ("English", "Japanese"), or the code itself when unknown. */
+internal fun ankiLanguageName(code: String): String {
+    val name = Locale.forLanguageTag(code.trim()).getDisplayLanguage(Locale.ENGLISH)
+    return name.ifBlank { code }
+}
+
+/** [name] as one level of a deck name: Anki's "::" separator and quotes taken out; null when nothing is left. */
+private fun ankiDeckPart(name: String): String? =
+    name
+        .replace("::", " ")
+        .replace("\"", "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .takeIf { it.isNotEmpty() }
 
 /** The words of [words] that were not sent before, by id. */
 internal fun unsentAnkiWords(

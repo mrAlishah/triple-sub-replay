@@ -10,11 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpRect
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -25,14 +20,19 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpRect
+import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.data.CaptionLanguage
 import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.ui.theme.DualSubTheme
@@ -57,10 +57,11 @@ class SubtitleUiTest {
                 SubtitleSettingsDialog(
                     sourcePreference = "auto",
                     targetLanguage = "vi",
-                    availableSourceLanguages = listOf(
-                        CaptionLanguage("en", "English"),
-                        CaptionLanguage("ja", "Japanese"),
-                    ),
+                    availableSourceLanguages =
+                        listOf(
+                            CaptionLanguage("en", "English"),
+                            CaptionLanguage("ja", "Japanese"),
+                        ),
                     fontScale = 1f,
                     landscapeSplitEnabled = false,
                     onSourceChange = { selectedLanguage = it },
@@ -116,6 +117,8 @@ class SubtitleUiTest {
         composeRule.onNodeWithText("Subtitle 1 · Vietnamese").assertIsDisplayed()
         composeRule.onNodeWithText("Text size: 100%").assertDoesNotExist()
         composeRule.onNodeWithText("Done").assertDoesNotExist()
+        // The Sleep timer is in Settings → Playback unless Show in quick settings is on.
+        composeRule.onNodeWithTag("sleep_timer").assertDoesNotExist()
         // The dialog fades in after Compose is idle; the screenshot waits for it.
         Thread.sleep(700)
         saveUiEvidence("subtitle-languages-quick")
@@ -363,7 +366,8 @@ class SubtitleUiTest {
             }
         }
 
-        composeRule.onNodeWithText("Active original")
+        composeRule
+            .onNodeWithText("Active original")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active subtitle"))
             .performClick()
         composeRule.runOnIdle { assertFalse(replayed) }
@@ -385,7 +389,8 @@ class SubtitleUiTest {
             }
         }
 
-        composeRule.onNodeWithText("Next sentence")
+        composeRule
+            .onNodeWithText("Next sentence")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Subtitle"))
         composeRule.onNodeWithText("Câu tiếp theo").assertIsDisplayed()
     }

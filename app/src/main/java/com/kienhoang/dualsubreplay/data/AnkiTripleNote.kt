@@ -60,11 +60,11 @@ internal fun tripleNoteFields(
 ): List<String> =
     listOf(
         ankiHtml(word.word),
-        ankiHtml(word.meaning),
+        ankiHtml(word.meaning) + media.meaningSounds,
         ankiMeaning2Html(word),
         ankiHtml(word.reading.orEmpty()),
         ankiSentenceHtml(word.sentence, word.word),
-        ankiLinesHtml(word),
+        ankiLinesHtml(word) + media.translationSound,
         ankiHtml(word.personalNotes),
         listOf(media.picture, ankiSourceLink(word.videoId, word.startMs)).filter { it.isNotEmpty() }.joinToString("<br>"),
         ankiOnlineExampleHtml(word),

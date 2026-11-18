@@ -67,11 +67,105 @@ class WordLearningDialogTest {
         compose.runOnIdle { assertEquals(1, spoken) }
         saveUiEvidence("word-definition")
         compose.onNodeWithTag("offline_clip_choice").assertDoesNotExist()
-        compose.onNodeWithTag("online_clip_choice").assertIsDisplayed()
-        compose.onNodeWithTag("save_word").performClick()
+        // The card keeps its own Online example box (owner decision 2026-11-18); the Flashcards & Anki setting is where it starts (on).
+        compose.onNodeWithTag("online_clip_choice").assertIsDisplayed().assertIsOn()
+        compose.onNodeWithTag("save_word").assertTextContains("Save to Practice").performClick()
         compose.waitForIdle()
         compose.runOnIdle { assertEquals(Pair("từ", true), saved) }
-        compose.onNodeWithTag("word_saved").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("word_saved").assertIsDisplayed().assertTextContains("Practice tab", substring = true)
+        compose.onNodeWithTag("save_word").assertTextContains("In Practice").assertIsNotEnabled()
+        saveUiEvidence("word-card-saved")
+    }
+
+    @Test
+    fun videoExampleSettingOffSavesTheWordWithoutItsClip() {
+        val preferences = studyPreferences(InstrumentationRegistry.getInstrumentation().targetContext)
+        preferences.edit().putBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, false).commit()
+        try {
+            var saved: Pair<String, Boolean>? = null
+            compose.setContent {
+                DualSubTheme {
+                    WordLearningDialog(selection, false, { "từ" }, { meaning, online, _ -> saved = Pair(meaning, online) }, {}, null, {})
+                }
+            }
+            compose.onNodeWithTag("save_word").performClick()
+            compose.waitForIdle()
+            compose.runOnIdle { assertEquals(Pair("từ", false), saved) }
+        } finally {
+            preferences.edit().remove(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE).commit()
+        }
+    }
+
+    @Test
+    fun theCardsOnlineExampleBoxStartsFromTheSettingAndChangesOnlyThisWord() {
+        val preferences = studyPreferences(InstrumentationRegistry.getInstrumentation().targetContext)
+        preferences.edit().putBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, false).commit()
+        try {
+            var saved: Pair<String, Boolean>? = null
+            compose.setContent {
+                DualSubTheme {
+                    WordLearningDialog(selection, false, { "từ" }, { meaning, online, _ -> saved = Pair(meaning, online) }, {}, null, {})
+                }
+            }
+            compose.onNodeWithTag("online_clip_choice").assertIsOff().performClick()
+            compose.onNodeWithTag("online_clip_choice").assertIsOn()
+            compose.onNodeWithTag("save_word").performClick()
+            compose.waitForIdle()
+            compose.runOnIdle { assertEquals(Pair("từ", true), saved) }
+            // The setting itself is untouched by the card's choice.
+            assertEquals(false, preferences.getBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, true))
+        } finally {
+            preferences.edit().remove(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE).commit()
+        }
+    }
+
+    @Test
+    fun aSavedWordKeepsItsOwnOnlineExampleChoiceWhateverTheSettingSays() {
+        var saved: Pair<String, Boolean>? = null
+        val existing = savedWordFrom(selection, "từ", online = false)
+        compose.setContent {
+            DualSubTheme {
+                WordLearningDialog(
+                    selection = selection,
+                    autoPronounce = false,
+                    onTranslateWord = { "từ" },
+                    onSave = { meaning, online, _ -> saved = Pair(meaning, online) },
+                    onSpeak = {},
+                    speechMessage = null,
+                    onDismiss = {},
+                    existingWord = existing,
+                )
+            }
+        }
+        compose.onNodeWithTag("online_clip_choice").assertIsOff().performClick()
+        compose.onNodeWithTag("save_word").assertIsEnabled().performClick()
+        compose.waitForIdle()
+        compose.runOnIdle { assertEquals(Pair("từ", true), saved) }
+    }
+
+    @Test
+    fun aNewUsersBarHasSaveAndMoreAtTheFarRightAndMoreOpensWordCardSettings() {
+        var settingsOpened = 0
+        compose.setContent {
+            DualSubTheme {
+                WordLearningDialog(selection, false, { "từ" }, { _, _, _ -> }, {}, null, {}, onOpenSettings = { settingsOpened++ })
+            }
+        }
+        compose.onNodeWithTag("save_word").assertIsDisplayed()
+        // No assistant, no flashcard app and Known words off: Ask AI, Anki and "I know this word" stay hidden.
+        compose.onNodeWithTag("grammar_ask_ai").assertDoesNotExist()
+        compose.onNodeWithTag("send_to_anki").assertDoesNotExist()
+        compose.onNodeWithTag("deck_chip").assertDoesNotExist()
+        val bar = compose.onNodeWithTag("word_card_actions").fetchSemanticsNode().boundsInRoot
+        val more = compose.onNodeWithTag("word_card_more").fetchSemanticsNode().boundsInRoot
+        assertEquals("More stays at the far right", bar.right, more.right, 1f)
+        saveUiEvidence("word-card-bar-new-user")
+        compose.onNodeWithTag("word_card_more").performClick()
+        compose.onNodeWithTag("known_word_toggle").assertDoesNotExist()
+        compose.onNodeWithTag("word_card_settings").assertIsDisplayed()
+        saveUiEvidence("word-card-more-menu-new-user")
+        compose.onNodeWithTag("word_card_settings").performClick()
+        compose.runOnIdle { assertEquals(1, settingsOpened) }
     }
 
     @Test
@@ -104,7 +198,7 @@ class WordLearningDialogTest {
             compose.onNodeWithTag("meaning_in_context_under").assertTextEquals("In this sentence: gedirəm")
             compose.onNodeWithTag("meaning_in_context_text").assertDoesNotExist()
             saveUiEvidence("word-card-dictionary-first")
-            compose.onNodeWithTag("save_word").performScrollTo().performClick()
+            compose.onNodeWithTag("save_word").performClick()
             compose.waitForIdle()
             compose.runOnIdle { assertEquals("getmək (gedirəm)", saved) }
         } finally {
@@ -140,7 +234,7 @@ class WordLearningDialogTest {
         compose.onNodeWithTag("dictionary_meaning_text").assertTextEquals("Dictionary: getmək")
         compose.onNodeWithText("In this sentence", substring = true).assertIsDisplayed()
         saveUiEvidence("word-card-meaning-in-sentence")
-        compose.onNodeWithTag("save_word").performScrollTo().performClick()
+        compose.onNodeWithTag("save_word").performClick()
         compose.waitForIdle()
         compose.runOnIdle { assertEquals("gedirəm (getmək)", saved) }
 
@@ -285,7 +379,7 @@ class WordLearningDialogTest {
             }
         }
         compose.onNodeWithText("Phrase").assertIsDisplayed()
-        compose.onNodeWithText("Save to vocabulary").assertIsDisplayed()
+        compose.onNodeWithTag("save_word").assertTextContains("Save to Practice")
         compose.onNodeWithText("Word by word").performScrollTo().assertIsDisplayed()
         saveUiEvidence("phrase-card")
         compose.onNodeWithTag("pronounce_part_1").performScrollTo().performClick()

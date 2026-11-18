@@ -21,6 +21,10 @@
     <string name="practice_google_translate_unavailable">Google 번역이 설치되어 있지 않습니다</string>
     <string name="practice_google_translate_cannot_open">Google 번역이 텍스트를 받을 수 없습니다</string>
     <string name="practice_pronounce_item">%1$s 발음</string>
+    <string name="practice_play_line">문장 재생</string>
+    <string name="practice_read_meaning">뜻 읽어 주기</string>
+    <string name="practice_read_translation">번역 읽어 주기</string>
+    <string name="practice_picture">동영상 사진</string>
     <string name="practice_speech_settings">음성 설정</string>
     <string name="practice_show_meaning">뜻 보기</string>
     <string name="practice_meaning_in_sentence_label">이 문장에서 (%1$s)</string>
@@ -74,13 +78,9 @@
     <string name="practice_export_full_backup">전체 백업(JSON)</string>
     <string name="practice_export_anki_text">Anki 텍스트(TSV)</string>
     <string name="practice_word_translation_unavailable">번역을 사용할 수 없어요. 뜻을 직접 입력하고 단어를 저장할 수 있어요.</string>
-    <string name="practice_example_plays_original">예시는 번역된 단어가 아니라 원래 문장을 재생해요.</string>
     <string name="practice_save_failed">저장하지 못했어요. 사용 가능한 저장공간을 확인하고 다시 시도하세요.</string>
-    <string name="practice_saved_to_vocabulary">단어장에 저장했어요</string>
     <string name="practice_phrase">구문</string>
     <string name="practice_saving">저장 중…</string>
-    <string name="practice_saved">저장됨</string>
-    <string name="practice_save_to_vocabulary">단어장에 저장</string>
     <string name="practice_word_by_word">단어별 보기</string>
     <string name="practice_dictionary_form">사전형: %1$s</string>
     <string name="practice_word_level_description">단어 수준: CEFR %1$s</string>
@@ -165,4 +165,16 @@
     <string name="practice_source_in_session">출처: %1$s</string>
     <string name="practice_source_option">%1$s (%2$d)</string>
     <string name="practice_source_same_title">%1$s · %2$s</string>
+    <string name="practice_from_video">출처: %1$s</string>
+    <string name="word_card_save_to_practice">연습에 저장</string>
+    <string name="word_card_in_practice">연습에 있음</string>
+    <string name="word_card_saved_note">저장했어요. 연습 탭에서 언제든 볼 수 있어요.</string>
+    <string name="word_card_saved_and_sent">연습에 저장하고 %1$s로 보냈어요.</string>
+    <string name="word_card_ask_ai">AI에게 묻기</string>
+    <string name="word_card_anki">Anki</string>
+    <string name="word_card_sent">보냄</string>
+    <string name="word_card_more">더보기</string>
+    <string name="word_card_more_description">이 단어의 더 많은 옵션</string>
+    <string name="word_card_settings">단어 카드 설정</string>
+    <string name="practice_example_plays_original">예시는 번역된 단어가 아니라 원래 문장을 재생해요.</string>
 </resources>

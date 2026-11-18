@@ -142,6 +142,8 @@ internal data class AiStoredSettings(
     val phoneVoice: Boolean = false,
     val meaningInContext: Boolean = false,
     val meaningOrder: String = MEANING_ORDER_SENTENCE_FIRST,
+    val prepareMeanings: Boolean = false,
+    val tapBarReading: Boolean = false,
     val overlayInFullscreen: Boolean = true,
     val overlayWhenRotated: Boolean = true,
     val movableControls: Boolean = true,
@@ -154,8 +156,24 @@ internal data class AiStoredSettings(
     val autoUpdate: Boolean = false,
     val adSkip: AdSkipSettings = AdSkipSettings(),
     val differentTabAccounts: Boolean = false,
+    val sleepTimerInQuickSettings: Boolean = false,
+    val wholeTranscript: Boolean = false,
     val tvLayout: Boolean = false,
 )
+
+/** On/off settings the assistant writes straight to their preference, as their settings pages do. */
+private val STORED_SWITCHES =
+    mapOf(
+        AiSetting.UPDATE_REMINDERS to UPDATE_REMINDERS_PREFERENCE,
+        AiSetting.APP_AUTO_UPDATE to APP_AUTO_UPDATE_PREFERENCE,
+        AiSetting.SKIP_ADS to SKIP_ADS_PREFERENCE,
+        AiSetting.SKIP_SPONSORS to SKIP_SPONSORS_PREFERENCE,
+        AiSetting.ALWAYS_SKIP_SPONSORS to ALWAYS_SKIP_SPONSORS_PREFERENCE,
+        AiSetting.DIFFERENT_TAB_ACCOUNTS to DIFFERENT_TAB_ACCOUNTS_PREFERENCE,
+        AiSetting.SLEEP_TIMER_QUICK to SLEEP_TIMER_QUICK_PREFERENCE,
+        AiSetting.WHOLE_TRANSCRIPT to WHOLE_TRANSCRIPT_PREFERENCE,
+        AiSetting.TV_LAYOUT to TV_LAYOUT_PREFERENCE,
+    )
 
 internal fun readAiStoredSettings(context: Context): AiStoredSettings {
     val preferences = context.getSharedPreferences("dual_sub_preferences", 0)
@@ -167,6 +185,8 @@ internal fun readAiStoredSettings(context: Context): AiStoredSettings {
         phoneVoice = preferences.getBoolean(PHONE_VOICE_PREFERENCE, false),
         meaningInContext = preferences.getBoolean(MEANING_IN_CONTEXT_PREFERENCE, false),
         meaningOrder = storedMeaningOrder(preferences.getString(MEANING_ORDER_PREFERENCE, null)),
+        prepareMeanings = preferences.getBoolean(PREPARE_MEANINGS_PREFERENCE, false),
+        tapBarReading = preferences.getBoolean(TAP_BAR_READING_PREFERENCE, false),
         overlayInFullscreen = preferences.getBoolean(AUTO_OVERLAY_FULLSCREEN_PREFERENCE, true),
         overlayWhenRotated = preferences.getBoolean(AUTO_OVERLAY_LANDSCAPE_PREFERENCE, true),
         movableControls = preferences.getBoolean(MOVABLE_OVERLAY_PREFERENCE, true),
@@ -178,6 +198,8 @@ internal fun readAiStoredSettings(context: Context): AiStoredSettings {
         autoUpdate = preferences.getBoolean(APP_AUTO_UPDATE_PREFERENCE, false),
         adSkip = readAdSkipSettings(preferences),
         differentTabAccounts = preferences.getBoolean(DIFFERENT_TAB_ACCOUNTS_PREFERENCE, false),
+        sleepTimerInQuickSettings = preferences.getBoolean(SLEEP_TIMER_QUICK_PREFERENCE, false),
+        wholeTranscript = preferences.getBoolean(WHOLE_TRANSCRIPT_PREFERENCE, false),
         tvLayout = readTvLayout(preferences, isTelevisionDevice(context)),
     )
 }
@@ -202,10 +224,6 @@ private fun aiStoredSettingValue(
         AiSetting.OVERLAY_BACKGROUND -> stored.overlayBackground
         AiSetting.APP_COLORS -> stored.appColors
         AiSetting.ACCENT_COLOR -> stored.accentColor
-        AiSetting.PRONUNCIATION_VOLUME -> Math.round(stored.pronunciationVolume * PERCENT).toString()
-        AiSetting.PHONE_VOICE -> onOff(stored.phoneVoice)
-        AiSetting.MEANING_IN_CONTEXT -> onOff(stored.meaningInContext)
-        AiSetting.MEANING_ORDER -> stored.meaningOrder
         AiSetting.OVERLAY_IN_FULLSCREEN -> onOff(stored.overlayInFullscreen)
         AiSetting.OVERLAY_WHEN_ROTATED -> onOff(stored.overlayWhenRotated)
         AiSetting.MOVABLE_SUBTITLE_CONTROLS -> onOff(stored.movableControls)
@@ -219,7 +237,24 @@ private fun aiStoredSettingValue(
         AiSetting.ALWAYS_SKIP_SPONSORS -> onOff(stored.adSkip.alwaysSkipSponsors)
         AiSetting.DIFFERENT_TAB_ACCOUNTS -> onOff(stored.differentTabAccounts)
         AiSetting.TV_LAYOUT -> onOff(stored.tvLayout)
-        else -> aiStudySettingValue(stored.study, setting)
+        else -> aiWordSettingValue(stored, setting) ?: aiStudySettingValue(stored.study, setting)
+    }
+
+/** Word learning's voice and meaning settings, and what the gear popup shows. */
+private fun aiWordSettingValue(
+    stored: AiStoredSettings,
+    setting: AiSetting,
+): String? =
+    when (setting) {
+        AiSetting.PRONUNCIATION_VOLUME -> Math.round(stored.pronunciationVolume * PERCENT).toString()
+        AiSetting.PHONE_VOICE -> onOff(stored.phoneVoice)
+        AiSetting.MEANING_IN_CONTEXT -> onOff(stored.meaningInContext)
+        AiSetting.MEANING_ORDER -> stored.meaningOrder
+        AiSetting.PREPARE_MEANINGS -> onOff(stored.prepareMeanings)
+        AiSetting.TAP_BAR_READING -> onOff(stored.tapBarReading)
+        AiSetting.SLEEP_TIMER_QUICK -> onOff(stored.sleepTimerInQuickSettings)
+        AiSetting.WHOLE_TRANSCRIPT -> onOff(stored.wholeTranscript)
+        else -> null
     }
 
 /** The Study tools settings (2026-10-20). */
@@ -240,11 +275,26 @@ private fun aiStudySettingValue(
         AiSetting.CARD_SENTENCE_SOUND -> study.cardSentenceSound.storageValue
         AiSetting.CARD_PICTURE -> study.cardPicture.storageValue
         AiSetting.CARD_SOUND_FIRST -> study.cardSoundFirst.storageValue
+        AiSetting.CARD_READING -> study.cardReading.storageValue
+        AiSetting.CARD_READ_MEANING -> onOff(study.cardReadAloud.meaningInSentence)
+        AiSetting.CARD_READ_DICTIONARY -> onOff(study.cardReadAloud.dictionaryMeaning)
+        AiSetting.CARD_READ_TRANSLATION -> onOff(study.cardReadAloud.translation)
         AiSetting.CARD_FRONT -> study.cardFront.storageValue
         AiSetting.BLUR_BOX -> onOff(study.blurBox)
         AiSetting.LOOP_BUTTON -> onOff(study.loopButton)
         AiSetting.KANJI_DETAILS -> onOff(study.kanjiDetails)
         AiSetting.PAGE_TOKEN_CAPTIONS -> study.pageTokenCaptions.storageValue
+        else -> aiFlashcardSwitchValue(study, setting)
+    }
+
+/** Flashcards & Anki → Also send saved words and Video example for saved words (2026-11-17). */
+private fun aiFlashcardSwitchValue(
+    study: StudySettings,
+    setting: AiSetting,
+): String? =
+    when (setting) {
+        AiSetting.SEND_SAVED_WORDS -> onOff(study.sendOnSave)
+        AiSetting.SAVED_WORD_VIDEO_EXAMPLE -> onOff(study.savedWordVideoExample)
         else -> null
     }
 
@@ -657,6 +707,8 @@ internal class AppAiActions(
             AiSetting.PHONE_VOICE -> editor.putBoolean(PHONE_VOICE_PREFERENCE, on)
             AiSetting.MEANING_IN_CONTEXT -> editor.putBoolean(MEANING_IN_CONTEXT_PREFERENCE, on)
             AiSetting.MEANING_ORDER -> editor.putString(MEANING_ORDER_PREFERENCE, storedMeaningOrder(value))
+            AiSetting.PREPARE_MEANINGS -> editor.putBoolean(PREPARE_MEANINGS_PREFERENCE, on)
+            AiSetting.TAP_BAR_READING -> editor.putBoolean(TAP_BAR_READING_PREFERENCE, on)
             AiSetting.OVERLAY_IN_FULLSCREEN -> editor.putBoolean(AUTO_OVERLAY_FULLSCREEN_PREFERENCE, on)
             AiSetting.OVERLAY_WHEN_ROTATED -> editor.putBoolean(AUTO_OVERLAY_LANDSCAPE_PREFERENCE, on)
             AiSetting.MOVABLE_SUBTITLE_CONTROLS -> editor.putBoolean(MOVABLE_OVERLAY_PREFERENCE, on)
@@ -666,13 +718,7 @@ internal class AppAiActions(
                 // Like the settings page: turning it off forgets the dragged positions.
                 if (!on) REMEMBERED_POSITION_PREFERENCES.forEach(editor::remove)
             }
-            AiSetting.UPDATE_REMINDERS -> editor.putBoolean(UPDATE_REMINDERS_PREFERENCE, on)
-            AiSetting.APP_AUTO_UPDATE -> editor.putBoolean(APP_AUTO_UPDATE_PREFERENCE, on)
-            AiSetting.SKIP_ADS -> editor.putBoolean(SKIP_ADS_PREFERENCE, on)
-            AiSetting.SKIP_SPONSORS -> editor.putBoolean(SKIP_SPONSORS_PREFERENCE, on)
-            AiSetting.ALWAYS_SKIP_SPONSORS -> editor.putBoolean(ALWAYS_SKIP_SPONSORS_PREFERENCE, on)
-            AiSetting.DIFFERENT_TAB_ACCOUNTS -> editor.putBoolean(DIFFERENT_TAB_ACCOUNTS_PREFERENCE, on)
-            AiSetting.TV_LAYOUT -> editor.putBoolean(TV_LAYOUT_PREFERENCE, on)
+            in STORED_SWITCHES -> editor.putBoolean(STORED_SWITCHES.getValue(setting), on)
             else -> if (!putStudySetting(editor, setting, value)) return false
         }
         editor.apply()
@@ -700,6 +746,10 @@ internal class AppAiActions(
                 editor.putString(CARD_SENTENCE_SOUND_PREFERENCE, storedCardPlace(value, CardPlace.BACK).storageValue)
             AiSetting.CARD_PICTURE -> editor.putString(CARD_PICTURE_PLACE_PREFERENCE, storedCardPlace(value, CardPlace.OFF).storageValue)
             AiSetting.CARD_SOUND_FIRST -> editor.putString(CARD_SOUND_FIRST_PREFERENCE, storedCardSoundFirst(value).storageValue)
+            AiSetting.CARD_READING -> editor.putString(CARD_READING_PLACE_PREFERENCE, storedCardPlace(value, CardPlace.BACK).storageValue)
+            AiSetting.CARD_READ_MEANING -> editor.putBoolean(CARD_READ_MEANING_PREFERENCE, on)
+            AiSetting.CARD_READ_DICTIONARY -> editor.putBoolean(CARD_READ_DICTIONARY_PREFERENCE, on)
+            AiSetting.CARD_READ_TRANSLATION -> editor.putBoolean(CARD_READ_TRANSLATION_PREFERENCE, on)
             AiSetting.CARD_FRONT -> editor.putString(CARD_FRONT_PREFERENCE, storedCardFront(value).storageValue)
             AiSetting.BLUR_BOX -> editor.putBoolean(BLUR_BOX_PREFERENCE, on)
             AiSetting.LOOP_BUTTON -> editor.putBoolean(LOOP_BUTTON_PREFERENCE, on)
@@ -710,6 +760,20 @@ internal class AppAiActions(
                         PAGE_TOKEN_CAPTIONS_PREFERENCE,
                         storedPageTokenMode(value).storageValue,
                     ).remove(PAGE_TOKEN_NEEDED_PREFERENCE)
+            else -> return putFlashcardSwitch(editor, setting, on)
+        }
+        return true
+    }
+
+    /** Writes Also send saved words or Video example for saved words; false when [setting] is neither. */
+    private fun putFlashcardSwitch(
+        editor: SharedPreferences.Editor,
+        setting: AiSetting,
+        on: Boolean,
+    ): Boolean {
+        when (setting) {
+            AiSetting.SEND_SAVED_WORDS -> editor.putBoolean(SEND_ON_SAVE_PREFERENCE, on)
+            AiSetting.SAVED_WORD_VIDEO_EXAMPLE -> editor.putBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, on)
             else -> return false
         }
         return true
@@ -880,6 +944,8 @@ internal class AppAiActions(
             AiSetting.SKIP_SPONSORS -> switch(R.string.ads_skip_sponsors_title, value)
             AiSetting.ALWAYS_SKIP_SPONSORS -> switch(R.string.ads_always_skip_sponsors_title, value)
             AiSetting.DIFFERENT_TAB_ACCOUNTS -> switch(R.string.tabs_different_accounts_title, value)
+            AiSetting.SLEEP_TIMER_QUICK -> switch(R.string.sleep_timer_quick_title, value)
+            AiSetting.WHOLE_TRANSCRIPT -> switch(R.string.whole_transcript_title, value)
             AiSetting.TV_LAYOUT -> switch(R.string.tv_layout_title, value)
             else -> flashcardSettingLabel(setting, value)
         }
@@ -892,6 +958,8 @@ internal class AppAiActions(
         when (setting) {
             AiSetting.SEND_TO_ANKIDROID -> switch(R.string.study_anki_title, value)
             AiSetting.SEND_TO_APP -> named(R.string.study_send_to_app_title, string(storedFlashcardApp(value).nameRes))
+            AiSetting.SEND_SAVED_WORDS -> switch(R.string.study_send_on_save_title, value)
+            AiSetting.SAVED_WORD_VIDEO_EXAMPLE -> switch(R.string.study_saved_word_video_example_title, value)
             AiSetting.CARD_WORD_SOUND ->
                 named(
                     R.string.study_card_word_sound_title,
@@ -901,6 +969,10 @@ internal class AppAiActions(
                 named(R.string.study_card_sentence_sound_title, string(storedCardPlace(value, CardPlace.BACK).labelRes))
             AiSetting.CARD_PICTURE -> named(R.string.study_card_picture_place_title, string(storedCardPlace(value, CardPlace.OFF).labelRes))
             AiSetting.CARD_SOUND_FIRST -> named(R.string.study_card_sound_first_title, string(storedCardSoundFirst(value).labelRes))
+            AiSetting.CARD_READING -> named(R.string.study_card_reading_title, string(storedCardPlace(value, CardPlace.BACK).labelRes))
+            AiSetting.CARD_READ_MEANING -> switch(R.string.study_card_read_aloud_meaning, value)
+            AiSetting.CARD_READ_DICTIONARY -> switch(R.string.study_card_read_aloud_dictionary, value)
+            AiSetting.CARD_READ_TRANSLATION -> switch(R.string.study_card_read_aloud_translation, value)
             AiSetting.CARD_FRONT -> named(R.string.study_card_front_title, string(storedCardFront(value).labelRes))
             // settingLabel and otherSettingLabel name the others.
             else -> value
@@ -985,6 +1057,8 @@ private val SETTING_SWITCH_TITLES =
         AiSetting.HIGHLIGHT_ACTIVE_SENTENCE_ONLY to R.string.settings_active_sentence_only_title,
         AiSetting.PHONE_VOICE to R.string.settings_phone_voice_title,
         AiSetting.MEANING_IN_CONTEXT to R.string.settings_meaning_in_context_title,
+        AiSetting.PREPARE_MEANINGS to R.string.settings_prepare_meanings_title,
+        AiSetting.TAP_BAR_READING to R.string.settings_tap_bar_reading_title,
         AiSetting.OVERLAY_IN_FULLSCREEN to R.string.settings_overlay_fullscreen_title,
         AiSetting.OVERLAY_WHEN_ROTATED to R.string.settings_overlay_landscape_title,
         AiSetting.MOVABLE_SUBTITLE_CONTROLS to R.string.settings_movable_controls_title,

@@ -232,3 +232,44 @@ Merge base `51817f2`. Resolved in the working tree, uncommitted. Compiled only (
 - German word card on a phone: the role appears once, inside Grammar; closing Grammar hides it.
 - Drawer logo and TV drawer focus together (`AppNavigation.kt` took upstream's logo and kept the fork's focus handling).
 - `AiRequestBudgetTest`, `testDebugUnitTest`, `lintDebug`, `formatCheck`, `complexityCheck`, `assembleDebug`, `assembleDebugAndroidTest`, Python tool tests and the managed-device tests: NOT RUN.
+
+## Upstream sync record: `main` (f8bbffe) into `mydevelop` (2026-11-18)
+
+Merge base `0370cc0`, 27 incoming commits (upstream PR #81 and the song-lyrics work). Resolved in the working tree, uncommitted. Owner decisions of 2026-11-18 applied (see below). Validated with the Gradle checks listed under "Validation"; no device or emulator test was run and nothing was checked on a device. 38 files conflicted: 11 Kotlin files and `strings_practice|settings|study.xml` in the default and 8 translated folders.
+
+### Accepted from upstream
+
+- Word card action bar (`ui/WordCardActions.kt`, `WordCardSend`, `knownWordToggle`): Save to Practice, Ask AI, Anki and More; the card's Online example box became Settings → Flashcards & Anki → Video example for saved words (the fork keeps the box, see below); the deck chip shows only when named decks exist; the first "I know this word" no longer offers to turn Known words on (`KnownWordsOfferDialog` and its strings are gone).
+- Meaning in this sentence for a whole line (`ui/LineMeanings.kt`, Prepare meanings ahead), English IPA and the tap bar's reading, read-aloud card backs (`CardReadAloud`), card reading place, sound-first rules, the "Sentence from the video" label, the Source link that opens the app at its line, Practice speaker buttons and picture, Sleep timer in Settings → Playback, Whole transcript, Custom repeat count, the AI transcript and synced lyrics for songs, `AiKeyPacer` urgent requests, CI retry of failed device tests.
+
+### Adapted to the fork
+
+- Urgent AI requests: `urgent` runs through `aiTranslationModel`, `aiTranslationModelFor`, `KeyedAiTranslationModel` and a new `AiTranslationConfig.buildUrgent` / `translationModel(urgent)`, so the tapped word and the line's meanings use the Translation AI Service (keyed or ChatGPT Subscription) and never upstream's "AI thinking for translation". ChatGPT Subscription has no pacer, so `urgent` does nothing there.
+- Word card: the fork's Subtitle 2 meanings (`ExtraMeanings`, `ExtraMeaningPanels`) stay; `wordToSend` (`ui/StudyTools.kt`) builds the card's word for Send to with the Subtitle 2 sentence and saved notes; Anki and Save stay disabled while a meaning loads. `WordLearningDialog.onSave` keeps the fork's three arguments.
+- Practice (`SavedWordsScreen`, `PracticeSounds`): upstream's title, example box, picture and speakers, with the fork's selectable words (`PracticeSelectableText` now takes the highlighted text), `ReviewMeanings` / `EditMeanings`, every sentence translation, the source title line and editor. `PracticeExample(showSource = false)` keeps the title from showing twice.
+- AnkiDroid: `AnkiDroidSender` and `tripleNoteFields` take the card's meaning and translation sounds and the sentence label; the move-to-deck fix was already there.
+- Online example (owner decision 2026-11-18): the fork's per-card box (`ClipChoice`, tag `online_clip_choice`, shown with a playable line) is back in the new word card, below Grammar. Settings → Video example for saved words is where it starts (an already saved word keeps its own choice), so there is one default and one per-word switch. `practice_example_plays_original` is restored in every folder. Regression tests: `WordLearningDialogTest` (starts from the setting, changes only this word, a saved word keeps its choice).
+- Strings: the fork's `practice_notes_label`/`practice_save_notes` values and `study_sending_to_anki` kept; the unused `practice_video_filter*` strings stay removed; `practice_from_video` is back in every folder.
+- `AGENTS.md` and the Claude core: three upstream wording changes reconciled (`python3 tools/claude_instructions.py sync`, `ack ANKI`, `ack TESTING`, one `CLAUDE.md` line each).
+
+### Excluded or held back (fork behaviour kept)
+
+- "AI thinking for translation" and its `ai_translation_thinking` preference (owner decision 2026-11-18: not duplicated; the per-service Model and Thinking under Settings → AI Connection cover it, shared between chat and translation; independent chat and translation Thinking may come later as its own feature). Checked: provider, model and effort reach `KeyedAiTranslationModel` only through `AiTranslationConfig` and `aiEffortWire`; the cache scope is unchanged by `urgent`; ChatGPT Subscription still goes through `chatGpt.translationModel()` without a keyed effort. `AiTranslationConfigTest` has a new urgent-model case.
+- AnkiDroid cards in a subdeck per language or Practice deck (owner decision 2026-11-18: deferred, a later feature under `TripleSub Replay::<name>`) and any "DualSub Replay" deck name for AnkiDroid (the deck stays `TripleSub Replay`; no deck is renamed, migrated or created). `ankiDeckName(word, parent)` is kept (upstream's test uses it) but no send path calls it; `AnkiDroidSenderTest` now asserts the one deck. `study_ankidroid_description`, `AGENTS.md`-derived rules and `tech-stack.md` describe the fork's behaviour.
+- Google Translate hand-off in `PhraseSelection.kt` (`mydevelop` wins).
+
+### Remaining manual verification (owner)
+
+- Word card on a phone: Subtitle 2 meanings load, edit and save; Save and Anki wait for them; Send to carries the Subtitle 2 meaning, sentence and saved notes; a re-saved word keeps its meanings.
+- Practice: select a word in the title, sentence and translations; the meanings read aloud; the source title shows once; an old saved word with several sentence translations.
+- A tapped word and Prepare meanings ahead on the chosen Translation AI Service, keyed and ChatGPT Subscription.
+- A card sent to AnkiDroid with read-aloud on: sounds in Subtitle 1 and Translation, the sentence label, and the card in the `TripleSub Replay` deck.
+- Word card: the Online example box shows with a playable line, starts from the Video example setting, and a saved word keeps its own choice.
+- AnkiDroid send still lands in the one `TripleSub Replay` deck (no subdeck is created).
+
+### Validation (2026-11-18)
+
+- PASS: `formatCheck`, `complexityCheck` (after wrapping my own code, adding `tvArrowsLeave()` to upstream's Whole transcript search box and Custom repeat slider, and moving two small pieces out of long functions), `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` (the test APK is built, not run), the Claude-instructions drift check.
+- `testDebugUnitTest`: 1871 tests. Final full run on its own: 0 failed. In the two runs that shared the machine with lint and assemble, `AiTranslationConfigTest.resettingStartsAgainFromTheAssistantsService` failed once in each (`expected gemini but was claude`, it reads `config.state.value` on an unconfined scope); it passed when run alone, with the ui package, and after each of the assistant, chatgpt, data, translation and playback packages. The same test passed at `HEAD` (a cached earlier run). Treated as timing-sensitive, not proven to predate the merge; the test now reads `config.current()` instead of the lagging `state.value`. `TvFocusGuardTest` failed twice in the first run (upstream's new text field and slider) and was fixed.
+- New tests (unit tests run and passing; device tests only compiled): `AiTranslationConfigTest` urgent model (`buildUrgent` is now required, and the test checks it is the one called), `AiRequestBudgetTest` a tapped word's model sends at once while a background one waits its turn (fails when `urgent` is dropped between the model and `AiKeyPacer`), `AnkiDroidSenderTest` read-aloud sounds, label and the one deck, `WordLearningDialogTest` Online example box (device).
+- NOT RUN: device and emulator suites, Python tool tests.

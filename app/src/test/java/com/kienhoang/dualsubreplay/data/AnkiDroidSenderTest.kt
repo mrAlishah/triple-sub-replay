@@ -76,6 +76,7 @@ class AnkiDroidSenderTest {
     /** A pretend media maker: the files it hands out, and the cards it was asked to finish later. */
     private class FakeMedia(
         private val files: AnkiCardFiles,
+        override val sentenceLabel: String = "",
     ) : AnkiCardMedia {
         val waiting = mutableListOf<PendingCardAudio>()
 
@@ -185,6 +186,23 @@ class AnkiDroidSenderTest {
         assertTrue(byName.getValue("Source").startsWith("<img src=\"p.jpg\""))
         assertTrue(byName.getValue("Source").contains("youtube.com/watch"))
         assertTrue(media.waiting.isEmpty())
+    }
+
+    @Test
+    fun readAloudSoundsAndTheSentenceLabelGoIntoTheV5FieldsAndTheCardStaysInTheOneTripleSubDeck() {
+        val anki = FakeAnki().also(::ready)
+        val files = AnkiCardFiles(sentence = File("s.m4a"), meanings = listOf(File("m1.mp3"), File("m2.mp3")), translation = File("t.mp3"))
+        val media = FakeMedia(files, sentenceLabel = "Sentence from the video")
+        val result = sender(anki).sendNow(listOf(word()), media, CardOptions(CardPlace.FRONT, CardPlace.BACK))
+        assertEquals(AnkiSendResult(sent = 1), result)
+        val byName = TRIPLE_FIELDS.zip(anki.notes.single().second).toMap()
+        assertTrue(byName.getValue("Subtitle 1").endsWith("[sound:m1.mp3][sound:m2.mp3]"))
+        assertTrue(byName.getValue("Translation").endsWith("[sound:t.mp3]"))
+        assertTrue(byName.getValue("Sentence audio").contains("Sentence from the video"))
+        assertTrue(byName.getValue("Sentence audio").endsWith("[sound:s.m4a]"))
+        // Upstream's per-language subdecks are deferred (owner decision 2026-11-18): no deck is made, the card goes to deck 5.
+        assertEquals(listOf(TRIPLE_DECK_NAME), anki.deckList.map { it.second })
+        assertEquals(5L, anki.moves.single().second)
     }
 
     @Test

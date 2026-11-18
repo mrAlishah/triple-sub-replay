@@ -7,15 +7,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -99,7 +106,8 @@ internal fun SavedWordsScreen(
     val locale = currentInterfaceLocale()
     val titleEditor = LocalVideoTitleEditor.current
     val searchLabel = stringResource(R.string.practice_search_label)
-    val pronounceLabel = stringResource(R.string.practice_pronounce)
+    val clips = remember(context) { LineAudioStore.of(context) }
+    val studySettings by rememberStudySettings()
     val showMeaningLabel = stringResource(R.string.practice_show_meaning)
     val originalSentenceNote = stringResource(R.string.practice_video_uses_original_sentence)
     val playOnlineLabel = stringResource(R.string.practice_play_online_example)
@@ -226,14 +234,21 @@ internal fun SavedWordsScreen(
                         }
                     }
                 } else {
+                    val playLine = {
+                        onPause()
+                        pronouncer.playLine(selected, clips)
+                    }
+                    val speak = { text: String, language: String ->
+                        onPause()
+                        pronouncer.speak(text, language)
+                    }
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PracticeSelectableText(selected.word, selected.wordLanguage, MaterialTheme.typography.headlineMedium)
-                        selected.reading?.let { Text(it) }
-                        if (practice) selected.sourceTitle?.let { PracticeSourceLine(it) }
-                        TextButton(onClick = {
+                        PracticeWordTitle(selected) {
                             onPause()
                             pronouncer.speak(spokenWord(selected.word, selected.reading), selected.wordLanguage)
-                        }) { Text(pronounceLabel) }
+                        }
+                        if (practice) selected.sourceTitle?.let { PracticeSourceLine(it) }
+                        selected.reading?.let { Text(it) }
                         pronouncer.message?.let { Text(it) }
                         if (pronouncer.showSpeechSettings) {
                             TextButton(
@@ -244,13 +259,18 @@ internal fun SavedWordsScreen(
                             }
                         }
                         if (practice && !revealed) {
+                            // The front of the card, as on the Anki card: the word's own line as a hint, translations hidden.
+                            PracticeExample(selected, revealed = false, onPlayLine = playLine)
+                            PracticePicture(selected, studySettings.cardPicture, revealed = false)
                             Button(onClick = { revealed = true }, modifier = Modifier.testTag("reveal_meaning")) { Text(showMeaningLabel) }
                         } else {
-                            if (practice) {
-                                ReviewMeanings(selected, locale)
-                            } else {
-                                EditMeanings(selected, editedMeaning, { editedMeaning = it }, editedExtra, locale, !busy) {
-                                    action { repository.update(selected.id) { it.withMeanings(editedMeaning, editedExtra) } }
+                            WithSpeaker(practiceMeaningText(selected), selected.meaningLanguage, speak) {
+                                if (practice) {
+                                    ReviewMeanings(selected, locale)
+                                } else {
+                                    EditMeanings(selected, editedMeaning, { editedMeaning = it }, editedExtra, locale, !busy) {
+                                        action { repository.update(selected.id) { it.withMeanings(editedMeaning, editedExtra) } }
+                                    }
                                 }
                             }
                             if (!practice) {
@@ -258,9 +278,16 @@ internal fun SavedWordsScreen(
                                     action { repository.update(selected.id) { it.copy(deck = deck) } }
                                 }, enabled = !busy, tag = "word_deck")
                             }
-                            PracticeSelectableText(selected.sentence, selected.wordLanguage)
-                            selected.translatedSentence?.let { PracticeSelectableText(it, selected.meaningLanguage) }
-                            selected.sentenceTranslations.forEach { (language, text) -> PracticeSelectableText(text, language) }
+                            val translationAloud = practiceTranslationText(selected)
+                            // The title shows in its own line (practice) or its editor (below), so the box leaves it out.
+                            PracticeExample(
+                                selected,
+                                revealed = true,
+                                onPlayLine = playLine,
+                                onReadTranslation = translationAloud?.let { text -> { speak(text, selected.meaningLanguage) } },
+                                showSource = false,
+                            )
+                            PracticePicture(selected, studySettings.cardPicture, revealed = true)
                             if (!practice) {
                                 val title = normalizeSourceTitle(editedSourceTitle)
                                 val changed = title != selected.sourceTitle && (title != null || selected.videoId == null)
@@ -364,3 +391,114 @@ internal fun SavedWordsScreen(
 private fun SavedWord.matchesSearch(search: String): Boolean =
     word.contains(search, true) || meaning.contains(search, true) || meanings.values.any { it.contains(search, true) } ||
         personalNotes.contains(search, true)
+
+/**
+ * The word's example in a tinted box: its own line first, with the word in bold accent color as in the
+ * word card, then the other lines smaller and dimmer, and the video it came from ([showSource]). Before
+ * "Show meaning" ([revealed] false) only the word's own line shows. The word's line plays its sound and the
+ * translation is read aloud from their speaker buttons, as on the Anki card. Every line's words can be
+ * selected like a subtitle line, and each further sentence translation the word has gets its own line.
+ */
+@Composable
+private fun PracticeExample(
+    word: SavedWord,
+    revealed: Boolean,
+    onPlayLine: () -> Unit,
+    onReadTranslation: (() -> Unit)? = null,
+    showSource: Boolean = true,
+) {
+    val colors = MaterialTheme.colorScheme
+    val own = if (word.translated) word.translatedSentence ?: word.sentence else word.sentence
+    val ownLanguage = if (word.translated) word.meaningLanguage else word.wordLanguage
+    // Text, its language, and whether it is a further sentence translation (Subtitle 2 and more).
+    val lines =
+        if (revealed) {
+            listOfNotNull(
+                Triple(word.sentence, word.wordLanguage, false),
+                word.translatedSentence?.let { Triple(it, word.meaningLanguage, false) },
+            ) + word.sentenceTranslations.map { (language, text) -> Triple(text, language, true) }
+        } else {
+            listOf(Triple(own, ownLanguage, false))
+        }.filter { it.first.isNotBlank() }
+    if (lines.isEmpty() && (!revealed || !showSource || word.sourceTitle == null)) return
+    val translationLine = if (word.translated) word.sentence else word.translatedSentence
+    val playLabel = stringResource(R.string.practice_play_line)
+    val translationLabel = stringResource(R.string.practice_read_translation)
+    Surface(
+        color = colors.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().testTag("word_example"),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            lines.forEach { (line, language, further) ->
+                val main = line == own
+                PracticeSentence(
+                    text = withWordHighlighted(line, word.word, colors.primary),
+                    language = language,
+                    style = if (main) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                    color = if (main) colors.onSurface else colors.onSurfaceVariant,
+                    modifier = if (further && revealed) Modifier.testTag("word_third_sentence") else Modifier,
+                    speaker =
+                        when {
+                            main -> {
+                                { SpeakerButton(playLabel, "practice_play_line", onPlayLine) }
+                            }
+                            line == translationLine && onReadTranslation != null -> {
+                                { SpeakerButton(translationLabel, "practice_read_translation", onReadTranslation) }
+                            }
+                            else -> null
+                        },
+                )
+            }
+            if (revealed && showSource) {
+                word.sourceTitle?.let { title ->
+                    Text(
+                        stringResource(R.string.practice_from_video, title),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                        modifier = Modifier.testTag("word_source_title"),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** [text] with the first appearance of [word] in bold [color], like the Anki card's sentence. */
+internal fun withWordHighlighted(
+    text: String,
+    word: String,
+    color: Color,
+): AnnotatedString {
+    val at = if (word.isBlank()) -1 else text.indexOf(word, ignoreCase = true)
+    return buildAnnotatedString {
+        append(text)
+        if (at >= 0) addStyle(SpanStyle(color = color, fontWeight = FontWeight.Bold), at, at + word.length)
+    }
+}
+
+/** A subtitle line in Practice: its words can be selected, and it reads from its own side (issue #152). */
+@Composable
+private fun PracticeSentence(
+    text: AnnotatedString,
+    language: String,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+    speaker: (@Composable () -> Unit)? = null,
+) {
+    val line =
+        @Composable { sized: Modifier ->
+            CompositionLocalProvider(LocalContentColor provides color) {
+                PracticeSelectableText(text.text, language, style, modifier.then(sized), text)
+            }
+        }
+    if (speaker == null) {
+        line(Modifier)
+        return
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        line(Modifier.weight(1f))
+        speaker()
+    }
+}

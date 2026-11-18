@@ -5,8 +5,11 @@ import com.kienhoang.dualsubreplay.data.AiSubtitleStore
 import com.kienhoang.dualsubreplay.translation.AiSubtitleTranslator
 import com.kienhoang.dualsubreplay.translation.AiTranslationModel
 import com.kienhoang.dualsubreplay.ui.AiSubtitleRunner
+import com.kienhoang.dualsubreplay.ui.LineMeanings
+import com.kienhoang.dualsubreplay.ui.MeaningContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.currentTime
@@ -131,6 +134,24 @@ class AiRequestBudgetTest {
     }
 
     @Test
+    fun aTappedWordsModelSendsAtOnceWhileABackgroundOneWaitsItsTurn() =
+        runTest {
+            val clock = { testScheduler.currentTime }
+            val store = AiKeyStore(MapStorage(), FakeCipher())
+            store.add(AiProvider.GEMINI, keys[0])
+            val service = FakeChatService(clock) { _, _ -> null }
+            val pacer = AiKeyPacer(now = clock)
+            val background = aiTranslationModel(gemini, null, store, service, pacer)!!
+            val urgent = aiTranslationModel(gemini, null, store, service, pacer, urgent = true)!!
+            val nothing = """{"sentences":[]}"""
+            background.ask("s", nothing)
+            urgent.ask("s", nothing)
+            background.ask("s", nothing)
+            // The urgent request does not wait for the key's interval; the next background one waits it out.
+            assertEquals(listOf(0L, 0L, AI_TRANSLATION_KEY_INTERVAL_MS), service.sent.map { it.atMs })
+        }
+
+    @Test
     fun oneFreeKeyIsAskedAtMostTenTimesAMinute() =
         runTest {
             val (translator, model, service) = translation(keyCount = 1)
@@ -182,6 +203,89 @@ class AiRequestBudgetTest {
             skipAheadFor(minutes = 10, translator, model)
             assertWithinBudget(service.sent)
             assertEquals(1, service.sent.count { it.key == keys[0] })
+        }
+
+    /**
+     * Prepare meanings ahead (off by default) asks about every line that starts playing. A line
+     * starts every 2 s for 10 minutes, faster than the key may be asked. The fake request takes its
+     * turn from the key's pacer like the real one (whose disk and network steps leave virtual time).
+     * Only the newest line waits while a request runs, so the key stays within its budget, and no
+     * queue is left behind when playing stops.
+     */
+    @Test
+    fun preparingMeaningsAheadWhilePlayingStaysWithinTheBudget() =
+        runTest {
+            val clock = { testScheduler.currentTime }
+            val pacer = AiKeyPacer(now = clock)
+            val sent = Collections.synchronizedList(mutableListOf<Sent>())
+            val meanings = HashMap<String, String>()
+            val lines =
+                LineMeanings(
+                    scope = this,
+                    cached = meanings::get,
+                    store = { key, meaning -> meanings[key] = meaning },
+                    words = { sentence, _ -> sentence.split(' ') },
+                    ask = { _, _, _ ->
+                        val key = pacer.take(listOf("gemini/${keys[0]}"))!!
+                        sent += Sent(clock(), keys[0], "gemini-flash-lite-latest")
+                        delay(1_500)
+                        pacer.answered(key)
+                        "1. một\n2. hai\n3. ba"
+                    },
+                )
+            val end = currentTime + 10 * MINUTE_MS
+            var line = 0
+            while (currentTime < end) {
+                lines.prepare(MeaningContext("Line ${line++} plays now"), "en", "vi")
+                delay(2_000)
+            }
+            val whilePlaying = sent.size
+            testScheduler.advanceUntilIdle()
+            assertWithinBudget(sent)
+            assertTrue("Only $whilePlaying requests in 10 minutes", whilePlaying >= 90)
+            assertTrue("${sent.size - whilePlaying} requests were still queued", sent.size - whilePlaying <= 1)
+        }
+
+    /**
+     * Words the learner taps go ahead of Prepare meanings ahead (lion737, Discussion #81,
+     * 2026-11-16), one every 4 s while a line starts every 2 s for 10 minutes. Together they still
+     * stay within the key's budget.
+     */
+    @Test
+    fun tappedWordsWhilePreparingAheadStayWithinTheBudget() =
+        runTest {
+            val clock = { testScheduler.currentTime }
+            val pacer = AiKeyPacer(now = clock)
+            val sent = Collections.synchronizedList(mutableListOf<Sent>())
+            val key = "gemini/${keys[0]}"
+            val meanings = HashMap<String, String>()
+            val lines =
+                LineMeanings(
+                    scope = this,
+                    cached = meanings::get,
+                    store = { key, meaning -> meanings[key] = meaning },
+                    words = { sentence, _ -> sentence.split(' ') },
+                    ask = { _, _, urgent ->
+                        pacer.take(listOf(key), urgent)!!
+                        sent += Sent(clock(), keys[0], "gemini-flash-lite-latest")
+                        delay(1_500)
+                        "1. một\n2. hai\n3. ba"
+                    },
+                )
+            val end = currentTime + 10 * MINUTE_MS
+            var line = 0
+            while (currentTime < end) {
+                lines.prepare(MeaningContext("Line ${line++} plays now"), "en", "vi")
+                if (line % 2 == 0) {
+                    launch {
+                        pacer.take(listOf(key), urgent = true)
+                        sent += Sent(clock(), keys[0], "gemini-flash-lite-latest")
+                    }
+                }
+                delay(2_000)
+            }
+            testScheduler.advanceUntilIdle()
+            assertWithinBudget(sent)
         }
 
     /** Gemini's generateContent endpoint AI subtitles use; [status] picks the HTTP status of the n-th request (1 first). */

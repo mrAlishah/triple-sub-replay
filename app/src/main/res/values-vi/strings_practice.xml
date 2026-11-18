@@ -21,6 +21,10 @@
     <string name="practice_google_translate_unavailable">Google Dịch chưa được cài đặt</string>
     <string name="practice_google_translate_cannot_open">Google Dịch không nhận được văn bản</string>
     <string name="practice_pronounce_item">Phát âm %1$s</string>
+    <string name="practice_play_line">Phát câu</string>
+    <string name="practice_read_meaning">Đọc nghĩa</string>
+    <string name="practice_read_translation">Đọc bản dịch</string>
+    <string name="practice_picture">Hình từ video</string>
     <string name="practice_speech_settings">Cài đặt giọng nói</string>
     <string name="practice_show_meaning">Hiện nghĩa</string>
     <string name="practice_meaning_in_sentence_label">Trong câu này (%1$s)</string>
@@ -74,13 +78,9 @@
     <string name="practice_export_full_backup">Sao lưu đầy đủ (JSON)</string>
     <string name="practice_export_anki_text">Văn bản Anki (TSV)</string>
     <string name="practice_word_translation_unavailable">Không có bản dịch. Bạn có thể tự nhập nghĩa và lưu từ.</string>
-    <string name="practice_example_plays_original">Ví dụ phát câu gốc, không phải từ đã dịch.</string>
     <string name="practice_save_failed">Không thể lưu. Hãy kiểm tra dung lượng trống và thử lại.</string>
-    <string name="practice_saved_to_vocabulary">Đã lưu vào từ vựng của bạn</string>
     <string name="practice_phrase">Cụm từ</string>
     <string name="practice_saving">Đang lưu…</string>
-    <string name="practice_saved">Đã lưu</string>
-    <string name="practice_save_to_vocabulary">Lưu vào từ vựng</string>
     <string name="practice_word_by_word">Từng từ</string>
     <string name="practice_dictionary_form">Dạng từ điển: %1$s</string>
     <string name="practice_word_level_description">Cấp độ từ: CEFR %1$s</string>
@@ -165,4 +165,16 @@
     <string name="practice_source_in_session">Nguồn: %1$s</string>
     <string name="practice_source_option">%1$s (%2$d)</string>
     <string name="practice_source_same_title">%1$s · %2$s</string>
+    <string name="practice_from_video">Từ: %1$s</string>
+    <string name="word_card_save_to_practice">Lưu vào Luyện tập</string>
+    <string name="word_card_in_practice">Đã có trong Luyện tập</string>
+    <string name="word_card_saved_note">Đã lưu. Bạn có thể xem lại bất cứ lúc nào trong thẻ Luyện tập.</string>
+    <string name="word_card_saved_and_sent">Đã lưu vào Luyện tập và gửi sang %1$s.</string>
+    <string name="word_card_ask_ai">Hỏi AI</string>
+    <string name="word_card_anki">Anki</string>
+    <string name="word_card_sent">Đã gửi</string>
+    <string name="word_card_more">Thêm</string>
+    <string name="word_card_more_description">Thêm tùy chọn cho từ này</string>
+    <string name="word_card_settings">Cài đặt thẻ từ</string>
+    <string name="practice_example_plays_original">Ví dụ phát câu gốc, không phải từ đã dịch.</string>
 </resources>

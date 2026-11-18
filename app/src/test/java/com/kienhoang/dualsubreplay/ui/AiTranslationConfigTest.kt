@@ -229,6 +229,8 @@ class AiTranslationConfigTest {
             { },
         ) { reloads++ }
 
+    private var urgentBuilt = 0
+
     private val config =
         AiTranslationConfig(
             choices = AiTranslationChoices(FakePrefsView(prefs)) { chatGpt.useSubscription },
@@ -239,6 +241,19 @@ class AiTranslationConfigTest {
             scope = scope,
             buildKeyed = { provider, model, effort, drop ->
                 aiTranslationModel(provider, model, effort, provider.baseUrl, keyStore, transport, AiKeyPacer(intervalMs = 0), drop)
+            },
+            buildUrgent = { provider, model, effort ->
+                urgentBuilt++
+                aiTranslationModel(
+                    provider,
+                    model,
+                    effort,
+                    provider.baseUrl,
+                    keyStore,
+                    transport,
+                    AiKeyPacer(intervalMs = 0),
+                    urgent = true,
+                )
             },
         ) { reloads++ }
 
@@ -362,6 +377,25 @@ class AiTranslationConfigTest {
             assertEquals("low", requests.last().reasoningEffort)
             assertEquals("claude/claude-haiku-5-5@low", low.scope)
             assertTrue(low.scope != automatic.scope)
+            assertTrue(requests.all { it.apiKey.startsWith("sk-ant-") })
+        }
+
+    @Test
+    fun anUrgentModelUsesTheChosenServiceModelAndEffortAndTheSameCacheScope() =
+        runBlocking {
+            addKeys()
+            config.selectAccess("claude")
+            config.ensureModels()
+            withTimeout(5000) { config.state.first { it.accessId == "claude" && it.modelsState == AiModelsState.LOADED } }
+            config.selectModel("claude-haiku-5-5")
+            config.selectEffort(AiEffort.LOW)
+            val background = config.translationModel()!!
+            assertEquals("a background model is not built the urgent way", 0, urgentBuilt)
+            val urgent = config.translationModel(urgent = true)!!
+            assertEquals(1, urgentBuilt)
+            assertEquals(background.scope, urgent.scope)
+            urgent.ask("s", "u")
+            assertEquals("low", requests.last().reasoningEffort)
             assertTrue(requests.all { it.apiKey.startsWith("sk-ant-") })
         }
 
@@ -542,10 +576,11 @@ class AiTranslationConfigTest {
     fun resettingStartsAgainFromTheAssistantsService() {
         addKeys()
         config.selectAccess("claude")
-        assertEquals("claude", config.state.value.accessId)
+        assertEquals("claude", config.current().accessId)
         prefs.map.clear()
         config.resetChoice()
-        assertEquals("gemini", config.state.value.accessId)
+        // current(), not state.value: the flow can lag one emission, which failed this test on a busy machine.
+        assertEquals("gemini", config.current().accessId)
     }
 
     @Test

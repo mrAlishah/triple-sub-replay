@@ -11,14 +11,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.assistant.AI_REPEAT_FOREVER
+import com.kienhoang.dualsubreplay.assistant.AI_STUDY_REPEAT_RANGE
 import com.kienhoang.dualsubreplay.data.CardFront
 import com.kienhoang.dualsubreplay.data.CardOptions
 import com.kienhoang.dualsubreplay.data.CardPlace
+import com.kienhoang.dualsubreplay.data.CardReadAloud
 import com.kienhoang.dualsubreplay.data.CardSoundFirst
 import com.kienhoang.dualsubreplay.data.PageTokenMode
+import com.kienhoang.dualsubreplay.data.cardSoundFirstFor
+import com.kienhoang.dualsubreplay.data.pickedCardSoundFirst
 import com.kienhoang.dualsubreplay.data.storedCardFront
 import com.kienhoang.dualsubreplay.data.storedCardPlace
-import com.kienhoang.dualsubreplay.data.storedCardSoundFirst
 import com.kienhoang.dualsubreplay.data.storedPageTokenMode
 import com.kienhoang.dualsubreplay.data.usualWordSoundPlace
 
@@ -61,6 +64,17 @@ internal const val CARD_PICTURE_PLACE_PREFERENCE = "anki_card_picture_place"
 /** Flashcards & Anki → Play first (lion737, #81, 2026-11-13): a [CardSoundFirst] storage value, the word by default. */
 internal const val CARD_SOUND_FIRST_PREFERENCE = "anki_card_sound_first"
 
+/** Flashcards & Anki → Reading (2026-11-16): a [CardPlace] storage value, the back by default. */
+internal const val CARD_READING_PLACE_PREFERENCE = "anki_card_reading_place"
+
+/**
+ * Flashcards & Anki → Read aloud on the back (lion737, #81, 2026-11-15; owner pick 2026-11-16: all
+ * on by default): the meaning in this sentence, the dictionary meaning and the sentence translation.
+ */
+internal const val CARD_READ_MEANING_PREFERENCE = "anki_card_read_meaning"
+internal const val CARD_READ_DICTIONARY_PREFERENCE = "anki_card_read_dictionary"
+internal const val CARD_READ_TRANSLATION_PREFERENCE = "anki_card_read_translation"
+
 /** The word card's Kanji section for Japanese words (owner request 2026-10-24), on by default. */
 internal const val KANJI_DETAILS_PREFERENCE = "kanji_details"
 internal const val PAGE_TOKEN_CAPTIONS_PREFERENCE = "page_token_captions"
@@ -71,8 +85,17 @@ internal const val PAGE_TOKEN_NEEDED_PREFERENCE = "page_token_needed"
 /** Study tools → Loop button on the playing line (owner request 2026-11-06), off by default. */
 internal const val LOOP_BUTTON_PREFERENCE = "line_loop_button"
 
-/** The word card offered to turn Known words on once, after the first "I know this word". */
-internal const val KNOWN_WORDS_OFFERED_PREFERENCE = "known_words_offered"
+/**
+ * Flashcards & Anki → Also send saved words (owner pick 2026-11-17): Save to Practice on the word card
+ * also sends the card to the Send to app. Off by default.
+ */
+internal const val SEND_ON_SAVE_PREFERENCE = "send_saved_words"
+
+/**
+ * Flashcards & Anki → Video example for saved words (owner pick 2026-11-17): was the word card's
+ * "Online example" box. On by default, as the box was; each word can still change it in Practice.
+ */
+internal const val SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE = "saved_word_video_example"
 
 /** The Study tools settings, all reset by Reset all settings. */
 internal val STUDY_SETTING_KEYS =
@@ -94,12 +117,17 @@ internal val STUDY_SETTING_KEYS =
         CARD_SENTENCE_SOUND_PREFERENCE,
         CARD_PICTURE_PLACE_PREFERENCE,
         CARD_SOUND_FIRST_PREFERENCE,
+        CARD_READING_PLACE_PREFERENCE,
+        CARD_READ_MEANING_PREFERENCE,
+        CARD_READ_DICTIONARY_PREFERENCE,
+        CARD_READ_TRANSLATION_PREFERENCE,
         BLUR_BOX_PREFERENCE,
         LOOP_BUTTON_PREFERENCE,
         KANJI_DETAILS_PREFERENCE,
         PAGE_TOKEN_CAPTIONS_PREFERENCE,
         PAGE_TOKEN_NEEDED_PREFERENCE,
-        KNOWN_WORDS_OFFERED_PREFERENCE,
+        SEND_ON_SAVE_PREFERENCE,
+        SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE,
     )
 
 /** How the video plays around each subtitle line (Settings → Study tools → Play mode). */
@@ -176,7 +204,13 @@ internal fun storedKnownWordsAfter(value: Int): Int = value.takeIf { it in KNOWN
 internal const val STUDY_REPEAT_FOREVER = 0
 
 /** How many times Repeat each line plays a line; [STUDY_REPEAT_FOREVER] has no limit. */
-internal val STUDY_REPEAT_COUNTS = listOf(2, 3, 5, STUDY_REPEAT_FOREVER)
+internal val STUDY_REPEAT_COUNTS = listOf(2, 3, 5, 10, STUDY_REPEAT_FOREVER)
+
+/**
+ * Custom picks any count in this range (25kiuo, Discussion #81, 2026-11-17, asked for any number of
+ * plays; a slider with − and + was picked over a slider alone, which can't hit an exact number).
+ */
+internal val STUDY_REPEAT_CUSTOM_RANGE = AI_STUDY_REPEAT_RANGE
 
 internal const val DEFAULT_STUDY_REPEAT_COUNT = 2
 
@@ -191,21 +225,32 @@ internal data class StudySettings(
     val ankiDroid: Boolean = true,
     val sendTo: FlashcardApp = FlashcardApp.ANKIDROID,
     val ankiConnectDeck: String? = null,
+    /** Save to Practice on the word card also sends the card to [sendTo]. */
+    val sendOnSave: Boolean = false,
+    /** New saved words get the Play online example button in Practice. */
+    val savedWordVideoExample: Boolean = true,
     /** Where cards carry the word's voice. */
     val cardWordSound: CardPlace = CardPlace.FRONT,
     /** Where cards carry the line's real sound from the video. */
     val cardSentenceSound: CardPlace = CardPlace.BACK,
     /** Where cards carry a still of the line from the video (else the video's thumbnail). */
     val cardPicture: CardPlace = CardPlace.OFF,
-    /** Which sound plays first on a card side with both. */
-    val cardSoundFirst: CardSoundFirst = CardSoundFirst.WORD,
+    /** The learner's Play first pick; null when never picked, so [cardSoundFirst] follows the front. */
+    val cardSoundFirstPicked: CardSoundFirst? = null,
     val cardFront: CardFront = CardFront.WORD_AND_SENTENCE,
+    /** Where cards show the word's reading (kana, pinyin, English IPA). */
+    val cardReading: CardPlace = CardPlace.BACK,
+    /** Which parts of the back Anki reads aloud. */
+    val cardReadAloud: CardReadAloud = CardReadAloud(),
     val blurBox: Boolean = false,
     val kanjiDetails: Boolean = true,
     val pageTokenCaptions: PageTokenMode = PageTokenMode.AUTO,
 ) {
-    /** Known words is on (Automatic or Manual): the score, new-word marks and "I know this word" show. */
+    /** Known words is on (Automatic or Manual): the score, new-word marks and the word card's "I know this word" show. */
     val knownWords: Boolean get() = knownWordsMode != KnownWordsMode.OFF
+
+    /** Which sound plays first on a card side with both. */
+    val cardSoundFirst: CardSoundFirst get() = cardSoundFirstFor(cardFront, cardSoundFirstPicked)
 
     /** What Send to puts on each card. */
     val cardOptions: CardOptions get() =
@@ -214,7 +259,9 @@ internal data class StudySettings(
             sentenceSound = cardSentenceSound,
             picture = cardPicture,
             front = cardFront,
-            soundFirst = cardSoundFirst,
+            soundFirst = cardSoundFirstPicked,
+            reading = cardReading,
+            readAloud = cardReadAloud,
         )
 
     /** Pause on lines with one new word needs the known-word list; without it the video plays normally. */
@@ -228,9 +275,10 @@ internal fun storedStudyPlayMode(value: String?): StudyPlayMode =
 internal fun storedSkipSilence(value: String?): SkipSilence =
     SkipSilence.entries.firstOrNull { it.storageValue == value } ?: SkipSilence.OFF
 
-internal fun storedStudyRepeatCount(value: Int): Int = value.takeIf { it in STUDY_REPEAT_COUNTS } ?: DEFAULT_STUDY_REPEAT_COUNT
+internal fun storedStudyRepeatCount(value: Int): Int =
+    value.takeIf { it == STUDY_REPEAT_FOREVER || it in STUDY_REPEAT_CUSTOM_RANGE } ?: DEFAULT_STUDY_REPEAT_COUNT
 
-/** The AI assistant's study_repeat_count ("2", "3", "5" or "forever") as a stored count. */
+/** The AI assistant's study_repeat_count ("2" to "99", or "forever") as a stored count. */
 internal fun aiStudyRepeatCount(value: String): Int =
     if (value == AI_REPEAT_FOREVER) {
         STUDY_REPEAT_FOREVER
@@ -250,6 +298,8 @@ internal fun readStudySettings(preferences: SharedPreferences): StudySettings =
         ankiDroid = preferences.getBoolean(ANKIDROID_PREFERENCE, true),
         sendTo = storedFlashcardApp(preferences.getString(SEND_TO_APP_PREFERENCE, null)),
         ankiConnectDeck = preferences.getString(ANKICONNECT_DECK_PREFERENCE, null)?.takeIf { it.isNotBlank() },
+        sendOnSave = preferences.getBoolean(SEND_ON_SAVE_PREFERENCE, false),
+        savedWordVideoExample = preferences.getBoolean(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE, true),
         cardWordSound = storedCardWordSound(preferences),
         cardSentenceSound = storedCardSentenceSound(preferences),
         // Add a picture to cards put it on the back.
@@ -258,8 +308,15 @@ internal fun readStudySettings(preferences: SharedPreferences): StudySettings =
                 preferences.getString(CARD_PICTURE_PLACE_PREFERENCE, null),
                 otherwise = if (preferences.getBoolean(CARD_PICTURE_PREFERENCE, false)) CardPlace.BACK else CardPlace.OFF,
             ),
-        cardSoundFirst = storedCardSoundFirst(preferences.getString(CARD_SOUND_FIRST_PREFERENCE, null)),
+        cardSoundFirstPicked = pickedCardSoundFirst(preferences.getString(CARD_SOUND_FIRST_PREFERENCE, null)),
         cardFront = storedCardFront(preferences.getString(CARD_FRONT_PREFERENCE, null)),
+        cardReading = storedCardPlace(preferences.getString(CARD_READING_PLACE_PREFERENCE, null), otherwise = CardPlace.BACK),
+        cardReadAloud =
+            CardReadAloud(
+                meaningInSentence = preferences.getBoolean(CARD_READ_MEANING_PREFERENCE, true),
+                dictionaryMeaning = preferences.getBoolean(CARD_READ_DICTIONARY_PREFERENCE, false),
+                translation = preferences.getBoolean(CARD_READ_TRANSLATION_PREFERENCE, false),
+            ),
         blurBox = preferences.getBoolean(BLUR_BOX_PREFERENCE, false),
         kanjiDetails = preferences.getBoolean(KANJI_DETAILS_PREFERENCE, true),
         pageTokenCaptions = storedPageTokenMode(preferences.all[PAGE_TOKEN_CAPTIONS_PREFERENCE]),

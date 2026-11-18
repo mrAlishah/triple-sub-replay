@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
@@ -307,18 +310,20 @@ class AiAssistantPanelUiTest {
                 SubtitleSegment(1, 1000, 3000, line, "I rested well yesterday."),
                 false,
             )
-        var cardClosed = false
+        var cardClosed by mutableStateOf(false)
         composeRule.setContent {
             DualSubTheme {
                 CompositionLocalProvider(LocalAiAssistant provides host) {
                     Box(Modifier.fillMaxSize()) {
-                        GrammarExplanations(selection) { cardClosed = true }
                         AiAssistantPanel(host, emptyList(), { snapshot }, currentLineQuestion = null)
+                        // The word card's Ask AI (owner design 2026-11-17) asks about the whole line and closes the card.
+                        if (!cardClosed) WordLearningDialog(selection, false, { "rested" }, { _, _, _ -> }, {}, null, { cardClosed = true })
                     }
                 }
             }
         }
-        composeRule.onNodeWithText("Explain the grammar with AI").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Explain the grammar with AI").assertIsDisplayed()
+        composeRule.onNodeWithTag("grammar_ask_ai").assertTextContains("Ask AI")
         saveUiEvidence("grammar_ask_ai_button")
         composeRule.onNodeWithTag("grammar_ask_ai").performClick()
         composeRule.onNodeWithTag("ai_reply").assertIsDisplayed()
@@ -348,8 +353,13 @@ class AiAssistantPanelUiTest {
                 false,
             )
         composeRule.setContent {
-            DualSubTheme { CompositionLocalProvider(LocalAiAssistant provides host) { GrammarExplanations(selection) } }
+            DualSubTheme {
+                CompositionLocalProvider(LocalAiAssistant provides host) {
+                    WordLearningDialog(selection, false, { "cat" }, { _, _, _ -> }, {}, null, {})
+                }
+            }
         }
+        composeRule.onNodeWithTag("save_word").assertIsDisplayed()
         composeRule.onNodeWithTag("grammar_ask_ai").assertDoesNotExist()
     }
 

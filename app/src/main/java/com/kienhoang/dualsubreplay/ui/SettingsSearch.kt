@@ -203,6 +203,18 @@ internal enum class SearchableSetting(
         "meaning_in_context_switch",
         setOf(MEANING_IN_CONTEXT_PREFERENCE),
     ),
+    PREPARE_MEANINGS(
+        R.string.settings_prepare_meanings_title,
+        MoreSettingsSection.WORD_LEARNING,
+        "prepare_meanings_switch",
+        setOf(PREPARE_MEANINGS_PREFERENCE),
+    ),
+    TAP_BAR_READING(
+        R.string.settings_tap_bar_reading_title,
+        MoreSettingsSection.WORD_LEARNING,
+        "tap_bar_reading_switch",
+        setOf(TAP_BAR_READING_PREFERENCE),
+    ),
     WORD_LEARNING_MODE(
         R.string.settings_word_learning_mode_title,
         MoreSettingsSection.WORD_LEARNING,
@@ -248,11 +260,23 @@ internal enum class SearchableSetting(
         "mark_new_words_switch",
         setOf(MARK_NEW_WORDS_PREFERENCE),
     ),
+    SAVED_WORD_VIDEO_EXAMPLE(
+        R.string.study_saved_word_video_example_title,
+        MoreSettingsSection.FLASHCARDS,
+        "saved_word_video_example_switch",
+        setOf(SAVED_WORD_VIDEO_EXAMPLE_PREFERENCE),
+    ),
     SEND_TO(
         R.string.study_anki_title,
         MoreSettingsSection.FLASHCARDS,
         "ankidroid_switch",
         setOf(ANKIDROID_PREFERENCE, SEND_TO_APP_PREFERENCE, ANKICONNECT_DECK_PREFERENCE),
+    ),
+    SEND_ON_SAVE(
+        R.string.study_send_on_save_title,
+        MoreSettingsSection.FLASHCARDS,
+        "send_on_save_switch",
+        setOf(SEND_ON_SAVE_PREFERENCE),
     ),
     CARD_FRONT(
         R.string.study_card_front_title,
@@ -288,6 +312,24 @@ internal enum class SearchableSetting(
         "card_sound_first",
         setOf(CARD_SOUND_FIRST_PREFERENCE),
         CardSoundFirst.entries.map { it.labelRes },
+    ),
+    CARD_READING(
+        R.string.study_card_reading_title,
+        MoreSettingsSection.FLASHCARDS,
+        "card_reading",
+        setOf(CARD_READING_PLACE_PREFERENCE),
+        CARD_PLACE_LABELS,
+    ),
+    CARD_READ_ALOUD(
+        R.string.study_card_read_aloud_title,
+        MoreSettingsSection.FLASHCARDS,
+        "card_read_aloud",
+        setOf(CARD_READ_MEANING_PREFERENCE, CARD_READ_DICTIONARY_PREFERENCE, CARD_READ_TRANSLATION_PREFERENCE),
+        listOf(
+            R.string.study_card_read_aloud_meaning,
+            R.string.study_card_read_aloud_dictionary,
+            R.string.study_card_read_aloud_translation,
+        ),
     ),
     BLUR_BOX(R.string.study_blur_box_title, MoreSettingsSection.STUDY, "blur_box_switch", setOf(BLUR_BOX_PREFERENCE)),
     CHARACTER_DETAILS(
@@ -357,6 +399,19 @@ internal enum class SearchableSetting(
         MoreSettingsSection.TABS,
         "different_tab_accounts_switch",
         setOf(DIFFERENT_TAB_ACCOUNTS_PREFERENCE),
+    ),
+    SLEEP_TIMER(R.string.sleep_timer_title, MoreSettingsSection.PLAYBACK, "sleep_timer", emptySet()),
+    SLEEP_TIMER_QUICK(
+        R.string.sleep_timer_quick_title,
+        MoreSettingsSection.PLAYBACK,
+        "sleep_timer_quick_switch",
+        setOf(SLEEP_TIMER_QUICK_PREFERENCE),
+    ),
+    WHOLE_TRANSCRIPT(
+        R.string.whole_transcript_title,
+        MoreSettingsSection.PLAYBACK,
+        "whole_transcript_switch",
+        setOf(WHOLE_TRANSCRIPT_PREFERENCE),
     ),
     SKIP_ADS(R.string.ads_skip_ads_title, MoreSettingsSection.ADS, "skip_ads_switch", setOf(SKIP_ADS_PREFERENCE)),
     SKIP_SPONSORS(R.string.ads_skip_sponsors_title, MoreSettingsSection.ADS, "skip_sponsors_switch", setOf(SKIP_SPONSORS_PREFERENCE)),

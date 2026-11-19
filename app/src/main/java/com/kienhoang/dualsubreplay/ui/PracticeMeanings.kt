@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.dp
 import com.kienhoang.dualsubreplay.R
 import com.kienhoang.dualsubreplay.data.*
 import java.util.Locale
@@ -23,22 +24,31 @@ internal fun editableMeanings(word: SavedWord?): SnapshotStateMap<String, String
 @Composable
 private fun meaningTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.Content)
 
-/** The answer side of a Practice card: the primary meaning, then each further language under its own label. */
+/**
+ * The answer side of a Practice card: the primary meaning, then each further language under its own label.
+ * One [Column], so a parent that stacks its children (such as [WithSpeaker]'s Box) cannot lay them on top of each other.
+ */
 @Composable
 internal fun ReviewMeanings(
     word: SavedWord,
     locale: Locale,
 ) {
     val style = meaningTextStyle()
-    PracticeSelectableText(word.meaning, word.meaningLanguage, style, Modifier.testTag("review_meaning"))
-    word.meanings.forEach { (language, text) ->
-        val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
-        Text(label, style = MaterialTheme.typography.labelLarge)
-        PracticeSelectableText(text, language, style, Modifier.testTag("review_meaning_$language"))
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PracticeSelectableText(word.meaning, word.meaningLanguage, style, Modifier.testTag("review_meaning"))
+        word.meanings.forEach { (language, text) ->
+            val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            PracticeSelectableText(text, language, style, Modifier.testTag("review_meaning_$language"))
+        }
     }
 }
 
-/** The Vocabulary edit view: the primary meaning, then one text field per further language, each edited on its own. */
+/**
+ * The Vocabulary edit view: the primary meaning, then one text field per further language, each edited on its own.
+ * One [Column] (see [ReviewMeanings]); the fields fill the width they are given, so a narrow phone wraps the text
+ * instead of running under the speaker button.
+ */
 @Composable
 internal fun EditMeanings(
     word: SavedWord,
@@ -51,20 +61,28 @@ internal fun EditMeanings(
 ) {
     val style = meaningTextStyle()
     val primaryLabel = slotRoleLabel(SubtitleSlot.SECOND, languageDisplayName(word.meaningLanguage, locale))
-    OutlinedTextField(meaning, onMeaning, modifier = Modifier.tvArrowsLeave(), textStyle = style, label = { Text(primaryLabel) })
-    val languages = edited.keys.toList()
-    languages.forEach { language ->
-        val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
-            value = edited[language].orEmpty(),
-            onValueChange = { edited[language] = it },
+            value = meaning,
+            onValueChange = onMeaning,
+            modifier = Modifier.fillMaxWidth().tvArrowsLeave().testTag("saved_meaning_primary"),
             textStyle = style,
-            label = { Text(label) },
-            modifier = Modifier.tvArrowsLeave().testTag("saved_meaning_$language"),
+            label = { Text(primaryLabel) },
         )
+        val languages = edited.keys.toList()
+        languages.forEach { language ->
+            val label = slotRoleLabel(SubtitleSlot.THIRD, languageDisplayName(language, locale))
+            OutlinedTextField(
+                value = edited[language].orEmpty(),
+                onValueChange = { edited[language] = it },
+                textStyle = style,
+                label = { Text(label) },
+                modifier = Modifier.fillMaxWidth().tvArrowsLeave().testTag("saved_meaning_$language"),
+            )
+        }
+        val changed = meaning != word.meaning || edited.toMap() != word.meanings
+        TextButton(onClick = onSave, enabled = enabled && changed) { Text(stringResource(R.string.practice_save_meaning)) }
     }
-    val changed = meaning != word.meaning || edited.toMap() != word.meanings
-    TextButton(onClick = onSave, enabled = enabled && changed) { Text(stringResource(R.string.practice_save_meaning)) }
 }
 
 /**

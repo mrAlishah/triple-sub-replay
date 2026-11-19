@@ -69,7 +69,10 @@ internal fun PracticeWordTitle(
     }
 }
 
-/** [content] with a speaker button after it that reads [text] in [language]; no button when [text] is empty. */
+/**
+ * [content] with a speaker button after it that reads [text] in [language]; no button when [text] is empty.
+ * The button sits at the top, beside the first line, because [content] may be several fields tall.
+ */
 @Composable
 internal fun WithSpeaker(
     text: String,
@@ -77,7 +80,7 @@ internal fun WithSpeaker(
     speak: (String, String) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.Top) {
         Box(Modifier.weight(1f)) { content() }
         if (text.isNotEmpty()) {
             SpeakerButton(

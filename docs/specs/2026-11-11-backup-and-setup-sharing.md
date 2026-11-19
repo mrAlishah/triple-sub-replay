@@ -40,7 +40,7 @@ access, and patched APKs break the updater's signature check. What people actual
 ## User-visible behavior
 
 - Back up: dialog "Back up" with the three ticks (all on), a note listing what is never in the
-  file, then Android's save picker (`DualSub-Backup-<date>.json`). "Last backup: …" under the card.
+  file, then Android's save picker (`TripleSub-Backup-<date>.json`). "Last backup: …" under the card.
 - Restore: Android's open picker, then "Restore this backup?" with the date and version, one tick
   per part the file holds: Settings (replaces current settings), Practice words ("Adds N new
   words. Words you already have keep the newer review date."), Progress ("Adds N study days. Days

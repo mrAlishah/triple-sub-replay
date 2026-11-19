@@ -25,6 +25,8 @@ Upstream releases are tracked in `CHANGELOG.md`; fork entries live only here.
 
 ### Changed
 
+- **Backup file names say TripleSub.** The settings backup is saved as `TripleSub-Backup-<date>.json` and the Practice backup as `TripleSub-Practice.json` (was `DualSub-…`). The backup format value inside the file is unchanged, so old backups still restore.
+
 - **Smaller Codex instruction context.** Codex uses a generated core and reads the existing area rules when needed; the shared drift check detects stale instructions.
 
 - **Smaller Claude Code context.** Claude Code now loads a short `CLAUDE.md` core (memory files 7.2k tokens in total, measured with `/context`) instead of all of `AGENTS.md` (21.9k in total before). The area rules in `.claude/rules/` and the PR and release skill load on demand and are generated from `AGENTS.md`, and a CI test fails when they drift. `AGENTS.md` and the app are unchanged.

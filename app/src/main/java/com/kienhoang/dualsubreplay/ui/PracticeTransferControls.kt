@@ -155,7 +155,7 @@ internal fun PracticeTransferControls(
             onExport = { backup ->
                 exportChoice = false
                 exportBackupFormat = backup
-                exporter.launch(if (backup) "DualSub-Practice.json" else "DualSub-Anki.tsv")
+                exporter.launch(if (backup) "TripleSub-Practice.json" else "DualSub-Anki.tsv")
             },
             sendToAnki = {
                 AnkiSendAllButton(words) { result ->

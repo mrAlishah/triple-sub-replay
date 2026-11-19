@@ -433,7 +433,7 @@ internal fun BackupSharingSettingsSection() {
             onDismiss = { controller.choosing = false },
             onSave = {
                 controller.choosing = false
-                saver.launch("DualSub-Backup-${java.time.LocalDate.now()}.json")
+                saver.launch("TripleSub-Backup-${java.time.LocalDate.now()}.json")
             },
         )
     }

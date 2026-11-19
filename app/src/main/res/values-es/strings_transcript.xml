@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">Exportar</string>
     <string name="whole_transcript_format_text">Archivo de texto</string>
     <string name="whole_transcript_format_srt">Archivo de subtítulos (SRT)</string>
-    <string name="whole_transcript_with_translation">Incluir la traducción</string>
+    <string name="whole_transcript_include_subtitle">Incluir %1$s (%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">Ahora no se puede incluir el Subtítulo 2: está desactivado o usa el mismo idioma que el original o el Subtítulo 1. Configúralo en Ajustes → Idiomas.</string>
+    <string name="whole_transcript_saved_missing">Transcripción guardada, pero algunas líneas no tienen traducción en: %1$s.</string>
+    <string name="whole_transcript_ai_note">Se pide a tu servicio de IA elegido que traduzca las líneas que aún no están traducidas. Un vídeo largo puede tardar y gastar mucha cuota o crédito de ese servicio. Las líneas que la IA aún no ha respondido pueden venir de Google o del dispositivo, así que un archivo puede mezclarlas.</string>
+    <string name="whole_transcript_export_changed">Exportación detenida: cambió el vídeo o los idiomas de los subtítulos.</string>
+    <string name="whole_transcript_export_incomplete_note">Puede que el archivo esté incompleto.</string>
     <string name="whole_transcript_with_translation_note">Las líneas aún sin traducir se traducen primero, así que un video largo puede tardar unos minutos.</string>
     <string name="whole_transcript_export_save">Guardar</string>
     <string name="whole_transcript_exporting">Exportando la transcripción…</string>

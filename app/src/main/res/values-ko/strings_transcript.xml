@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">내보내기</string>
     <string name="whole_transcript_format_text">텍스트 파일</string>
     <string name="whole_transcript_format_srt">자막 파일 (SRT)</string>
-    <string name="whole_transcript_with_translation">번역 포함</string>
+    <string name="whole_transcript_include_subtitle">%1$s 포함(%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">자막 2는 지금 포함할 수 없어요. 꺼져 있거나 원본 자막 또는 자막 1과 같은 언어예요. 설정 → 언어에서 정하세요.</string>
+    <string name="whole_transcript_saved_missing">대본을 저장했지만 일부 줄에 번역이 없어요: %1$s.</string>
+    <string name="whole_transcript_ai_note">선택한 AI 서비스에 아직 번역되지 않은 줄의 번역을 요청해요. 긴 동영상은 시간이 걸리고 그 서비스의 사용량이나 크레딧을 많이 쓸 수 있어요. AI가 아직 답하지 않은 줄은 Google이나 기기의 번역일 수 있어서, 한 파일에 섞일 수 있어요.</string>
+    <string name="whole_transcript_export_changed">내보내기를 멈췄어요. 동영상이나 자막 언어가 바뀌었어요.</string>
+    <string name="whole_transcript_export_incomplete_note">파일이 완전하지 않을 수 있어요.</string>
     <string name="whole_transcript_with_translation_note">아직 번역되지 않은 줄을 먼저 번역하므로 긴 영상은 몇 분 걸릴 수 있습니다.</string>
     <string name="whole_transcript_export_save">저장</string>
     <string name="whole_transcript_exporting">자막을 내보내는 중…</string>

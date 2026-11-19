@@ -15,9 +15,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import okhttp3.FormBody
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -62,6 +70,9 @@ class ThirdLineTranslationTest {
     private fun runThird(
         ai: AiTranslationModel?,
         stateOf: () -> DualSubUiState,
+        onTrack: (TranscriptTrack) -> Unit = {},
+        google: GoogleWebTranslator = GoogleWebTranslator(),
+        googleWaitMs: Long = 1L,
         check: suspend (MutableStateFlow<DualSubUiState>) -> Unit,
     ) {
         val directory = Files.createTempDirectory("third-line").toFile()
@@ -76,13 +87,13 @@ class ThirdLineTranslationTest {
                             isCurrentLoad = { _, _, _ -> true },
                             aiTranslator = AiSubtitleTranslator(null),
                             diagnostics = TranslationDiagnostics(),
-                            googleTranslator = GoogleWebTranslator(),
+                            googleTranslator = google,
                             playbackRequests = MutableStateFlow(CaptionPlaybackRequest(0, paused = false, enabled = true)),
                             aiFillTexts = { emptyList() },
                             translateOnDevice = { _, _, _, _, text -> "D:$text" },
-                            googleWaitMs = { 1L },
+                            googleWaitMs = { googleWaitMs },
                         )
-                    val job = third.start(store, "v", 1L, "en", scope, ai, null)
+                    val job = third.start(store, "v", 1L, "en", scope, ai, null, onTrack)
                     try {
                         check(state)
                     } finally {
@@ -134,6 +145,93 @@ class ThirdLineTranslationTest {
                     ?.takeIf { it.provider.name == "AI_PROVIDER" },
             )
         }
+    }
+
+    @Test
+    fun theTranscriptTrackTranslatesAnyLineOfTheVideoFromTheOriginalWithTheSameFallbacks() {
+        var track: TranscriptTrack? = null
+        runThird(null, { base(aiOnly = false) }, { track = it }) {
+            val whole = checkNotNull(track)
+            assertEquals("fr", whole.language)
+            // A line far from the playing window, translated on the device straight from the Original.
+            withTimeout(30_000) { whole.fill(listOf("Line number 17 is spoken here.")) }
+            assertEquals("D:Line number 17 is spoken here.", whole.known("Line number 17 is spoken here."))
+        }
+    }
+
+    @Test
+    fun theTranscriptTrackAsksTheSelectedAiServiceInSubtitle2sLanguageFromTheOriginal() {
+        val model = FakeKeyedModel()
+        var track: TranscriptTrack? = null
+        runThird(model, { base(aiOnly = true) }, { track = it }) {
+            val whole = checkNotNull(track)
+            withTimeout(30_000) { whole.fill(listOf("Line number 17 is spoken here.")) }
+            assertEquals("T:Line number 17 is spoken here.", whole.known("Line number 17 is spoken here."))
+            assertTrue("asked in French", model.systems.all { it.contains("French") })
+            assertTrue("from the Original, never from Subtitle 1", model.sentences.all { it.startsWith("Line number") })
+        }
+    }
+
+    /** Answers every Google request locally ("fr:<text>"), keeping the texts each request carried. */
+    private fun fakeGoogle(requests: MutableList<List<String>>): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .addInterceptor(
+                Interceptor { chain ->
+                    val request = chain.request()
+                    val form = request.body as FormBody
+                    val texts = (0 until form.size).filter { form.name(it) == "q" }.map(form::value)
+                    requests += texts
+                    Response
+                        .Builder()
+                        .request(request)
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("test")
+                        .body(JSONArray(texts.map { "fr:$it" }).toString().toResponseBody("application/json".toMediaType()))
+                        .build()
+                },
+            ).build()
+
+    @Test
+    fun theTranscriptTrackAsksGoogleForABatchInOneRequestAndNeverUsesTheAi() {
+        val requests = CopyOnWriteArrayList<List<String>>()
+        val batch = listOf("Export sentence A.", "Export sentence B.", "Export sentence C.")
+        var track: TranscriptTrack? = null
+        runThird(null, {
+            base(aiOnly = false, engine = TranslationEngine.GOOGLE_WEB)
+        }, { track = it }, GoogleWebTranslator(client = fakeGoogle(requests)), 5_000L) {
+            val whole = checkNotNull(track)
+            assertFalse("no AI model, so no AI quota is used", whole.usesAi)
+            withTimeout(30_000) { whole.fill(batch) }
+            assertEquals("one request for the whole batch", listOf(batch), requests.filter { request -> batch.any { it in request } })
+            assertEquals("fr:Export sentence B.", whole.known("Export sentence B."))
+        }
+    }
+
+    @Test
+    fun anAiOnlyTranscriptTrackSaysItUsesTheAiAndSendsNothingToGoogle() {
+        val requests = CopyOnWriteArrayList<List<String>>()
+        val model = FakeKeyedModel()
+        var track: TranscriptTrack? = null
+        runThird(model, {
+            base(aiOnly = true, engine = TranslationEngine.GOOGLE_WEB)
+        }, { track = it }, GoogleWebTranslator(client = fakeGoogle(requests)), 5_000L) {
+            val whole = checkNotNull(track)
+            assertTrue(whole.usesAi)
+            withTimeout(30_000) { whole.fill(listOf("Export sentence A.")) }
+            assertEquals("T:Export sentence A.", whole.known("Export sentence A."))
+            assertTrue("Google is not asked for AI-only lines", requests.none { "Export sentence A." in it })
+        }
+    }
+
+    @Test
+    fun noTranscriptTrackWhenSubtitle2IsOffOrRepeatsAnotherLine() {
+        var tracks = 0
+        runThird(null, { base(aiOnly = false).copy(tripleSubtitlesEnabled = false) }, { tracks++ }) { }
+        runThird(null, { base(aiOnly = false).copy(thirdLanguage = "vi") }, { tracks++ }) { }
+        runThird(null, { base(aiOnly = false).copy(thirdLanguage = "en") }, { tracks++ }) { }
+        assertEquals(0, tracks)
     }
 
     @Test

@@ -70,7 +70,7 @@ class WholeTranscriptTest {
     fun textExportWritesOneLinePerSentenceWithItsTranslation() =
         runBlocking {
             val out = StringWriter()
-            assertTrue(transcript().export(out, TranscriptExportFormat.TEXT, withTranslation = true, title = "My video"))
+            assertTrue(transcript().export(out, TranscriptExportOptions(TranscriptExportFormat.TEXT), "My video").completed)
             assertEquals(
                 "My video\n\n[0:01] Hello there.\n    vi: Hello there.\n[1:00:00] Good night.\n    vi: Good night.\n",
                 out.toString(),
@@ -81,7 +81,9 @@ class WholeTranscriptTest {
     fun srtExportJoinsASentencesRowsAndCanLeaveTheTranslationOut() =
         runBlocking {
             val out = StringWriter()
-            assertTrue(transcript().export(out, TranscriptExportFormat.SRT, withTranslation = false, title = "ignored"))
+            assertTrue(
+                transcript().export(out, TranscriptExportOptions(TranscriptExportFormat.SRT, subtitle1 = false), "ignored").completed,
+            )
             assertEquals(
                 "1\n00:00:01,000 --> 00:00:03,500\nHello there.\n\n2\n01:00:00,000 --> 01:00:02,000\nGood night.\n\n",
                 out.toString(),
@@ -97,7 +99,9 @@ class WholeTranscriptTest {
             store.close()
             assertNull(whole.row(0))
             assertEquals(emptyList<Int>(), whole.search("hello"))
-            assertFalse(whole.export(StringWriter(), TranscriptExportFormat.TEXT, withTranslation = false, title = null))
+            assertFalse(
+                whole.export(StringWriter(), TranscriptExportOptions(TranscriptExportFormat.TEXT, subtitle1 = false), null).completed,
+            )
         }
 
     /**
@@ -131,10 +135,11 @@ class WholeTranscriptTest {
                 }
             var progress = 0
             assertTrue(
-                whole.export(counting, TranscriptExportFormat.SRT, withTranslation = false, title = null) { done, _ ->
-                    progress =
-                        done
-                },
+                whole
+                    .export(counting, TranscriptExportOptions(TranscriptExportFormat.SRT, subtitle1 = false), null) { done, _ ->
+                        progress =
+                            done
+                    }.completed,
             )
             assertEquals(count, progress)
             assertTrue("Only $written characters written", written > count * 30L)

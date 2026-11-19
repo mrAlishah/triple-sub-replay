@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">Ekspor</string>
     <string name="whole_transcript_format_text">File teks</string>
     <string name="whole_transcript_format_srt">File subtitle (SRT)</string>
-    <string name="whole_transcript_with_translation">Sertakan terjemahan</string>
+    <string name="whole_transcript_include_subtitle">Sertakan %1$s (%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">Subjudul 2 belum bisa disertakan: sedang mati, atau bahasanya sama dengan subjudul asli atau Subjudul 1. Atur di Pengaturan → Bahasa.</string>
+    <string name="whole_transcript_saved_missing">Transkrip disimpan, tetapi beberapa baris tidak punya terjemahan dalam: %1$s.</string>
+    <string name="whole_transcript_ai_note">Layanan AI yang Anda pilih akan diminta menerjemahkan baris yang belum diterjemahkan. Video panjang bisa memakan waktu dan banyak kuota atau kredit layanan itu. Baris yang belum dijawab AI bisa berasal dari Google atau perangkat, jadi satu berkas bisa campuran.</string>
+    <string name="whole_transcript_export_changed">Ekspor dihentikan: video atau bahasa subjudul berubah.</string>
+    <string name="whole_transcript_export_incomplete_note">Berkas mungkin tidak lengkap.</string>
     <string name="whole_transcript_with_translation_note">Baris yang belum diterjemahkan akan diterjemahkan dulu, jadi video panjang bisa memakan beberapa menit.</string>
     <string name="whole_transcript_export_save">Simpan</string>
     <string name="whole_transcript_exporting">Mengekspor transkrip…</string>

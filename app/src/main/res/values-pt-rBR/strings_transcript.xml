@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">Exportar</string>
     <string name="whole_transcript_format_text">Arquivo de texto</string>
     <string name="whole_transcript_format_srt">Arquivo de legendas (SRT)</string>
-    <string name="whole_transcript_with_translation">Incluir a tradução</string>
+    <string name="whole_transcript_include_subtitle">Incluir %1$s (%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">Agora não dá para incluir a Legenda 2: ela está desativada ou usa o mesmo idioma do original ou da Legenda 1. Configure em Configurações → Idiomas.</string>
+    <string name="whole_transcript_saved_missing">Transcrição salva, mas algumas linhas não têm tradução em: %1$s.</string>
+    <string name="whole_transcript_ai_note">O serviço de IA escolhido será usado para traduzir as linhas ainda não traduzidas. Um vídeo longo pode demorar e gastar muita cota ou muitos créditos desse serviço. As linhas que a IA ainda não respondeu podem vir do Google ou do dispositivo, então um arquivo pode misturá-las.</string>
+    <string name="whole_transcript_export_changed">Exportação interrompida: o vídeo ou os idiomas das legendas mudaram.</string>
+    <string name="whole_transcript_export_incomplete_note">O arquivo pode estar incompleto.</string>
     <string name="whole_transcript_with_translation_note">As linhas ainda não traduzidas são traduzidas antes, então um vídeo longo pode levar alguns minutos.</string>
     <string name="whole_transcript_export_save">Salvar</string>
     <string name="whole_transcript_exporting">Exportando a transcrição…</string>

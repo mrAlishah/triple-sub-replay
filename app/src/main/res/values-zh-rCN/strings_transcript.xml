@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">导出</string>
     <string name="whole_transcript_format_text">文本文件</string>
     <string name="whole_transcript_format_srt">字幕文件 (SRT)</string>
-    <string name="whole_transcript_with_translation">包含翻译</string>
+    <string name="whole_transcript_include_subtitle">包含%1$s（%2$s）</string>
+    <string name="whole_transcript_subtitle2_unavailable">现在无法包含字幕 2：它已关闭，或与原字幕、字幕 1 使用相同语言。请在“设置 → 语言”中设置。</string>
+    <string name="whole_transcript_saved_missing">文字稿已保存，但部分行没有以下语言的翻译：%1$s。</string>
+    <string name="whole_transcript_ai_note">会请所选的 AI 服务翻译尚未翻译的行。较长的视频可能耗时较久，并消耗该服务的大量额度或积分。 AI 尚未返回的行可能来自 Google 或设备本地翻译，因此同一文件中可能混用。</string>
+    <string name="whole_transcript_export_changed">导出已停止：视频或字幕语言已更改。</string>
+    <string name="whole_transcript_export_incomplete_note">文件可能不完整。</string>
     <string name="whole_transcript_with_translation_note">还没翻译的句子会先翻译，所以长视频可能需要几分钟。</string>
     <string name="whole_transcript_export_save">保存</string>
     <string name="whole_transcript_exporting">正在导出字幕…</string>

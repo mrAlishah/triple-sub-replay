@@ -44,7 +44,9 @@ internal class ThirdLineTranslation(
      * One more window loop on the same display [store], so its row ids match [DualSubUiState.segments]. Null when the
      * mode is off or would repeat another line. It runs in [scope] (the load's Google scope) and is cancelled when this
      * translation run ends. With an [ai] model (the selected Translation AI Service, keyed or ChatGPT Subscription) the line is also asked from the AI, straight
-     * from the Original.
+     * from the Original. [onTrack] gets the same engine as a [TranscriptTrack] (same pacing, caches, Google-first or AI-only
+     * rules and fallbacks), so the Whole transcript export can translate the entire video's Subtitle 2 without the
+     * playback window's map.
      */
     fun start(
         store: SubtitleStore,
@@ -54,6 +56,7 @@ internal class ThirdLineTranslation(
         scope: CoroutineScope,
         ai: AiTranslationModel?,
         manualAi: AiTranslationModel?,
+        onTrack: (TranscriptTrack) -> Unit = {},
     ): Job? {
         publish(videoId, generation, emptyMap(), null)
         val third = state.value.thirdLanguageFor(source) ?: return null
@@ -73,6 +76,15 @@ internal class ThirdLineTranslation(
         suspend fun prefetch(texts: List<String>) {
             if (aiOnly) window.first(texts) else window?.ask(texts)
         }
+
+        // The export asks for whole batches, so Google gets them in one request like Subtitle 1's export does, not a sentence at a time.
+        suspend fun exportPrefetch(texts: List<String>) {
+            prefetch(texts)
+            if (aiOnly || !state.value.translatesWithGoogle()) return
+            val rest = window?.let { asked -> texts.filter { asked.cached(it) == null } } ?: texts
+            if (rest.isNotEmpty()) awaitWithin(scope, googleWaitMs()) { googleTranslator.translateAll(source, third, rest) }
+        }
+        onTrack(TranscriptTrack(third, { translate(it).text }, ::exportPrefetch, usesAi = window != null))
         val upgrades =
             (ai ?: manualAi)?.let { model ->
                 aiTranslationUpgrades(aiTranslator, diagnostics, model, source, third, window.takeUnless { aiOnly })

@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">Xuất</string>
     <string name="whole_transcript_format_text">Tệp văn bản</string>
     <string name="whole_transcript_format_srt">Tệp phụ đề (SRT)</string>
-    <string name="whole_transcript_with_translation">Kèm bản dịch</string>
+    <string name="whole_transcript_include_subtitle">Gồm %1$s (%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">Hiện chưa thể gồm Phụ đề 2: nó đang tắt, hoặc dùng cùng ngôn ngữ với phụ đề gốc hoặc Phụ đề 1. Thiết lập tại Cài đặt → Ngôn ngữ.</string>
+    <string name="whole_transcript_saved_missing">Đã lưu bản ghi, nhưng một số dòng chưa có bản dịch sang: %1$s.</string>
+    <string name="whole_transcript_ai_note">Dịch vụ AI bạn đã chọn sẽ được dùng để dịch các dòng chưa có bản dịch. Video dài có thể mất nhiều thời gian và tốn nhiều hạn mức hoặc tín dụng của dịch vụ đó. Dòng nào AI chưa trả lời có thể lấy từ Google hoặc từ thiết bị, nên một tệp có thể trộn lẫn các nguồn.</string>
+    <string name="whole_transcript_export_changed">Đã dừng xuất: video hoặc ngôn ngữ phụ đề đã thay đổi.</string>
+    <string name="whole_transcript_export_incomplete_note">Tệp có thể chưa đầy đủ.</string>
     <string name="whole_transcript_with_translation_note">Những dòng chưa dịch sẽ được dịch trước, nên video dài có thể mất vài phút.</string>
     <string name="whole_transcript_export_save">Lưu</string>
     <string name="whole_transcript_exporting">Đang xuất phụ đề…</string>

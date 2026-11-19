@@ -7,7 +7,12 @@
     <string name="whole_transcript_export">Export</string>
     <string name="whole_transcript_format_text">Text file</string>
     <string name="whole_transcript_format_srt">Subtitle file (SRT)</string>
-    <string name="whole_transcript_with_translation">Include the translation</string>
+    <string name="whole_transcript_include_subtitle">Include %1$s (%2$s)</string>
+    <string name="whole_transcript_subtitle2_unavailable">Subtitle 2 can\'t be included now: it is off, or it uses the same language as the Original or Subtitle 1. Set it up in Settings → Languages.</string>
+    <string name="whole_transcript_saved_missing">Transcript saved, but some lines have no translation in: %1$s.</string>
+    <string name="whole_transcript_ai_note">Your selected AI service is asked for lines that aren\'t translated yet. A long video can take a while and use a lot of that service\'s quota or credits. Lines the AI hasn\'t answered yet may come from Google or the device instead, so one file can mix them.</string>
+    <string name="whole_transcript_export_changed">Export stopped: the video or its subtitle languages changed.</string>
+    <string name="whole_transcript_export_incomplete_note">The file may be incomplete.</string>
     <string name="whole_transcript_with_translation_note">Lines that aren\'t translated yet are translated first, so a long video can take a few minutes.</string>
     <string name="whole_transcript_export_save">Save</string>
     <string name="whole_transcript_exporting">Exporting the transcript…</string>

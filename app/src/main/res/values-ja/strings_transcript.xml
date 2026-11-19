@@ -6,7 +6,12 @@
     <string name="whole_transcript_export">書き出す</string>
     <string name="whole_transcript_format_text">テキストファイル</string>
     <string name="whole_transcript_format_srt">字幕ファイル (SRT)</string>
-    <string name="whole_transcript_with_translation">翻訳も含める</string>
+    <string name="whole_transcript_include_subtitle">%1$s（%2$s）を含める</string>
+    <string name="whole_transcript_subtitle2_unavailable">字幕 2 は今は含められません。オフになっているか、元の字幕または字幕 1 と同じ言語です。設定 → 言語で設定してください。</string>
+    <string name="whole_transcript_saved_missing">トランスクリプトを保存しましたが、一部の行に次の言語の翻訳がありません：%1$s。</string>
+    <string name="whole_transcript_ai_note">選択中のAIサービスに、まだ翻訳されていない行の翻訳を依頼します。長い動画では時間がかかり、そのサービスの利用枠やクレジットを多く使うことがあります。 AIがまだ答えていない行は、Googleや端末の翻訳になることがあり、1つのファイルに混ざる場合があります。</string>
+    <string name="whole_transcript_export_changed">エクスポートを止めました。動画または字幕の言語が変わりました。</string>
+    <string name="whole_transcript_export_incomplete_note">ファイルが不完全な可能性があります。</string>
     <string name="whole_transcript_with_translation_note">まだ翻訳されていない行を先に翻訳するため、長い動画は数分かかることがあります。</string>
     <string name="whole_transcript_export_save">保存</string>
     <string name="whole_transcript_exporting">字幕を書き出しています…</string>

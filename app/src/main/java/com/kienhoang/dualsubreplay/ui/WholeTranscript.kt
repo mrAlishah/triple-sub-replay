@@ -4,8 +4,6 @@ import com.kienhoang.dualsubreplay.data.SubtitleSegment
 import com.kienhoang.dualsubreplay.data.SubtitleStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -18,13 +16,13 @@ internal const val WHOLE_TRANSCRIPT_PAGE_ROWS = 50
 internal const val WHOLE_TRANSCRIPT_PAGES_KEPT = 8
 
 /** Translations of sentences the sheet showed, kept so scrolling back costs nothing. */
-private const val WHOLE_TRANSCRIPT_TRANSLATIONS_KEPT = 600
+internal const val WHOLE_TRANSCRIPT_TRANSLATIONS_KEPT = 600
 
 /** Search stops after this many matching rows. */
 internal const val WHOLE_TRANSCRIPT_MAX_MATCHES = 500
 
-/** Sentences translated in one go while exporting (one online request with [WholeTranscript.prefetch]). */
-private const val EXPORT_BATCH_SENTENCES = 40
+/** Sentences translated in one go while exporting (one online request with [TranscriptTrack]'s prefetch). */
+internal const val EXPORT_BATCH_SENTENCES = 40
 
 /** Rows search and export read from disk at a time; they are dropped before the next batch. */
 private const val SCAN_ROWS = 500
@@ -36,26 +34,33 @@ private const val SCAN_ROWS = 500
  * same on-disk [store] a page at a time, so at most [WHOLE_TRANSCRIPT_PAGES_KEPT] pages of rows are
  * in memory however long the video is; search and export stream through it.
  *
- * [translate] and [prefetch] are the playing video's own engine (Google with its pacing, AI, or the
- * device): a sentence is translated only when its row is on screen or when exporting asks for it.
- * The store closes when the video changes; reads then return nothing.
+ * [translate] and [prefetch] are the playing video's own engine for Subtitle 1 (Google with its pacing, AI, or
+ * the device): a sentence is translated only when its row is on screen or when exporting asks for it. [subtitle2]
+ * is the same for Subtitle 2, built by the fork's ThirdLineTranslation (always from the Original); it is only
+ * used by exports. The store closes when the video changes; reads then return nothing.
  */
 internal class WholeTranscript(
     private val store: SubtitleStore,
-    private val translate: suspend (String) -> String,
-    private val prefetch: (suspend (List<String>) -> Unit)?,
+    translate: suspend (String) -> String,
+    prefetch: (suspend (List<String>) -> Unit)?,
+    subtitle1Language: String? = null,
+    private val subtitle2: TranscriptTrack? = null,
+    /** Whether Subtitle 1's engine may ask the selected AI service (Subtitle 2's is [TranscriptTrack.usesAi]). */
+    val subtitle1UsesAi: Boolean = false,
 ) {
     val size: Int get() = store.size
 
+    /** The languages of the two translation lines an export can include; Subtitle 2's is null when it is off or repeats another line. */
+    val subtitle1Language: String? = subtitle1Language
+    val subtitle2Language: String? get() = subtitle2?.language
+    val subtitle2UsesAi: Boolean get() = subtitle2?.usesAi == true
+
+    private val subtitle1 = TranscriptTrack(subtitle1Language.orEmpty(), translate, prefetch)
     private val lock = Mutex()
     private val pages =
         object : LinkedHashMap<Int, List<SubtitleSegment>>(WHOLE_TRANSCRIPT_PAGES_KEPT, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, List<SubtitleSegment>>?) =
                 size > WHOLE_TRANSCRIPT_PAGES_KEPT
-        }
-    private val translations =
-        object : LinkedHashMap<String, String>(64, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?) = size > WHOLE_TRANSCRIPT_TRANSLATIONS_KEPT
         }
 
     /** Row [index], or null once the video changed. */
@@ -67,7 +72,7 @@ internal class WholeTranscript(
     }
 
     /** A translation already known for [row]'s sentence, without asking for one. */
-    fun knownTranslation(row: SubtitleSegment): String? = synchronized(translations) { translations[sentenceText(row)] }
+    fun knownTranslation(row: SubtitleSegment): String? = subtitle1.known(sentenceText(row))
 
     /**
      * Translations for the sentences that start in [indices] (the rows on screen), in one online
@@ -75,8 +80,13 @@ internal class WholeTranscript(
      */
     suspend fun translateStarts(indices: IntRange): Map<Int, String> {
         val starts = indices.mapNotNull { index -> row(index)?.takeIf(::startsSentence)?.let { index to it } }
-        val missing = starts.map { sentenceText(it.second) }.filter { text -> knownText(text) == null }.distinct()
-        translateTexts(missing)
+        val missing = starts.map { sentenceText(it.second) }.filter { text -> subtitle1.known(text) == null }.distinct()
+        try {
+            subtitle1.fill(missing)
+        } catch (_: StaleTranscriptException) {
+            // The video changed while the rows were asked for; the sheet closes itself, so they simply stay untranslated.
+            return emptyMap()
+        }
         return starts.mapNotNull { (index, row) -> knownTranslation(row)?.let { index to it } }.toMap()
     }
 
@@ -100,25 +110,39 @@ internal class WholeTranscript(
     }
 
     /**
-     * Writes the transcript to [out] one sentence per entry: [format] text ("[m:ss] sentence" lines) or
-     * SRT. With [withTranslation], each sentence's translation follows it; sentences the engine can't
-     * translate are left without one. [onProgress] gets rows done out of [size]. Returns false when
-     * the video changed before the end.
+     * Writes the transcript to [out] one sentence per entry: [TranscriptExportOptions.format] text ("[m:ss]
+     * sentence" lines) or SRT. After the Original come Subtitle 1 and Subtitle 2, each only when asked for, in that
+     * order; each comes from its own engine and cache, always translated from the Original. A sentence a requested
+     * track can't translate is left without that line and counted in the outcome. [onProgress] gets rows done out
+     * of [size]. The outcome is not completed, and [TranscriptExportOutcome.changed], when the video or its subtitle
+     * setup was replaced before the end: nothing of another video or setup is ever written.
      */
     suspend fun export(
         out: Writer,
-        format: TranscriptExportFormat,
-        withTranslation: Boolean,
+        options: TranscriptExportOptions,
         title: String?,
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
-    ): Boolean {
+    ): TranscriptExportOutcome =
+        try {
+            writeAll(out, options, title, onProgress)
+        } catch (_: StaleTranscriptException) {
+            TranscriptExportOutcome(completed = false, changed = true)
+        }
+
+    private suspend fun writeAll(
+        out: Writer,
+        options: TranscriptExportOptions,
+        title: String?,
+        onProgress: (done: Int, total: Int) -> Unit,
+    ): TranscriptExportOutcome {
         var first = 0
         var entry = 0
         var open: SentenceEntry? = null
-        if (format == TranscriptExportFormat.TEXT && !title.isNullOrBlank()) out.write("$title\n\n")
+        val missing = IntArray(2)
+        if (options.format == TranscriptExportFormat.TEXT && !title.isNullOrBlank()) out.write("$title\n\n")
         while (first < size) {
             val range = first..minOf(size - 1, first + SCAN_ROWS - 1)
-            val rows = read(range) ?: return false
+            val rows = read(range) ?: return TranscriptExportOutcome(completed = false, changed = true)
             val sentences = mutableListOf<SentenceEntry>()
             rows.forEach { row ->
                 val current = open
@@ -129,53 +153,34 @@ internal class WholeTranscript(
                     open = SentenceEntry(row.startMs, row.endMs, sentenceText(row))
                 }
             }
-            if (withTranslation) translateInBatches(sentences.map { it.text })
-            sentences.forEach { sentence ->
-                entry++
-                writeEntry(out, format, entry, sentence, if (withTranslation) knownText(sentence.text) else null)
-            }
+            entry = writeSentences(out, options, sentences, entry, missing)
             first = range.last + 1
             onProgress(first, size)
         }
-        open?.let { last ->
-            if (withTranslation) translateInBatches(listOf(last.text))
-            writeEntry(out, format, entry + 1, last, if (withTranslation) knownText(last.text) else null)
-        }
+        open?.let { last -> writeSentences(out, options, listOf(last), entry, missing) }
         out.flush()
-        return true
+        return TranscriptExportOutcome(completed = true, missingSubtitle1 = missing[0], missingSubtitle2 = missing[1])
     }
 
-    private suspend fun translateInBatches(texts: List<String>) {
-        texts.filter { knownText(it) == null }.distinct().chunked(EXPORT_BATCH_SENTENCES).forEach { batch ->
-            currentCoroutineContext().ensureActive()
-            translateTexts(batch)
+    /** Translates the requested tracks for [sentences], writes them numbered after [done], and returns the new count. */
+    private suspend fun writeSentences(
+        out: Writer,
+        options: TranscriptExportOptions,
+        sentences: List<SentenceEntry>,
+        done: Int,
+        missing: IntArray,
+    ): Int {
+        val tracks = listOf(subtitle1.takeIf { options.subtitle1 }, subtitle2.takeIf { options.subtitle2 })
+        tracks.forEach { it?.fillInBatches(sentences.map { sentence -> sentence.text }) }
+        sentences.forEachIndexed { offset, sentence ->
+            val lines = tracks.map { track -> track?.known(sentence.text) }
+            // A requested track with no translation (or no engine at all) is counted, never filled from the other track.
+            if (options.subtitle1 && lines[0].isNullOrBlank()) missing[0]++
+            if (options.subtitle2 && lines[1].isNullOrBlank()) missing[1]++
+            writeEntry(out, options.format, done + offset + 1, sentence, lines.mapNotNull { it?.takeIf(String::isNotBlank) })
         }
+        return done + sentences.size
     }
-
-    /** Asks the engine for [texts]: in one request first where it can, then each from its cache. */
-    private suspend fun translateTexts(texts: List<String>) {
-        if (texts.isEmpty()) return
-        try {
-            prefetch?.invoke(texts)
-        } catch (cancel: CancellationException) {
-            throw cancel
-        } catch (_: Exception) {
-            // Each sentence is still asked on its own below.
-        }
-        texts.forEach { text ->
-            val translated =
-                try {
-                    translate(text).trim()
-                } catch (cancel: CancellationException) {
-                    throw cancel
-                } catch (_: Exception) {
-                    ""
-                }
-            if (translated.isNotEmpty()) synchronized(translations) { translations[text] = translated }
-        }
-    }
-
-    private fun knownText(text: String): String? = synchronized(translations) { translations[text] }
 
     private fun pageRange(page: Int): IntRange {
         val first = page * WHOLE_TRANSCRIPT_PAGE_ROWS
@@ -205,17 +210,17 @@ internal class WholeTranscript(
         format: TranscriptExportFormat,
         number: Int,
         sentence: SentenceEntry,
-        translation: String?,
+        translations: List<String>,
     ) {
         when (format) {
             TranscriptExportFormat.TEXT -> {
                 out.write("[${clockTime(sentence.startMs)}] ${sentence.text}\n")
-                if (!translation.isNullOrBlank()) out.write("    $translation\n")
+                translations.forEach { out.write("    $it\n") }
             }
             TranscriptExportFormat.SRT -> {
                 out.write("$number\n${srtTime(sentence.startMs)} --> ${srtTime(maxOf(sentence.endMs, sentence.startMs))}\n")
-                out.write("${sentence.text}\n")
-                if (!translation.isNullOrBlank()) out.write("$translation\n")
+                out.write("${srtSafe(sentence.text)}\n")
+                translations.forEach { out.write("${srtSafe(it)}\n") }
                 out.write("\n")
             }
         }

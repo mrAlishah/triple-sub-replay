@@ -1,6 +1,11 @@
 package com.kienhoang.dualsubreplay.ui
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -46,7 +51,13 @@ class WholeTranscriptUiTest {
                     val text = if (index == 600) "Let's make kimchi together." else "This is line ${index + 1} of the talk."
                     SubtitleSegment(index.toLong(), index * 6_000L, index * 6_000L + 5_000, text)
                 }
-            WholeTranscript(SubtitleStore.create(folder, rows), { text -> "Dịch: $text" }, null)
+            WholeTranscript(
+                SubtitleStore.create(folder, rows),
+                { text -> "Dịch: $text" },
+                null,
+                "vi",
+                TranscriptTrack("fr", { text -> "Traduction: $text" }, null),
+            )
         }
 
     @Test
@@ -90,7 +101,7 @@ class WholeTranscriptUiTest {
     }
 
     @Test
-    fun exportAsksForTheFormatAndTheTranslation() {
+    fun exportAsksForTheFormatAndTheTwoSubtitles() {
         val whole = transcript()
         composeRule.setContent {
             DualSubTheme {
@@ -99,9 +110,103 @@ class WholeTranscriptUiTest {
         }
         composeRule.onNodeWithTag("whole_transcript_export").performClick()
         composeRule.onNodeWithTag("whole_transcript_format_srt").assertIsDisplayed()
-        composeRule.onNodeWithTag("whole_transcript_with_translation").assertIsDisplayed()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").assertIsDisplayed()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").assertIsDisplayed()
         Thread.sleep(500)
         saveUiEvidence("whole-transcript-export")
+    }
+
+    private fun showExportDialog(
+        subtitle2Language: String?,
+        onExport: (TranscriptExportOptions) -> Unit = {},
+    ) = composeRule.setContent {
+        DualSubTheme { ExportDialog("vi", subtitle2Language, onDismiss = {}, onExport = onExport) }
+    }
+
+    @Test
+    fun subtitle1IsOnAndSubtitle2IsOffByDefault() {
+        showExportDialog("fr")
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").assertIsDisplayed().assertIsOn()
+        composeRule
+            .onNodeWithTag("whole_transcript_with_subtitle2")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+            .assertIsOff()
+    }
+
+    @Test
+    fun theTwoSubtitleBoxesToggleIndependently() {
+        showExportDialog("fr")
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick().assertIsOn()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").assertIsOn()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").performClick().assertIsOff()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").assertIsOn()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick().assertIsOff()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").assertIsOff()
+    }
+
+    @Test
+    fun theChosenFormatAndSubtitlesReachTheExporter() {
+        val picked = mutableListOf<TranscriptExportOptions>()
+        showExportDialog("fr") { picked += it }
+        composeRule.onNodeWithTag("whole_transcript_export_save").performClick()
+        composeRule.onNodeWithTag("whole_transcript_format_srt").performClick()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick()
+        composeRule.onNodeWithTag("whole_transcript_export_save").performClick()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle1").performClick()
+        composeRule.onNodeWithTag("whole_transcript_export_save").performClick()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick()
+        composeRule.onNodeWithTag("whole_transcript_export_save").performClick()
+        assertEquals(
+            listOf(
+                TranscriptExportOptions(TranscriptExportFormat.TEXT, subtitle1 = true, subtitle2 = false),
+                TranscriptExportOptions(TranscriptExportFormat.SRT, subtitle1 = true, subtitle2 = true),
+                TranscriptExportOptions(TranscriptExportFormat.SRT, subtitle1 = false, subtitle2 = true),
+                TranscriptExportOptions(TranscriptExportFormat.SRT, subtitle1 = false, subtitle2 = false),
+            ),
+            picked,
+        )
+    }
+
+    @Test
+    fun subtitle2IsDisabledAndExplainedWhenItIsOffOrRepeatsAnotherLine() {
+        val picked = mutableListOf<TranscriptExportOptions>()
+        showExportDialog(null) { picked += it }
+        composeRule
+            .onNodeWithTag("whole_transcript_with_subtitle2")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+            .assertIsOff()
+        composeRule.onNodeWithTag("whole_transcript_subtitle2_unavailable").assertIsDisplayed()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick().assertIsOff()
+        composeRule.onNodeWithTag("whole_transcript_export_save").performClick()
+        assertEquals(listOf(TranscriptExportOptions(TranscriptExportFormat.TEXT, subtitle1 = true, subtitle2 = false)), picked)
+    }
+
+    @Test
+    fun theAiQuotaNoteShowsOnlyWhileAChosenSubtitleMayAskTheAi() {
+        composeRule.setContent {
+            DualSubTheme { ExportDialog("vi", "fr", subtitle1UsesAi = false, subtitle2UsesAi = true, onDismiss = {}, onExport = {}) }
+        }
+        // Subtitle 1 (no AI) is the only one chosen: nothing is asked of the AI.
+        composeRule.onAllNodesWithTag("whole_transcript_ai_note").assertCountEquals(0)
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick()
+        composeRule.onNodeWithTag("whole_transcript_ai_note").assertIsDisplayed()
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick()
+        composeRule.onAllNodesWithTag("whole_transcript_ai_note").assertCountEquals(0)
+    }
+
+    @Test
+    fun noAiNoteWhenTheEnginesDoNotUseTheAi() {
+        showExportDialog("fr")
+        composeRule.onNodeWithTag("whole_transcript_with_subtitle2").performClick()
+        composeRule.onAllNodesWithTag("whole_transcript_ai_note").assertCountEquals(0)
+    }
+
+    @Test
+    fun subtitle2HasNoExplanationWhenItIsAvailable() {
+        showExportDialog("fr")
+        composeRule.onAllNodesWithTag("whole_transcript_subtitle2_unavailable").assertCountEquals(0)
     }
 
     @Test

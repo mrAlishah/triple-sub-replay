@@ -2,6 +2,7 @@ package com.kienhoang.dualsubreplay.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
@@ -50,6 +54,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -64,6 +69,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.util.Locale
 
 /** What the player needs to open the Whole transcript sheet; null in previews and tests without a video. */
 internal class WholeTranscriptAccess(
@@ -173,12 +179,12 @@ internal fun WholeTranscriptSheet(
     }
     val translations = remember(transcript) { mutableStateMapOf<Int, String>() }
     // Registered here, not in the export dialog, which closes before Android's save screen answers.
-    var pending by remember { mutableStateOf<Pair<TranscriptExportFormat, Boolean>?>(null) }
+    var pending by remember { mutableStateOf<TranscriptExportOptions?>(null) }
     val saveScreen =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
             val picked = pending
             pending = null
-            if (uri != null && picked != null) exporter.start(transcript, uri, picked.first, picked.second, title)
+            if (uri != null && picked != null) exporter.start(transcript, uri, picked, title)
         }
     TranslateRowsOnScreen(transcript, listState, translations, enabled = query.isBlank())
 
@@ -239,10 +245,16 @@ internal fun WholeTranscriptSheet(
         }
     }
     if (exporting) {
-        ExportDialog(onDismiss = { exporting = false }) { format, withTranslation ->
+        ExportDialog(
+            subtitle1Language = transcript.subtitle1Language,
+            subtitle2Language = transcript.subtitle2Language,
+            subtitle1UsesAi = transcript.subtitle1UsesAi,
+            subtitle2UsesAi = transcript.subtitle2UsesAi,
+            onDismiss = { exporting = false },
+        ) { options ->
             exporting = false
-            pending = format to withTranslation
-            saveScreen.launch(exportFileName(title, format))
+            pending = options
+            saveScreen.launch(exportFileName(title, options.format))
         }
     }
 }
@@ -335,20 +347,42 @@ private fun TranscriptRow(
 private fun ExportProgress(exporter: TranscriptExporter) {
     val state by exporter.state.collectAsState()
     val export = state ?: return
+    val locale = currentInterfaceLocale()
+    // A file that stopped early may stay behind incomplete: the save screen already made it, and it is never deleted.
+    val mayBeIncomplete =
+        export.result in
+            setOf(TranscriptExportState.Result.FAILED, TranscriptExportState.Result.CHANGED, TranscriptExportState.Result.CANCELLED)
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("whole_transcript_export_progress")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(
-                    when (export.result) {
-                        TranscriptExportState.Result.RUNNING -> R.string.whole_transcript_exporting
-                        TranscriptExportState.Result.SAVED -> R.string.whole_transcript_saved
-                        TranscriptExportState.Result.FAILED -> R.string.whole_transcript_export_failed
-                        TranscriptExportState.Result.CANCELLED -> R.string.whole_transcript_export_cancelled
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (export.result == TranscriptExportState.Result.PARTIAL && export.missingLanguages.isNotEmpty()) {
+                        stringResource(
+                            R.string.whole_transcript_saved_missing,
+                            export.missingLanguages.joinToString { languageDisplayName(it, locale) },
+                        )
+                    } else {
+                        stringResource(
+                            when (export.result) {
+                                TranscriptExportState.Result.RUNNING -> R.string.whole_transcript_exporting
+                                TranscriptExportState.Result.SAVED, TranscriptExportState.Result.PARTIAL -> R.string.whole_transcript_saved
+                                TranscriptExportState.Result.FAILED -> R.string.whole_transcript_export_failed
+                                TranscriptExportState.Result.CHANGED -> R.string.whole_transcript_export_changed
+                                TranscriptExportState.Result.CANCELLED -> R.string.whole_transcript_export_cancelled
+                            },
+                        )
                     },
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (mayBeIncomplete) {
+                    Text(
+                        stringResource(R.string.whole_transcript_export_incomplete_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("whole_transcript_export_incomplete_note"),
+                    )
+                }
+            }
             if (export.result == TranscriptExportState.Result.RUNNING) {
                 TextButton(onClick = exporter::cancel) { Text(stringResource(R.string.whole_transcript_export_cancel)) }
             } else {
@@ -365,20 +399,32 @@ private fun ExportProgress(exporter: TranscriptExporter) {
     }
 }
 
-/** Export: text or SRT, with or without the translation, then Android's own save screen picks the file. */
+/**
+ * Export: text or SRT, then which translation lines follow the Original (Subtitle 1 on, Subtitle 2 off by default),
+ * then Android's own save screen picks the file. [subtitle2Language] is null when Subtitle 2 is off or repeats another
+ * line: its box is then disabled and says why, so no file silently lacks it.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ExportDialog(
+internal fun ExportDialog(
+    subtitle1Language: String?,
+    subtitle2Language: String?,
+    subtitle1UsesAi: Boolean = false,
+    subtitle2UsesAi: Boolean = false,
     onDismiss: () -> Unit,
-    onExport: (TranscriptExportFormat, Boolean) -> Unit,
+    onExport: (TranscriptExportOptions) -> Unit,
 ) {
     var format by remember { mutableStateOf(TranscriptExportFormat.TEXT) }
-    var withTranslation by remember { mutableStateOf(true) }
+    var withSubtitle1 by remember { mutableStateOf(true) }
+    var withSubtitle2 by remember { mutableStateOf(false) }
+    val locale = currentInterfaceLocale()
+    val subtitle2Available = subtitle2Language != null
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { DialogTitle(stringResource(R.string.whole_transcript_export), onClose = onDismiss) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scrolls, so the notes never push Save off a small or landscape screen.
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = format == TranscriptExportFormat.TEXT,
@@ -393,34 +439,90 @@ private fun ExportDialog(
                         modifier = Modifier.testTag("whole_transcript_format_srt"),
                     )
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(role = Role.Checkbox) { withTranslation = !withTranslation }
-                            .testTag("whole_transcript_with_translation"),
-                ) {
-                    Checkbox(checked = withTranslation, onCheckedChange = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.whole_transcript_with_translation))
+                SubtitleChoice(
+                    label = subtitleChoiceLabel(R.string.subtitle_role_first, subtitle1Language, locale),
+                    checked = withSubtitle1,
+                    enabled = true,
+                    testTag = "whole_transcript_with_subtitle1",
+                ) { withSubtitle1 = !withSubtitle1 }
+                SubtitleChoice(
+                    label = subtitleChoiceLabel(R.string.subtitle_role_second, subtitle2Language, locale),
+                    checked = withSubtitle2 && subtitle2Available,
+                    enabled = subtitle2Available,
+                    testTag = "whole_transcript_with_subtitle2",
+                ) { withSubtitle2 = !withSubtitle2 }
+                if (!subtitle2Available) {
+                    Text(
+                        stringResource(R.string.whole_transcript_subtitle2_unavailable),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("whole_transcript_subtitle2_unavailable"),
+                    )
                 }
-                if (withTranslation) {
+                if (withSubtitle1 || (withSubtitle2 && subtitle2Available)) {
                     Text(
                         stringResource(R.string.whole_transcript_with_translation_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                // The selected AI service is asked for lines it has not translated yet, and that uses its quota or credits.
+                if ((withSubtitle1 && subtitle1UsesAi) || (withSubtitle2 && subtitle2Available && subtitle2UsesAi)) {
+                    Text(
+                        stringResource(R.string.whole_transcript_ai_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("whole_transcript_ai_note"),
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onExport(format, withTranslation) },
+                onClick = { onExport(TranscriptExportOptions(format, withSubtitle1, withSubtitle2 && subtitle2Available)) },
                 modifier = Modifier.testTag("whole_transcript_export_save"),
             ) { Text(stringResource(R.string.whole_transcript_export_save)) }
         },
     )
+}
+
+/** "Subtitle 1 (German)": the slot's role name and, when known, the language it shows now. */
+@Composable
+private fun subtitleChoiceLabel(
+    @StringRes role: Int,
+    language: String?,
+    locale: Locale,
+): String =
+    stringResource(role).let { name ->
+        if (language ==
+            null
+        ) {
+            name
+        } else {
+            stringResource(R.string.whole_transcript_include_subtitle, name, languageDisplayName(language, locale))
+        }
+    }
+
+@Composable
+private fun SubtitleChoice(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean,
+    testTag: String,
+    onToggle: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
+                .testTag(testTag),
+    ) {
+        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
+        Spacer(Modifier.width(8.dp))
+        Text(label, color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 /** The file name the save screen suggests: the video's title, made safe for a file name. */
